@@ -4,21 +4,12 @@ import java.util.*;
 
 public class Template implements Iterable<Key> {
 
-    private int id;
     private String name;
     private Formatter formatter;
     private final List<Key> keys = new ArrayList<>();
 
     public Template() {
 
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public String getName() {
@@ -136,18 +127,5 @@ public class Template implements Iterable<Key> {
     @Override
     public Iterator<Key> iterator() {
         return keys.iterator();
-    }
-
-    @Override
-    public boolean equals(Object object) {
-        if (this == object) return true;
-        if (!(object instanceof Template template)) return false;
-
-        return id == template.id;
-    }
-
-    @Override
-    public int hashCode() {
-        return id;
     }
 }

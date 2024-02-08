@@ -1,9 +1,13 @@
 package fr.poulpogaz.musicdb.ui;
 
+import fr.poulpogaz.musicdb.model.Templates;
+
 import javax.swing.*;
 import java.awt.*;
 
 public class MusicDBFrame extends JFrame {
+
+    private TemplatesPanel templatesPanel;
 
     public MusicDBFrame() {
         super("MusicDB");
@@ -17,17 +21,24 @@ public class MusicDBFrame extends JFrame {
 
     private void initComponents() {
         JToolBar toolBar = createToolBar();
+        templatesPanel = new TemplatesPanel();
+
+
 
         setLayout(new BorderLayout());
         add(toolBar, BorderLayout.NORTH);
+        add(templatesPanel, BorderLayout.CENTER);
     }
 
     private JToolBar createToolBar() {
         JButton newTemplate = new JButton(Icons.get("add.svg"));
+        newTemplate.setToolTipText("New template");
 
         JButton editTemplate = new JButton(Icons.get("edit.svg"));
+        newTemplate.setToolTipText("Edit template");
 
         JButton deleteTemplate = new JButton(Icons.get("delete.svg"));
+        newTemplate.setToolTipText("Delete template");
 
         JToolBar bar = new JToolBar();
         bar.add(newTemplate);
