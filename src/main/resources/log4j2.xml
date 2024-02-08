@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+    <Appenders>
+        <File name="File" fileName="musicdb.log" append="true">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %m%n"/>
+        </File>
+        <Console name="stdout">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %m%n"/>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="fr.poulpogaz.musicdb" level="debug" additivity="true">
+            <AppenderRef ref="File"/>
+            <AppenderRef ref="stdout"/>
+        </Logger>
+        <Root/>
+    </Loggers>
+</Configuration>
