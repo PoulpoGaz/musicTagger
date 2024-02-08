@@ -8,16 +8,17 @@ import fr.poulpogaz.json.tree.JsonElement;
 import fr.poulpogaz.json.tree.JsonObject;
 import fr.poulpogaz.json.tree.JsonTreeReader;
 
+import javax.swing.event.EventListenerList;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Templates {
 
     private static final Map<String, Template> templates = new HashMap<>();
+    private static final List<TemplateListener> listeners = new ArrayList<>();
+
 
     private Templates() {}
 
@@ -88,11 +89,18 @@ public class Templates {
     }
 
     public static void addTemplate(Template template) {
+        if (templates.containsKey(template.getName())) {
+            return;
+        }
+
         templates.put(template.getName(), template);
+        fireEvent(new TemplateEvent(Templates.class, template, EnumSet.of(TemplateEvent.Flags.TEMPLATE_CREATED)));
     }
 
     public static void removeTemplate(Template template) {
         templates.remove(template.getName());
+
+        fireEvent(new TemplateEvent(Templates.class, template, EnumSet.of(TemplateEvent.Flags.TEMPLATE_DELETED)));
     }
 
     public static Collection<Template> getTemplates() {
@@ -103,11 +111,19 @@ public class Templates {
         return templates.size();
     }
 
-    public static void addTemplateListener(TemplateListener listener) {
 
+    private static void fireEvent(TemplateEvent event) {
+        for (TemplateListener listener : listeners) {
+            listener.onTemplateModification(event);
+        }
+    }
+
+
+    public static void addTemplateListener(TemplateListener listener) {
+        listeners.add(listener);
     }
 
     public static void removeTemplateListener(TemplateListener listener) {
-
+        listeners.remove(listener);
     }
 }
