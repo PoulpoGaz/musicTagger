@@ -1,11 +1,17 @@
 package fr.poulpogaz.musicdb.model;
 
+import fr.poulpogaz.musicdb.properties.ObjectProperty;
+import fr.poulpogaz.musicdb.properties.Property;
+
+import javax.swing.*;
 import java.util.*;
 
 public class Template implements Iterable<Key> {
 
-    private String name;
-    private Formatter formatter;
+    private final ObjectProperty<String> name = new ObjectProperty<>();
+    private final ObjectProperty<Formatter> formatter = new ObjectProperty<>();
+
+    private final List<TemplateKeyListListener> templateListeners = new ArrayList<>();
     private final List<Key> keys = new ArrayList<>();
 
     public Template() {
@@ -13,34 +19,49 @@ public class Template implements Iterable<Key> {
     }
 
     public String getName() {
-        return name;
+        return name.get();
     }
 
     public void setName(String name) {
-        this.name = name;
+        this.name.set(name);
     }
 
+    public Property<String> nameProperty() {
+        return name;
+    }
+
+
     public Formatter getFormatter() {
-        return formatter;
+        return formatter.get();
     }
 
     public String getFormat() {
-        return formatter.getFormat();
+        return formatter.map(Formatter::getFormat);
     }
 
     public void setFormatter(Formatter formatter) {
-        this.formatter = formatter;
+        this.formatter.set(formatter);
     }
 
     public void setFormat(String format) {
-        if (formatter == null) {
-            formatter = new Formatter(format);
+        Formatter f = formatter.get();
+
+        if (f == null) {
+            formatter.set(new Formatter(format));
         } else {
-            formatter.setFormat(format);
+            f.setFormat(format);
         }
     }
 
+    public Property<Formatter> formatterProperty() {
+        return formatter;
+    }
+
     public boolean addKey(Key key) {
+        return addKey(keys.size(), key);
+    }
+
+    public boolean addKey(int index, Key key) {
         if (key.getName() == null || key.getName().isEmpty() ||
                 key.getTemplate() == this ||
                 getKey(key.getName()) != null) {
@@ -53,11 +74,17 @@ public class Template implements Iterable<Key> {
 
         key.template = this;
         keys.add(key);
+        fireEvent(TemplateKeyListListener.KEYS_ADDED, index, index);
 
         return true;
     }
 
-    public boolean removeKey(Key key) {
+    public boolean removeKey(int index) {
+        if (index < 0 || index >= keys.size()) {
+            return false;
+        }
+
+        Key key = keys.get(index);
         if (key.getTemplate() != this) {
             return false;
         }
@@ -65,8 +92,24 @@ public class Template implements Iterable<Key> {
         boolean removed = keys.remove(key);
         if (removed) {
             key.template = null;
+            fireEvent(TemplateKeyListListener.KEYS_REMOVED, index, index);
         }
         return false;
+    }
+
+    public boolean removeKey(Key key) {
+        return removeKey(keys.indexOf(key));
+    }
+
+    public void swap(int index1, int index2) {
+        if (index1 < 0 || index1 >= keys.size()
+                || index2 < 0 || index2 >= keys.size()
+                || index1 == index2) {
+            return;
+        }
+
+        Collections.swap(keys, index1, index2);
+        fireEvent(TemplateKeyListListener.KEYS_SWAPPED, index1, index2);
     }
 
     public Key getKey(String name) {
@@ -82,6 +125,31 @@ public class Template implements Iterable<Key> {
 
         return null;
     }
+
+    public void removeAllKeys() {
+        for (Key key : keys) {
+            key.template = null;
+        }
+
+        int size = keys.size();
+        this.keys.clear();
+        fireEvent(TemplateKeyListListener.KEYS_REMOVED, 0, size);
+    }
+
+    public void addAll(List<Key> keys) {
+        Objects.requireNonNull(keys);
+
+        int index = keys.size();
+        for (Key k : keys) {
+            addKey(k);
+        }
+
+        if (index < keys.size()) {
+            fireEvent(TemplateKeyListListener.KEYS_ADDED, index, keys.size());
+        }
+    }
+
+
 
     public Key getKey(int index) {
         return keys.get(index);
@@ -99,23 +167,6 @@ public class Template implements Iterable<Key> {
         return keys.get(index).getName();
     }
 
-    public void removeAllKeys() {
-        for (Key key : keys) {
-            key.template = null;
-        }
-
-        this.keys.clear();
-    }
-
-    public void setKeys(List<Key> keys) {
-        Objects.requireNonNull(keys);
-
-        removeAllKeys();
-        for (Key k : keys) {
-            addKey(k);
-        }
-    }
-
     public List<Key> getKeys() {
         return Collections.unmodifiableList(keys);
     }
@@ -127,5 +178,19 @@ public class Template implements Iterable<Key> {
     @Override
     public Iterator<Key> iterator() {
         return keys.iterator();
+    }
+
+    public void addTemplateKeyListListener(TemplateKeyListListener listener) {
+        templateListeners.add(listener);
+    }
+
+    public void removeTemplateKeyListListener(TemplateKeyListListener listener) {
+        templateListeners.remove(listener);
+    }
+
+    private void fireEvent(int type, int index1, int index2) {
+        for (TemplateKeyListListener listener : templateListeners) {
+            listener.keyListModified(type, index1, index2);
+        }
     }
 }

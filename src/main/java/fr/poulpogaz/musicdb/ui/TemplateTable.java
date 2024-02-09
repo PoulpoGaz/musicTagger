@@ -50,18 +50,12 @@ public class TemplateTable extends JPanel {
     }
 
 
-    private static class CellRenderer extends DefaultTableCellRenderer {
+    private static class CellRenderer extends CellRendererBase {
 
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-
-            if (value == null) {
-                setText("Not set");
-                setFont(getFont().deriveFont(Font.ITALIC));
-            }
-
-            return this;        }
+        protected int getStatusOfCell(JTable jTable, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            return DEFAULT;
+        }
     }
 
 

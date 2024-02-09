@@ -1,6 +1,7 @@
 package fr.poulpogaz.musicdb.ui;
 
 import fr.poulpogaz.musicdb.model.Templates;
+import fr.poulpogaz.musicdb.ui.dialogs.NewTemplateDialog;
 
 import javax.swing.*;
 import java.awt.*;
@@ -33,6 +34,7 @@ public class MusicDBFrame extends JFrame {
     private JToolBar createToolBar() {
         JButton newTemplate = new JButton(Icons.get("add.svg"));
         newTemplate.setToolTipText("New template");
+        newTemplate.addActionListener(e -> NewTemplateDialog.showDialog(this));
 
         JButton editTemplate = new JButton(Icons.get("edit.svg"));
         newTemplate.setToolTipText("Edit template");
