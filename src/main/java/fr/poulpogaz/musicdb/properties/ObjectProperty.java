@@ -7,6 +7,7 @@ import java.util.function.Function;
 public class ObjectProperty<T> extends AbstractProperty<T> {
 
     private T value;
+    private Object owner;
 
     public ObjectProperty() {
         this(null);
@@ -14,6 +15,20 @@ public class ObjectProperty<T> extends AbstractProperty<T> {
 
     public ObjectProperty(T value) {
         this.value = value;
+    }
+
+    public ObjectProperty(T value, Object owner) {
+        this.value = value;
+        this.owner = owner;
+    }
+
+    public void setOwner(Object owner) {
+        this.owner = owner;
+    }
+
+    @Override
+    public Object getOwner() {
+        return owner;
     }
 
     @Override

@@ -2,6 +2,8 @@ package fr.poulpogaz.musicdb.properties;
 
 public interface Property<T> {
 
+    Object getOwner();
+
     T get();
 
     void set(T value);

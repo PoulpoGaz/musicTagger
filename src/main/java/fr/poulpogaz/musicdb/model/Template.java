@@ -8,8 +8,8 @@ import java.util.*;
 
 public class Template implements Iterable<Key> {
 
-    private final ObjectProperty<String> name = new ObjectProperty<>();
-    private final ObjectProperty<Formatter> formatter = new ObjectProperty<>();
+    private final ObjectProperty<String> name = new ObjectProperty<>(null, this);
+    private final ObjectProperty<Formatter> formatter = new ObjectProperty<>(null, this);
 
     private final List<TemplateKeyListListener> templateListeners = new ArrayList<>();
     private final List<Key> keys = new ArrayList<>();

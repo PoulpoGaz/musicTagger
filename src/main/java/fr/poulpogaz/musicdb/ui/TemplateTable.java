@@ -75,7 +75,7 @@ public class TemplateTable extends JPanel {
 
             addMenuItem.addActionListener((ActionEvent e) -> {
                 int row = table.getSelectedRow();
-                tableModel.addRow(row);
+                tableModel.addRow(row + 1);
             });
 
             removeMenuItem.addActionListener((ActionEvent e) -> {

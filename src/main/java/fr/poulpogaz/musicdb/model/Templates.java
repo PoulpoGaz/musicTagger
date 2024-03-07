@@ -8,7 +8,6 @@ import fr.poulpogaz.json.tree.JsonElement;
 import fr.poulpogaz.json.tree.JsonObject;
 import fr.poulpogaz.json.tree.JsonTreeReader;
 
-import javax.swing.event.EventListenerList;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,7 +16,7 @@ import java.util.*;
 public class Templates {
 
     private static final Map<String, Template> templates = new HashMap<>();
-    private static final List<TemplateListener> listeners = new ArrayList<>();
+    private static final List<TemplatesListener> listeners = new ArrayList<>();
 
 
     private Templates() {}
@@ -94,13 +93,13 @@ public class Templates {
         }
 
         templates.put(template.getName(), template);
-        fireEvent(new TemplateEvent(Templates.class, template, EnumSet.of(TemplateEvent.Flags.TEMPLATE_CREATED)));
+        fireEvent(TemplatesListener.TEMPLATE_ADDED, template);
     }
 
     public static void removeTemplate(Template template) {
-        templates.remove(template.getName());
-
-        fireEvent(new TemplateEvent(Templates.class, template, EnumSet.of(TemplateEvent.Flags.TEMPLATE_DELETED)));
+        if (templates.remove(template.getName(), template)) {
+            fireEvent(TemplatesListener.TEMPLATE_REMOVED, template);
+        }
     }
 
     public static Collection<Template> getTemplates() {
@@ -112,18 +111,18 @@ public class Templates {
     }
 
 
-    private static void fireEvent(TemplateEvent event) {
-        for (TemplateListener listener : listeners) {
-            listener.onTemplateModification(event);
+    private static void fireEvent(int event, Template template) {
+        for (TemplatesListener listener : listeners) {
+            listener.templatesChanged(event, template);
         }
     }
 
 
-    public static void addTemplateListener(TemplateListener listener) {
+    public static void addTemplateListener(TemplatesListener listener) {
         listeners.add(listener);
     }
 
-    public static void removeTemplateListener(TemplateListener listener) {
+    public static void removeTemplateListener(TemplatesListener listener) {
         listeners.remove(listener);
     }
 }
