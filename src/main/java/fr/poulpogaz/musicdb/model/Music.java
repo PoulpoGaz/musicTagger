@@ -24,7 +24,7 @@ public class Music {
         return tags.get(tag);
     }
 
-    public String putTag(String tag, String value) {
+    public String setTag(String tag, String value) {
         if (value == null) {
             return tags.remove(tag);
         } else {

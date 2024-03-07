@@ -24,17 +24,18 @@ public class TemplateTableModel extends AbstractTableModel {
         index0++;
         index1++;
 
+        int affectLength = index1 - index0 + 1;
+
         switch (eventType) {
             case TemplateKeyListListener.KEYS_ADDED -> {
                 for (int i = 0; i < rows.size(); i++) {
                     String[] row = rows.get(i);
-                    int addLength = index1 - index0 + 1;
 
-                    row = Arrays.copyOf(row, row.length + addLength);
+                    row = Arrays.copyOf(row, row.length + affectLength);
                     System.arraycopy(row, index0,
                                      row, index1 + 1,
-                                     addLength);
-                    Arrays.fill(row, index0, index1, null);
+                                     row.length - index1 - 1);
+                    Arrays.fill(row, index0, index1 + 1, null);
 
                     rows.set(i, row);
                 }
@@ -42,12 +43,11 @@ public class TemplateTableModel extends AbstractTableModel {
             case TemplateKeyListListener.KEYS_REMOVED -> {
                 for (int i = 0; i < rows.size(); i++) {
                     String[] row = rows.get(i);
-                    int removeLength = index1 - index0 + 1;
 
                     System.arraycopy(row, index1 + 1,
                                      row, index0,
                                      row.length - index1 - 1);
-                    row = Arrays.copyOf(row, row.length - removeLength);
+                    row = Arrays.copyOf(row, row.length - affectLength);
 
                     rows.set(i, row);
                 }
@@ -124,5 +124,15 @@ public class TemplateTableModel extends AbstractTableModel {
 
     public Template getTemplate() {
         return template;
+    }
+
+    public String[][] getContent() {
+        String[][] content = new String[getRowCount()][getColumnCount()];
+
+        for (int y = 0; y < getRowCount(); y++) {
+            System.arraycopy(rows.get(y), 0, content[y], 0, getColumnCount());
+        }
+
+        return content;
     }
 }
