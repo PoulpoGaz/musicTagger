@@ -25,6 +25,10 @@ public class Music {
     }
 
     public String putTag(String tag, String value) {
-        return tags.put(tag, value);
+        if (value == null) {
+            return tags.remove(tag);
+        } else {
+            return tags.put(tag, value);
+        }
     }
 }

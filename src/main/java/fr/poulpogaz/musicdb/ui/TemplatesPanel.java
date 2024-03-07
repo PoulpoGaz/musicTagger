@@ -49,5 +49,9 @@ public class TemplatesPanel extends JTabbedPane {
             super.insertTab(title, icon, component, tip, index);
         }
     }
+
+    public Template getSelectedTemplate() {
+        return ((TemplateTable) getSelectedComponent()).getModel().getTemplate();
+    }
 }
 

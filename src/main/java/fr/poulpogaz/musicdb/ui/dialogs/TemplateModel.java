@@ -323,6 +323,42 @@ public class TemplateModel extends AbstractTableModel {
         }
     }
 
+    public void applyChanges() {
+        if (template == null) {
+            throw new IllegalStateException("New template");
+        }
+
+        template.setName(name);
+        template.setFormat(format);
+
+        // remove keys
+        for (KeyModel k : removedKeys) {
+            template.removeKey(k.originalIndex);
+        }
+
+        // insert keys or update keys
+        for (KeyModel k : keys) {
+            if (k.isNew()) {
+                template.addKey(k.index, k.asKey());
+            } else {
+                k.updateKey();
+            }
+        }
+
+        // swap keys
+        for (int i = 0; i < template.keyCount(); i++) {
+            KeyModel kModel = keys.get(i);
+            Key key = template.getKey(i);
+
+            if (kModel.isNew() || kModel.getOriginal() == key) {
+                continue;
+            }
+
+            template.swap(i, kModel.index);
+        }
+    }
+
+
     public Template getTemplate() {
         return template;
     }

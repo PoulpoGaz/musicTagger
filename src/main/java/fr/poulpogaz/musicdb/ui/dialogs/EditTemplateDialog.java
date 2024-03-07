@@ -72,6 +72,6 @@ public class EditTemplateDialog extends TemplateDialogBase {
 
     @Override
     protected void apply() {
-
+        templateModel.applyChanges();
     }
 }

@@ -73,7 +73,7 @@ public class Template implements Iterable<Key> {
         }
 
         key.template = this;
-        keys.add(key);
+        keys.add(index, key);
         fireEvent(TemplateKeyListListener.KEYS_ADDED, index, index);
 
         return true;
