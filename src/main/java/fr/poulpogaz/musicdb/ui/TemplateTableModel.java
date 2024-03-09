@@ -135,7 +135,31 @@ public class TemplateTableModel extends AbstractTableModel {
             }
         }
 
-        fireTableRowsDeleted(min, max);
+        if (min >= 0 && max >= 0) {
+            fireTableRowsDeleted(min, max);
+        }
+    }
+
+    public void setNullValues(ListSelectionModel selectedRows, ListSelectionModel selectedColumns) {
+        int minRow = selectedRows.getMinSelectionIndex();
+        int minCol = selectedColumns.getMinSelectionIndex();
+
+        int maxRow = selectedRows.getMaxSelectionIndex();
+        int maxCol = selectedColumns.getMaxSelectionIndex();
+
+        for (int row = minRow; row <= maxRow; row++) {
+            if (selectedRows.isSelectedIndex(row)) {
+                for (int col = minCol; col <= maxCol; col++) {
+                    if (selectedColumns.isSelectedIndex(col)) {
+                        rows.get(row)[col] = null;
+                    }
+                }
+            }
+        }
+
+        if (0 <= minRow && minRow <= maxRow && 0 <= minCol && minCol <= maxCol) {
+            fireTableRowsUpdated(minRow, maxRow);
+        }
     }
 
     public Template getTemplate() {

@@ -5,6 +5,7 @@ import fr.poulpogaz.musicdb.model.Templates;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 
@@ -36,7 +37,7 @@ public class TemplateTable extends JPanel {
     protected JTable createTable() {
         JTable jTable = new JTable();
         jTable.setDefaultRenderer(Object.class, new CellRenderer());
-        jTable.setColumnSelectionAllowed(false);
+        jTable.setColumnSelectionAllowed(true);
         jTable.setRowSelectionAllowed(true);
         jTable.setShowVerticalLines(true);
         jTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
@@ -56,7 +57,9 @@ public class TemplateTable extends JPanel {
     }
 
     public void unsetSelectedCell() {
-
+        ListSelectionModel selectedRows = table.getSelectionModel();
+        ListSelectionModel selectedColumns = table.getColumnModel().getSelectionModel();
+        tableModel.setNullValues(selectedRows, selectedColumns);
     }
 
     public TemplateTableModel getModel() {

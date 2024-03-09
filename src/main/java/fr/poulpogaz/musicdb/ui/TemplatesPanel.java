@@ -92,7 +92,7 @@ public class TemplatesPanel extends JPanel {
             } else if (event == TemplatesListener.TEMPLATE_REMOVED) {
                 TemplateTable table = panels.remove(template);
                 if (table != null) {
-                    remove(table);
+                    templatesPane.remove(table);
                 }
             }
         };
