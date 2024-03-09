@@ -40,11 +40,13 @@ public class TablePopupMenuSupport extends MouseAdapter {
     }
 
     protected boolean isVisible(MouseEvent event, int row, int column) {
-        if (row >= 0 && column >= 0) {
+        ListSelectionModel selection = table.getSelectionModel();
+
+        // Modify selection if and only if the user clicked inside the table
+        // and outside the current selection
+        if (row >= 0 && column >= 0 && !selection.isSelectedIndex(row)) {
             table.setRowSelectionInterval(row, row);
             table.setColumnSelectionInterval(column, column);
-        } else {
-            table.clearSelection();
         }
 
         return true;

@@ -1,6 +1,7 @@
 package fr.poulpogaz.musicdb.ui;
 
 import fr.poulpogaz.musicdb.model.Template;
+import fr.poulpogaz.musicdb.model.Templates;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -38,11 +39,24 @@ public class TemplateTable extends JPanel {
         jTable.setColumnSelectionAllowed(false);
         jTable.setRowSelectionAllowed(true);
         jTable.setShowVerticalLines(true);
-        jTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        jTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         jTable.setFillsViewportHeight(true);
         jTable.setModel(tableModel);
 
         return jTable;
+    }
+
+    public void addMusicBelowSelection() {
+        int row = table.getSelectionModel().getMaxSelectionIndex();
+        tableModel.addRow(row + 1);
+    }
+
+    public void deleteSelectedMusics() {
+        tableModel.deleteSelectedRows(table.getSelectionModel());
+    }
+
+    public void unsetSelectedCell() {
+
     }
 
     public TemplateTableModel getModel() {
@@ -64,6 +78,7 @@ public class TemplateTable extends JPanel {
 
         protected JMenuItem addMenuItem;
         protected JMenuItem removeMenuItem;
+        protected JMenuItem unset;
 
         public TemplateTablePopupMenu() {
             initPopup();
@@ -72,16 +87,12 @@ public class TemplateTable extends JPanel {
         protected void initPopup() {
             addMenuItem = add("Add music");
             removeMenuItem = add("Remove music");
+            addSeparator();
+            unset = add("Unset");
 
-            addMenuItem.addActionListener((ActionEvent e) -> {
-                int row = table.getSelectedRow();
-                tableModel.addRow(row + 1);
-            });
-
-            removeMenuItem.addActionListener((ActionEvent e) -> {
-                int row = table.getSelectedRow();
-                tableModel.deleteRow(row);
-            });
+            addMenuItem.addActionListener((ActionEvent e) -> addMusicBelowSelection());
+            removeMenuItem.addActionListener((ActionEvent e) -> deleteSelectedMusics());
+            unset.addActionListener((ActionEvent e) -> unsetSelectedCell());
         }
     }
 }

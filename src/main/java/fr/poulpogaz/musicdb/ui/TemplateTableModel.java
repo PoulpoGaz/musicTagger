@@ -3,6 +3,7 @@ package fr.poulpogaz.musicdb.ui;
 import fr.poulpogaz.musicdb.model.Template;
 import fr.poulpogaz.musicdb.model.TemplateKeyListListener;
 
+import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -120,6 +121,21 @@ public class TemplateTableModel extends AbstractTableModel {
             rows.remove(rowIndex);
             fireTableRowsDeleted(rowIndex, rowIndex);
         }
+    }
+
+    public void deleteSelectedRows(ListSelectionModel model) {
+        int min = model.getMinSelectionIndex();
+        int max = Math.min(model.getMaxSelectionIndex() + 1, getRowCount());
+
+        for (int i = min, r = min; i < max; i++) {
+            if (model.isSelectedIndex(i)) {
+                rows.remove(r);
+            } else {
+                r++;
+            }
+        }
+
+        fireTableRowsDeleted(min, max);
     }
 
     public Template getTemplate() {

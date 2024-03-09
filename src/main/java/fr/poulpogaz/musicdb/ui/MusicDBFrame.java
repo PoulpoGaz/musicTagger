@@ -7,21 +7,23 @@ import fr.poulpogaz.musicdb.ui.dialogs.NewTemplateDialog;
 
 import javax.swing.*;
 import java.awt.*;
+import java.net.http.HttpClient;
 
 public class MusicDBFrame extends JFrame {
 
     private TemplatesPanel templatesPanel;
 
-    private JToolBar toolBar;
-    private JButton newTemplate;
-    private JButton editTemplate;
-    private JButton deleteTemplate;
+    private JMenuBar menuBar;
+    private JMenuItem newTemplate;
+    private JMenuItem editTemplate;
+    private JMenuItem deleteTemplate;
 
     public MusicDBFrame() {
         super("MusicDB");
 
         Templates.addTemplateListener(createTemplatesListener());
         initComponents();
+        setJMenuBar(menuBar);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setSize(1280, 720);
 
@@ -41,27 +43,26 @@ public class MusicDBFrame extends JFrame {
     }
 
     private void initComponents() {
-        toolBar = createToolBar();
         templatesPanel = new TemplatesPanel();
 
-
+        menuBar = createJMenuBar();
 
         setLayout(new BorderLayout());
-        add(toolBar, BorderLayout.NORTH);
         add(templatesPanel, BorderLayout.CENTER);
     }
 
-    private JToolBar createToolBar() {
-        newTemplate = new JButton(Icons.get("add.svg"));
-        newTemplate.setToolTipText("New template");
+    private JMenuBar createJMenuBar() {
+        JMenu templates = new JMenu("Templates");
+        newTemplate = templates.add("New template");
+        newTemplate.setIcon(Icons.get("add.svg"));
         newTemplate.addActionListener(e -> NewTemplateDialog.showDialog(this));
 
-        editTemplate = new JButton(Icons.get("edit.svg"));
-        editTemplate.setToolTipText("Edit template");
+        editTemplate = templates.add("Edit template");
+        editTemplate.setIcon(Icons.get("edit.svg"));
         editTemplate.addActionListener(e -> EditTemplateDialog.showDialog(this, templatesPanel.getSelectedTemplate()));
 
-        deleteTemplate = new JButton(Icons.get("delete.svg"));
-        deleteTemplate.setToolTipText("Delete template");
+        deleteTemplate = templates.add("Delete template");
+        deleteTemplate.setIcon(Icons.get("delete.svg"));
         deleteTemplate.addActionListener(e -> {
             int r = JOptionPane.showConfirmDialog(this, "This operation will remove all data of template " +
                                                                 templatesPanel.getSelectedTemplate().getName());
@@ -70,10 +71,8 @@ public class MusicDBFrame extends JFrame {
             }
         });
 
-        JToolBar bar = new JToolBar();
-        bar.add(newTemplate);
-        bar.add(editTemplate);
-        bar.add(deleteTemplate);
+        JMenuBar bar = new JMenuBar();
+        bar.add(templates);
 
         return bar;
     }
