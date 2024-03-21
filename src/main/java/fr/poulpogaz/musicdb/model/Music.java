@@ -5,11 +5,20 @@ import java.util.Map;
 
 public class Music {
 
+    private Template template;
     private String downloadURL;
     private final Map<String, String> tags = new HashMap<>();
 
     public Music() {
 
+    }
+
+    public Template getTemplate() {
+        return template;
+    }
+
+    public void setTemplate(Template template) {
+        this.template = template;
     }
 
     public String getDownloadURL() {

@@ -1,5 +1,7 @@
 package fr.poulpogaz.musicdb.ui;
 
+import fr.poulpogaz.musicdb.model.Key;
+import fr.poulpogaz.musicdb.model.Music;
 import fr.poulpogaz.musicdb.model.Template;
 import fr.poulpogaz.musicdb.model.TemplateKeyListListener;
 
@@ -18,6 +20,36 @@ public class TemplateTableModel extends AbstractTableModel {
         this.template = template;
 
         template.addTemplateKeyListListener(this::updateTable);
+
+        String[] musics = new String[] {
+                "https://www.youtube.com/watch?v=Urcnqat6P0s",
+                "https://music.youtube.com/watch?v=yKPka2qGRh8",
+                "https://music.youtube.com/watch?v=oSgGnmh4sQo",
+                "https://music.youtube.com/watch?v=GtPLYvYeZ_4",
+                "https://music.youtube.com/watch?v=DNCN1II0G-4",
+                "https://music.youtube.com/watch?v=qiLO9YDOxYg",
+                "https://music.youtube.com/watch?v=qXoghQAzQF0",
+                "https://music.youtube.com/watch?v=7ddebyXI8-Q",
+                "https://music.youtube.com/watch?v=SxhJ6pVGaio",
+                "https://music.youtube.com/watch?v=XIwtX5aNO4w",
+                "https://music.youtube.com/watch?v=VQIv_2249Sc",
+                "https://music.youtube.com/watch?v=Sdb4nZgcETI",
+                "https://music.youtube.com/watch?v=zoi6ofeC4rY",
+                "https://music.youtube.com/watch?v=fhZMRwAs2Ys",
+                "https://music.youtube.com/watch?v=26W7rVonsEs",
+                "https://music.youtube.com/watch?v=jHVy3kkYiFY",
+                "https://music.youtube.com/watch?v=lyzjJYugE3o",
+                "https://music.youtube.com/watch?v=YYlcR-hBuXY",
+                "https://music.youtube.com/watch?v=kKEkoeUHeyM",
+                "https://music.youtube.com/watch?v=QnF41gLkuuE",
+                "https://music.youtube.com/watch?v=gegcg4hVN0A",
+        };
+
+        for (String s : musics) {
+            String[] v =  new String[template.keyCount() + 1];
+            v[0] = s;
+            rows.add(v);
+        }
     }
 
     private void updateTable(int eventType, int index0, int index1) {
@@ -86,6 +118,18 @@ public class TemplateTableModel extends AbstractTableModel {
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
         return rows.get(rowIndex)[columnIndex];
+    }
+
+    public Music getMusic(int row) {
+        String[] data = rows.get(row);
+
+        Music m = new Music();
+        m.setDownloadURL(data[0]);
+        for (int i = 0; i < template.keyCount(); i++) {
+            m.setTag(template.getKeyName(i), data[i + 1]);
+        }
+
+        return m;
     }
 
     @Override

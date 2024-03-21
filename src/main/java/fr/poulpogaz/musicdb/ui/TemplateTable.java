@@ -1,5 +1,6 @@
 package fr.poulpogaz.musicdb.ui;
 
+import fr.poulpogaz.musicdb.downloader.DownloadManager;
 import fr.poulpogaz.musicdb.model.Template;
 import fr.poulpogaz.musicdb.model.Templates;
 
@@ -62,6 +63,19 @@ public class TemplateTable extends JPanel {
         tableModel.setNullValues(selectedRows, selectedColumns);
     }
 
+    public void downloadSelectedMusics() {
+        ListSelectionModel selectedRows = table.getSelectionModel();
+
+        int min = selectedRows.getMinSelectionIndex();
+        int max = Math.min(selectedRows.getMaxSelectionIndex() + 1, table.getRowCount());
+
+        for (int i = min; i <= max; i++) {
+            if (selectedRows.isSelectedIndex(i)) {
+                DownloadManager.download(tableModel.getMusic(i));
+            }
+        }
+    }
+
     public TemplateTableModel getModel() {
         return tableModel;
     }
@@ -82,6 +96,7 @@ public class TemplateTable extends JPanel {
         protected JMenuItem addMenuItem;
         protected JMenuItem removeMenuItem;
         protected JMenuItem unset;
+        protected JMenuItem download;
 
         public TemplateTablePopupMenu() {
             initPopup();
@@ -92,10 +107,12 @@ public class TemplateTable extends JPanel {
             removeMenuItem = add("Remove music");
             addSeparator();
             unset = add("Unset");
+            download = add("Download music");
 
             addMenuItem.addActionListener((ActionEvent e) -> addMusicBelowSelection());
             removeMenuItem.addActionListener((ActionEvent e) -> deleteSelectedMusics());
             unset.addActionListener((ActionEvent e) -> unsetSelectedCell());
+            download.addActionListener((ActionEvent e) -> downloadSelectedMusics());
         }
     }
 }

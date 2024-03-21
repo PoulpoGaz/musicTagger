@@ -1,17 +1,24 @@
 package fr.poulpogaz.musicdb.ui;
 
+import fr.poulpogaz.musicdb.downloader.DownloadManager;
 import fr.poulpogaz.musicdb.model.TemplatesListener;
 import fr.poulpogaz.musicdb.model.Templates;
 import fr.poulpogaz.musicdb.ui.dialogs.EditTemplateDialog;
 import fr.poulpogaz.musicdb.ui.dialogs.NewTemplateDialog;
+import fr.poulpogaz.musicdb.ui.layout.VerticalConstraint;
+import fr.poulpogaz.musicdb.ui.layout.VerticalLayout;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.net.http.HttpClient;
 
 public class MusicDBFrame extends JFrame {
 
+    private MusicDBSplitPane splitPane;
     private TemplatesPanel templatesPanel;
+    private JPanel downloadQueue;
 
     private JMenuBar menuBar;
     private JMenuItem newTemplate;
@@ -28,6 +35,13 @@ public class MusicDBFrame extends JFrame {
         setSize(1280, 720);
 
         setLocationRelativeTo(null);
+
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                DownloadManager.shutdown();
+            }
+        });
     }
 
     private TemplatesListener createTemplatesListener() {
@@ -43,12 +57,14 @@ public class MusicDBFrame extends JFrame {
     }
 
     private void initComponents() {
+        downloadQueue = createQueuePanel();
         templatesPanel = new TemplatesPanel();
+        splitPane = new MusicDBSplitPane(templatesPanel, downloadQueue);
 
         menuBar = createJMenuBar();
 
         setLayout(new BorderLayout());
-        add(templatesPanel, BorderLayout.CENTER);
+        add(splitPane, BorderLayout.CENTER);
     }
 
     private JMenuBar createJMenuBar() {
@@ -71,9 +87,62 @@ public class MusicDBFrame extends JFrame {
             }
         });
 
+
+        JCheckBoxMenuItem downloadQueueItem = new JCheckBoxMenuItem();
+        downloadQueueItem.setState(isDownloadQueueVisible());
+        downloadQueueItem.setText("Open download queue");
+        downloadQueueItem.addActionListener(e -> setDownloadQueueVisible(!isDownloadQueueVisible()));
+        splitPane.addPropertyChangeListener(MusicDBSplitPane.RIGHT_VISIBILITY, e -> downloadQueueItem.setState(isDownloadQueueVisible()));
+
+        JMenu view = new JMenu("View");
+        view.add(downloadQueueItem);
+
+
         JMenuBar bar = new JMenuBar();
         bar.add(templates);
+        bar.add(view);
 
         return bar;
+    }
+
+
+    // ==================
+    // * DOWNLOAD QUEUE *
+    // ==================
+
+    private JPanel createQueuePanel() {
+        DownloadQueuePanel downloadQueuePanel = new DownloadQueuePanel();
+
+        JButton closeButton = new JButton(Icons.get("close.svg"));
+        closeButton.setToolTipText("Close download queue");
+        closeButton.addActionListener(e -> setDownloadQueueVisible(!isDownloadQueueVisible()));
+
+        JToolBar bar = new JToolBar();
+        bar.add(Box.createHorizontalGlue());
+        bar.add(closeButton);
+
+        JPanel right = new JPanel() {
+            @Override
+            public Dimension getMinimumSize() {
+                return bar.getMinimumSize();
+            }
+        };
+        right.setLayout(new VerticalLayout());
+        VerticalConstraint c = new VerticalConstraint();
+        c.fillXAxis = true;
+
+        right.add(bar, c);
+        c.endComponent = true;
+        right.add(downloadQueuePanel, c);
+
+        return right;
+    }
+
+    public void setDownloadQueueVisible(boolean visible) {
+        splitPane.setRightVisible(visible);
+    }
+
+    public boolean isDownloadQueueVisible() {
+        return splitPane.isRightVisible();
     }
 }
