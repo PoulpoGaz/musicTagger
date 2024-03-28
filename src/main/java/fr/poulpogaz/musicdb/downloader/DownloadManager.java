@@ -18,23 +18,23 @@ public class DownloadManager {
 
 
     static {
-        ThreadFactory factory = Thread.ofVirtual().name("DownloadTask-", 1).factory();
-        executor = Executors.newThreadPerTaskExecutor(factory);
+        ThreadFactory factory = Thread.ofVirtual().name("DownloadTask-", 0).factory();
+        EXECUTOR = Executors.newThreadPerTaskExecutor(factory);
     }
 
 
 
 
-    private static final ExecutorService executor;
-    private static final Semaphore sem = new Semaphore(DEFAULT_THREAD_COUNT);
+    private static final ExecutorService EXECUTOR;
+    static final Semaphore THREAD_GUARD = new Semaphore(DEFAULT_THREAD_COUNT);
+    static final Set<DownloadTask> TASKS = new HashSet<>();
 
     private static final Object LOCK = new Object();
     private static int maxThreadCount = DEFAULT_THREAD_COUNT;
 
-    private static final Set<DownloadTask> tasks = new HashSet<>();
 
 
-    private static final MultiValuedMap<EventThread, DownloadListener> listeners = new ArrayListValuedHashMap<>();
+    private static final MultiValuedMap<EventThread, DownloadListener> LISTENERS = new ArrayListValuedHashMap<>();
 
     private static Path downloadRoot = Path.of(System.getProperty("user.dir"));
 
@@ -45,9 +45,9 @@ public class DownloadManager {
         synchronized (LOCK) {
             if (threads > 0) {
                 if (maxThreadCount > threads) {
-                    sem.reducePermits(maxThreadCount - threads);
+                    THREAD_GUARD.reducePermits(maxThreadCount - threads);
                 } else {
-                    sem.release(threads - maxThreadCount);
+                    THREAD_GUARD.release(threads - maxThreadCount);
                 }
 
                 maxThreadCount = threads;
@@ -57,10 +57,6 @@ public class DownloadManager {
 
     public static int getMaxThreadCount() {
         return maxThreadCount;
-    }
-
-    public static void shutdown() {
-        executor.shutdown();
     }
 
 
@@ -74,14 +70,14 @@ public class DownloadManager {
     }
 
     private static void pushTask(DownloadTask task) {
-        tasks.add(task);
-        executor.submit(new Worker(task));
+        TASKS.add(task);
+        EXECUTOR.submit(task);
     }
 
 
 
     public static void cancelAll() {
-        for (DownloadTask task : tasks) {
+        for (DownloadTask task : TASKS) {
             task.cancel();
         }
     }
@@ -95,35 +91,35 @@ public class DownloadManager {
     }
 
     public static void addListener(EventThread thread, DownloadListener listener) {
-        listeners.put(thread, listener);
+        LISTENERS.put(thread, listener);
     }
 
     public static void removeListener(EventThread thread, DownloadListener listener) {
-        listeners.removeMapping(thread, listener);
+        LISTENERS.removeMapping(thread, listener);
     }
 
 
 
     public static boolean isDownloading() {
-        return !tasks.isEmpty();
+        return !TASKS.isEmpty();
     }
 
     public static boolean isQueueEmpty() {
-        return tasks.size() - maxThreadCount < 0;
+        return TASKS.size() - maxThreadCount < 0;
     }
 
 
 
     static void fireEvent(DownloadListener.Event event, DownloadTask task) {
-        Collection<DownloadListener> same1 = listeners.get(EventThread.SAME_THREAD);
+        Collection<DownloadListener> same1 = LISTENERS.get(EventThread.SAME_THREAD);
         Collection<DownloadListener> same2 = task.listeners.get(EventThread.SAME_THREAD);
         fireEvent(same1, same2, event, task);
 
-        Collection<DownloadListener> swing1 = listeners.get(EventThread.SWING_THREAD);
+        Collection<DownloadListener> swing1 = LISTENERS.get(EventThread.SWING_THREAD);
         Collection<DownloadListener> swing2 = task.listeners.get(EventThread.SWING_THREAD);
         SwingUtilities.invokeLater(() -> fireEvent(swing1, swing2, event, task));
 
-        fireEvent(listeners.mapIterator(), event, task);
+        fireEvent(LISTENERS.mapIterator(), event, task);
         fireEvent(task.listeners.mapIterator(), event, task);
     }
 
@@ -156,46 +152,7 @@ public class DownloadManager {
         DownloadManager.downloadRoot = downloadRoot;
     }
 
-    private static class Worker implements Callable<Void> {
-
-        private static final Logger LOGGER = LogManager.getLogger(Worker.class);
-
-        private final Downloader downloader = new Downloader();
-        private final DownloadTask task;
-
-        public Worker(DownloadTask task) {
-            this.task = task;
-        }
-
-        @Override
-        public Void call() throws InterruptedException {
-            sem.acquire();
-
-            try {
-                if (!task.isCanceled()) {
-                    fireEvent(DownloadListener.Event.STARTED, task);
-
-                    try {
-                        task.downloader = downloader;
-                        task.call();
-                    } catch (Exception e) {
-                        LOGGER.warn("Task {} throws an exception", task, e);
-                        fireEvent(DownloadListener.Event.FAILED, task);
-                    }
-
-                    fireEvent(DownloadListener.Event.FINISHED, task);
-                }
-            } finally {
-                tasks.remove(task);
-                sem.release();
-            }
-
-            return null;
-        }
-    }
-
-
-    private static class Semaphore extends java.util.concurrent.Semaphore {
+    static class Semaphore extends java.util.concurrent.Semaphore {
 
         public Semaphore(int permits) {
             super(permits);

@@ -1,6 +1,5 @@
 package fr.poulpogaz.musicdb.ui;
 
-import fr.poulpogaz.musicdb.model.Key;
 import fr.poulpogaz.musicdb.model.Music;
 import fr.poulpogaz.musicdb.model.Template;
 import fr.poulpogaz.musicdb.model.TemplateKeyListListener;
@@ -45,9 +44,12 @@ public class TemplateTableModel extends AbstractTableModel {
                 "https://music.youtube.com/watch?v=gegcg4hVN0A",
         };
 
+        int i = 0;
         for (String s : musics) {
             String[] v =  new String[template.keyCount() + 1];
             v[0] = s;
+            v[1] = Integer.toString(i);
+            i++;
             rows.add(v);
         }
     }
@@ -124,6 +126,7 @@ public class TemplateTableModel extends AbstractTableModel {
         String[] data = rows.get(row);
 
         Music m = new Music();
+        m.setTemplate(template);
         m.setDownloadURL(data[0]);
         for (int i = 0; i < template.keyCount(); i++) {
             m.setTag(template.getKeyName(i), data[i + 1]);

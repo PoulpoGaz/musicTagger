@@ -1,5 +1,6 @@
 package fr.poulpogaz.musicdb.downloader;
 
+import fr.poulpogaz.musicdb.model.Key;
 import fr.poulpogaz.musicdb.model.Music;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,7 +58,7 @@ public class Downloader {
                 return null;
             }
 
-            Path output = getOutput(music);
+            Path output = getOutput();
 
             /* if (output == null) {
                 LOGGER.info("Music already downloaded {}", music.getEffectiveDownloadPath());
@@ -66,7 +67,7 @@ public class Downloader {
 
             LOGGER.info("Downloading {} to {}", music.getDownloadURL(), output);
 
-            process = createProcess(music, output.toString());
+            process = createProcess(output.toString());
 
             Future<?> err = READ_ERR_EXECUTOR.submit(() -> read(process.errorReader(), false));
             read(process.inputReader(), true);
@@ -87,7 +88,7 @@ public class Downloader {
         }
     }
 
-    private Path getOutput(Music music) {
+    private Path getOutput() {
         Path downloadRoot = DownloadManager.getDownloadRoot();
 
         if (music.getTemplate() != null) {
@@ -104,7 +105,7 @@ public class Downloader {
 
 
 
-    private Process createProcess(Music music, String output) throws IOException {
+    private Process createProcess(String output) throws IOException {
         ArgBuilder builder = new ArgBuilder();
         builder.add("--abort-on-error");
         if (progress != null) {
@@ -125,16 +126,17 @@ public class Downloader {
                 .add("--parse-metadata", "%(title)s:%(meta_yt_title)s") // wtf is this, thanks to https://stackoverflow.com/questions/71347719/set-metadata-based-on-the-output-filename-in-yt-dlp
                 .add("--parse-metadata", "%(artist,creator,uploader,uploader_id)s:%(meta_yt_artist)s");
 
-        /*for (int i = 0; i < music.getTemplate().keyCount(); i++) {
+        for (int i = 0; i < music.getTemplate().keyCount(); i++) {
             Key key = music.getTemplate().getKey(i);
 
             if (key.getMetadataKey() != null) {
-                builder.add("--parse-metadata", ytdlpFormatEscape(music.getTag(i)) + ":%(meta_" + key.getMetadataKey() + ")s");
+                String value = ytdlpFormatEscape(music.getTag(key.getName()));
+
+                builder.add("--parse-metadata", value + ":%(meta_" + key.getMetadataKey() + ")s");
             }
-        }*/
+        }
 
-
-        builder.add("-o", output).add(music.getDownloadURL().toString());
+        builder.add("-o", output).add(music.getDownloadURL());
 
         LOGGER.debug("Executing {}", builder.getCommands());
 

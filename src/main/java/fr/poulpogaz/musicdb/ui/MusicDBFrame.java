@@ -35,13 +35,6 @@ public class MusicDBFrame extends JFrame {
         setSize(1280, 720);
 
         setLocationRelativeTo(null);
-
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                DownloadManager.shutdown();
-            }
-        });
     }
 
     private TemplatesListener createTemplatesListener() {

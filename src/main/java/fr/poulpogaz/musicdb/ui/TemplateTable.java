@@ -50,7 +50,11 @@ public class TemplateTable extends JPanel {
 
     public void addMusicBelowSelection() {
         int row = table.getSelectionModel().getMaxSelectionIndex();
-        tableModel.addRow(row + 1);
+        if (row == -1) {
+            tableModel.addRow(table.getRowCount());
+        } else {
+            tableModel.addRow(row + 1);
+        }
     }
 
     public void deleteSelectedMusics() {

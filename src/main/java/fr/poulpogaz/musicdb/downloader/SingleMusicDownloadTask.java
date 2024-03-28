@@ -21,9 +21,8 @@ public class SingleMusicDownloadTask extends DownloadTask {
     }
 
     @Override
-    public Void call() throws IOException {
+    public void download() throws IOException {
         downloader.download(music, progress);
-        return null;
     }
 
     @Override
