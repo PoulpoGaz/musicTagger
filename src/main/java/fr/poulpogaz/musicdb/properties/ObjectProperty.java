@@ -1,7 +1,6 @@
 package fr.poulpogaz.musicdb.properties;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 
 public class ObjectProperty<T> extends AbstractProperty<T> {

@@ -2,6 +2,7 @@ package fr.poulpogaz.musicdb.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class Formatter {
@@ -91,7 +92,7 @@ public class Formatter {
         return index;
     }
 
-    public String format(Music music) {
+    public String format(Map<String, String> music) {
         if (!compiled) {
             try {
                 compile();
@@ -134,13 +135,13 @@ public class Formatter {
 
     private interface FormatString {
 
-        void print(Formatter formatter, Music music);
+        void print(Formatter formatter, Map<String, String> music);
     }
 
     private record FixedString(String string) implements FormatString {
 
         @Override
-        public void print(Formatter formatter, Music music) {
+        public void print(Formatter formatter, Map<String, String> music) {
             formatter.sb.append(string);
         }
     }
@@ -148,8 +149,8 @@ public class Formatter {
     private record KeyString(String key) implements FormatString {
 
         @Override
-        public void print(Formatter formatter, Music music) {
-            String tag = music.getTag(key);
+        public void print(Formatter formatter, Map<String, String> music) {
+            String tag = music.get(key);
 
             if (tag == null) {
                 formatter.sb.append("null");

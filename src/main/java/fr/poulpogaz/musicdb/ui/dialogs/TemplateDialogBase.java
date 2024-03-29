@@ -3,9 +3,9 @@ package fr.poulpogaz.musicdb.ui.dialogs;
 import com.formdev.flatlaf.extras.components.FlatButton;
 import com.formdev.flatlaf.icons.FlatOptionPaneQuestionIcon;
 import fr.poulpogaz.musicdb.ui.CellRendererBase;
+import fr.poulpogaz.musicdb.ui.Icons;
 import fr.poulpogaz.musicdb.ui.SimpleDocumentListener;
 import fr.poulpogaz.musicdb.ui.TablePopupMenuSupport;
-import fr.poulpogaz.musicdb.ui.Icons;
 import fr.poulpogaz.musicdb.ui.text.ErrorTextField;
 
 import javax.swing.*;

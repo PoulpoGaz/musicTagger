@@ -1,16 +1,18 @@
 package fr.poulpogaz.musicdb.downloader;
 
-import fr.poulpogaz.musicdb.model.Music;
 import org.apache.commons.collections4.MapIterator;
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import java.nio.file.Path;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 public class DownloadManager {
 
@@ -27,7 +29,7 @@ public class DownloadManager {
 
     private static final ExecutorService EXECUTOR;
     static final Semaphore THREAD_GUARD = new Semaphore(DEFAULT_THREAD_COUNT);
-    static final Set<DownloadTask> TASKS = new HashSet<>();
+    static final Set<DownloadTask> TASKS = Collections.synchronizedSet(new HashSet<>());
 
     private static final Object LOCK = new Object();
     private static int maxThreadCount = DEFAULT_THREAD_COUNT;
@@ -60,18 +62,11 @@ public class DownloadManager {
     }
 
 
-    public static DownloadTask download(Music music) {
-        DownloadTask task = new SingleMusicDownloadTask(music);
-
-        fireEvent(DownloadListener.Event.QUEUED, task);
-        pushTask(task);
-
-        return task;
-    }
-
-    private static void pushTask(DownloadTask task) {
-        TASKS.add(task);
-        EXECUTOR.submit(task);
+    public static void offer(DownloadTask task) {
+        if (task != null && task.state.compareAndSet(State.CREATED, State.QUEUED)) {
+            TASKS.add(task);
+            EXECUTOR.submit(task);
+        }
     }
 
 
@@ -80,6 +75,10 @@ public class DownloadManager {
         for (DownloadTask task : TASKS) {
             task.cancel();
         }
+    }
+
+    public static void shutdown() {
+        EXECUTOR.shutdown();
     }
 
 
@@ -155,7 +154,7 @@ public class DownloadManager {
     static class Semaphore extends java.util.concurrent.Semaphore {
 
         public Semaphore(int permits) {
-            super(permits);
+            super(permits, true);
         }
 
         @Override

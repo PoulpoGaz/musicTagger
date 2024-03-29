@@ -28,13 +28,13 @@ public abstract class AbstractProgress implements Progress {
     }
 
     @Override
-    public synchronized void addArguments(ArgBuilder argBuilder) {
-        argBuilder.add("--progress")
-                .add("--newline")
-                .add("--progress-template")
-                .add("download:d %(progress.status)s %(progress.elapsed)s %(progress.eta)s %(progress.speed)s %(progress.downloaded_bytes)s %(progress.total_bytes)s")
-                .add("--progress-template")
-                .add("postprocess:p %(progress.status)s %(progress.postprocessor)s");
+    public synchronized void addOptions(YTDLP ytdlp) {
+        ytdlp.addOption("--progress")
+             .addOption("--newline")
+             .addOption("--progress-template")
+             .addOption("download:d %(progress.status)s %(progress.elapsed)s %(progress.eta)s %(progress.speed)s %(progress.downloaded_bytes)s %(progress.total_bytes)s")
+             .addOption("--progress-template")
+             .addOption("postprocess:p %(progress.status)s %(progress.postprocessor)s");
     }
 
     @Override

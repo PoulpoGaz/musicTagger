@@ -4,7 +4,7 @@ import java.awt.*;
 
 public interface Progress {
 
-    void addArguments(ArgBuilder argBuilder);
+    void addOptions(YTDLP ytdlp);
 
     boolean parse(String line);
 

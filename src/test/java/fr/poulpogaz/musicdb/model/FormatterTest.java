@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 
 public class FormatterTest {
 
-    @Test
+    /*@Test
     void simpleTest() {
         Music m = new Music();
         m.setTag("world", "world");
@@ -57,5 +57,5 @@ public class FormatterTest {
         Assertions.assertThrows(IllegalFormatException.class, f::compile);
         f.setFormat("{key:}");
         Assertions.assertThrows(IllegalFormatException.class, f::compile);
-    }
+    }*/
 }

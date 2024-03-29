@@ -1,28 +1,23 @@
 package fr.poulpogaz.musicdb.downloader;
 
-import fr.poulpogaz.musicdb.BasicObjectPool;
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.format.SignStyle;
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class DownloadTask implements Callable<Void> {
 
     private static final Logger LOGGER = LogManager.getLogger(DownloadTask.class);
-    private static final BasicObjectPool<Downloader> POOL = BasicObjectPool.supplierPool(Downloader::new);
     private static final AtomicInteger ID_GENERATOR = new AtomicInteger();
 
     private final int id = ID_GENERATOR.getAndIncrement();
-    private final AtomicReference<State> state = new AtomicReference<>(State.QUEUED);
+    final AtomicReference<State> state = new AtomicReference<>(State.CREATED);
 
-    protected Downloader downloader;
     final MultiValuedMap<EventThread, DownloadListener> listeners = new ArrayListValuedHashMap<>();
 
     @Override
@@ -35,7 +30,6 @@ public abstract class DownloadTask implements Callable<Void> {
             if (state.compareAndSet(State.QUEUED, State.RUNNING)) {
                 DownloadManager.fireEvent(DownloadListener.Event.STARTED, this);
 
-                downloader = POOL.get();
                 try {
                     download();
                 } catch (Exception e) {
@@ -44,8 +38,6 @@ public abstract class DownloadTask implements Callable<Void> {
                         DownloadManager.fireEvent(DownloadListener.Event.FAILED, this);
                     }
                 }
-                POOL.free(downloader);
-                downloader = null;
 
                 if (state.compareAndSet(State.RUNNING, State.FINISHED)) {
                     DownloadManager.fireEvent(DownloadListener.Event.FINISHED, this);
@@ -85,14 +77,14 @@ public abstract class DownloadTask implements Callable<Void> {
 
     public final void cancel() {
         State oldState = state.getAndUpdate((curr) -> {
-            if (curr == State.QUEUED || curr == State.RUNNING) {
+            if (curr.isCancelable()) {
                 return State.CANCELED;
             } else {
                 return curr;
             }
         });
 
-        if (oldState == State.QUEUED || oldState == State.RUNNING) {
+        if (oldState.isCancelable()) {
             cancelImpl();
             DownloadManager.fireEvent(DownloadListener.Event.CANCELED, this);
         }

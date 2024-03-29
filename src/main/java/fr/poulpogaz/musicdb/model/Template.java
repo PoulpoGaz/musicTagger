@@ -3,7 +3,6 @@ package fr.poulpogaz.musicdb.model;
 import fr.poulpogaz.musicdb.properties.ObjectProperty;
 import fr.poulpogaz.musicdb.properties.Property;
 
-import javax.swing.*;
 import java.util.*;
 
 public class Template implements Iterable<Key> {

@@ -1,14 +1,15 @@
 package fr.poulpogaz.musicdb.ui;
 
-import fr.poulpogaz.musicdb.model.Music;
+import fr.poulpogaz.musicdb.downloader.DownloadManager;
+import fr.poulpogaz.musicdb.downloader.YTDLP;
+import fr.poulpogaz.musicdb.downloader.YTDLPDownloadTask;
+import fr.poulpogaz.musicdb.model.Key;
 import fr.poulpogaz.musicdb.model.Template;
 import fr.poulpogaz.musicdb.model.TemplateKeyListListener;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class TemplateTableModel extends AbstractTableModel {
 
@@ -122,19 +123,6 @@ public class TemplateTableModel extends AbstractTableModel {
         return rows.get(rowIndex)[columnIndex];
     }
 
-    public Music getMusic(int row) {
-        String[] data = rows.get(row);
-
-        Music m = new Music();
-        m.setTemplate(template);
-        m.setDownloadURL(data[0]);
-        for (int i = 0; i < template.keyCount(); i++) {
-            m.setTag(template.getKeyName(i), data[i + 1]);
-        }
-
-        return m;
-    }
-
     @Override
     public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
         if (isCellEditable(rowIndex, columnIndex)) {
@@ -208,6 +196,31 @@ public class TemplateTableModel extends AbstractTableModel {
             fireTableRowsUpdated(minRow, maxRow);
         }
     }
+
+
+    public void download(int row) {
+        String[] r = rows.get(row);
+        YTDLP ytdlp = YTDLPDownloadTask.ytdlp(r[0]);
+
+
+        Map<String, String> t = new HashMap<>();
+        for (int i = 0; i < template.keyCount(); i++) {
+            Key key = template.getKey(i);
+            String tag = r[i + 1];
+
+            if (tag != null) {
+                ytdlp.setMetadata(key.getMetadataKey(), tag);
+                t.put(key.getName(), tag);
+            }
+        }
+
+        ytdlp.setOutput(template.getFormatter().format(t));
+
+
+        DownloadManager.offer(new YTDLPDownloadTask(ytdlp));
+    }
+
+
 
     public Template getTemplate() {
         return template;

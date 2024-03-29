@@ -1,12 +1,8 @@
 package fr.poulpogaz.musicdb.ui;
 
-import fr.poulpogaz.musicdb.downloader.DownloadManager;
 import fr.poulpogaz.musicdb.model.Template;
-import fr.poulpogaz.musicdb.model.Templates;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 
@@ -75,7 +71,7 @@ public class TemplateTable extends JPanel {
 
         for (int i = min; i <= max; i++) {
             if (selectedRows.isSelectedIndex(i)) {
-                DownloadManager.download(tableModel.getMusic(i));
+                tableModel.download(i);
             }
         }
     }
