@@ -30,7 +30,7 @@ public class Main {
             FlatLaf.registerCustomDefaultsSource("themes");
             FlatDarculaLaf.setup();
 
-            new MusicDBFrame().setVisible(true);
+            MusicDBFrame.getInstance().setVisible(true);
         });
     }
 }

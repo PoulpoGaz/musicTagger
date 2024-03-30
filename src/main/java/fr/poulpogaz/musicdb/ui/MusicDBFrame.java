@@ -1,6 +1,7 @@
 package fr.poulpogaz.musicdb.ui;
 
 import fr.poulpogaz.musicdb.downloader.DownloadManager;
+import fr.poulpogaz.musicdb.model.Template;
 import fr.poulpogaz.musicdb.model.Templates;
 import fr.poulpogaz.musicdb.model.TemplatesListener;
 import fr.poulpogaz.musicdb.ui.dialogs.EditTemplateDialog;
@@ -16,6 +17,15 @@ import java.awt.event.WindowListener;
 
 public class MusicDBFrame extends JFrame {
 
+    private static final MusicDBFrame INSTANCE = new MusicDBFrame();
+
+    public static MusicDBFrame getInstance() {
+        return INSTANCE;
+    }
+
+
+
+
     private MusicDBSplitPane splitPane;
     private TemplatesPanel templatesPanel;
     private JPanel downloadQueue;
@@ -25,7 +35,7 @@ public class MusicDBFrame extends JFrame {
     private JMenuItem editTemplate;
     private JMenuItem deleteTemplate;
 
-    public MusicDBFrame() {
+    private MusicDBFrame() {
         super("MusicDB");
 
         Templates.addTemplateListener(createTemplatesListener());
@@ -116,24 +126,9 @@ public class MusicDBFrame extends JFrame {
 
 
         JMenu templates = new JMenu("Templates");
-        newTemplate = templates.add("New template");
-        newTemplate.setIcon(Icons.get("add.svg"));
-        newTemplate.addActionListener(e -> NewTemplateDialog.showDialog(this));
-
-        editTemplate = templates.add("Edit template");
-        editTemplate.setIcon(Icons.get("edit.svg"));
-        editTemplate.addActionListener(e -> EditTemplateDialog.showDialog(this, templatesPanel.getSelectedTemplate()));
-
-        deleteTemplate = templates.add("Delete template");
-        deleteTemplate.setIcon(Icons.get("delete.svg"));
-        deleteTemplate.addActionListener(e -> {
-            int r = JOptionPane.showConfirmDialog(this, "This operation will remove all data of template " +
-                                                                templatesPanel.getSelectedTemplate().getName());
-            if (r == JOptionPane.YES_OPTION) {
-                Templates.removeTemplate(templatesPanel.getSelectedTemplate());
-            }
-        });
-
+        newTemplate = templates.add(TemplateHelper.createCreateTemplateAction());
+        editTemplate = templates.add(TemplateHelper.createEditTemplateAction(templatesPanel::getSelectedTemplate));
+        deleteTemplate = templates.add(TemplateHelper.createDeleteTemplateAction(templatesPanel::getSelectedTemplate));
 
         JCheckBoxMenuItem downloadQueueItem = new JCheckBoxMenuItem();
         downloadQueueItem.setState(isDownloadQueueVisible());
