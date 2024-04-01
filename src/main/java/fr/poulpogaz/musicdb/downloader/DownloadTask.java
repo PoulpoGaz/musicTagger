@@ -6,52 +6,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Objects;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-public abstract class DownloadTask implements Callable<Void> {
+public abstract class DownloadTask {
 
     private static final Logger LOGGER = LogManager.getLogger(DownloadTask.class);
     private static final AtomicInteger ID_GENERATOR = new AtomicInteger();
 
-    private final int id = ID_GENERATOR.getAndIncrement();
+    final int id = ID_GENERATOR.getAndIncrement();
     final AtomicReference<State> state = new AtomicReference<>(State.CREATED);
 
     final MultiValuedMap<EventThread, DownloadListener> listeners = new ArrayListValuedHashMap<>();
-
-    @Override
-    public final Void call() throws InterruptedException {
-        LOGGER.debug("task called {}", id);
-        DownloadManager.THREAD_GUARD.acquire();
-        LOGGER.debug("starting {}", id);
-
-        try {
-            if (state.compareAndSet(State.QUEUED, State.RUNNING)) {
-                DownloadManager.fireEvent(DownloadListener.Event.STARTED, this);
-
-                try {
-                    download();
-                } catch (Exception e) {
-                    LOGGER.warn("Task {} throws an exception", this, e);
-                    if (state.compareAndSet(State.RUNNING, State.FAILED)) {
-                        DownloadManager.fireEvent(DownloadListener.Event.FAILED, this);
-                    }
-                }
-
-                if (state.compareAndSet(State.RUNNING, State.FINISHED)) {
-                    DownloadManager.fireEvent(DownloadListener.Event.FINISHED, this);
-                }
-            }
-        } finally {
-            DownloadManager.TASKS.remove(this);
-            DownloadManager.THREAD_GUARD.release();
-        }
-
-        LOGGER.debug("finish {}", id);
-
-        return null;
-    }
 
     public abstract void download() throws Exception;
 
@@ -85,6 +51,8 @@ public abstract class DownloadTask implements Callable<Void> {
         });
 
         if (oldState.isCancelable()) {
+            LOGGER.debug("canceling task {}", id);
+
             cancelImpl();
             DownloadManager.fireEvent(DownloadListener.Event.CANCELED, this);
         }
@@ -96,6 +64,10 @@ public abstract class DownloadTask implements Callable<Void> {
 
     public final State getState() {
         return state.get();
+    }
+
+    public final State getStateImmediately() {
+        return state.getPlain();
     }
 
     @Override
@@ -110,4 +82,8 @@ public abstract class DownloadTask implements Callable<Void> {
     public int hashCode() {
         return id;
     }
-}
+
+    public int getID() {
+        return id;
+    }
+ }

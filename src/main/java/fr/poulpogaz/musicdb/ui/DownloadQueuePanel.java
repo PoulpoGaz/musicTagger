@@ -8,10 +8,9 @@ import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableColumn;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.util.ArrayList;
+import java.awt.event.*;
+import java.util.Collection;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Objects;
 
 public class DownloadQueuePanel extends JPanel {
@@ -19,38 +18,42 @@ public class DownloadQueuePanel extends JPanel {
     private static final Insets CANCEL_SELECTED_INSETS = new Insets(2, 2, 2, 2);
 
 
-    private JPanel runningTaskContainer;
+    private final DownloadListener downloadListener;
+
+
+    // RUNNING TASK
+    private RunningTaskPanel runningTaskPanel;
     private JLabel noDownloadLabel;
     private final Timer timer;
-    private final List<RunningTaskPanel> runningTaskPanels = new ArrayList<>();
-    private int usedPanels = 0;
 
 
+    // QUEUE
     private JPanel queueContainer;
     private JLabel emptyQueueLabel;
     private JScrollPane tableScrollPane;
     private JTable table;
     private TableModel tableModel;
     private JButton cancelSelected;
+    private boolean empty = true;
 
     public DownloadQueuePanel() {
         initComponents();
-        DownloadManager.addListener(EventThread.SWING_THREAD, createDownloadListener());
-        timer = new Timer(200, (e) -> updateProgressComponents());
+
+        addHierarchyListener(createHierarchyListener());
+        downloadListener = createDownloadListener();
+        timer = new Timer(200, (e) -> runningTaskPanel.updateProgressComponent());
     }
 
 
     private void initComponents() {
-        runningTaskContainer = new JPanel();
-        runningTaskContainer.setLayout(new VerticalLayout());
+        runningTaskPanel = new RunningTaskPanel();
         noDownloadLabel = new JLabel("No download in progress", SwingConstants.CENTER);
-        runningTaskContainer.add(noDownloadLabel);
 
         createQueueContainer();
 
         setLayout(new BorderLayout());
         add(queueContainer, BorderLayout.CENTER);
-        add(runningTaskContainer, BorderLayout.NORTH);
+        add(noDownloadLabel, BorderLayout.NORTH);
     }
 
 
@@ -79,7 +82,7 @@ public class DownloadQueuePanel extends JPanel {
         queueContainer = new JPanel();
         queueContainer.setLayout(new GridBagLayout());
         queueContainer.setBorder(BorderFactory.createTitledBorder("Download queue"));
-        updateLayout(true);
+        updateQueueContainerLayout(true, true);
     }
 
 
@@ -104,6 +107,68 @@ public class DownloadQueuePanel extends JPanel {
 
 
 
+    private HierarchyListener createHierarchyListener() {
+        return e -> {
+            if ((e.getChangeFlags() & HierarchyEvent.DISPLAYABILITY_CHANGED) != 0) {
+                if (isDisplayable()) {
+                    setupComponent();
+                } else {
+                    unSetupComponent();
+                }
+            }
+        };
+    }
+
+    private void setupComponent() {
+        setRunningTask(DownloadManager.getRunningTask());
+        tableModel.setTasks(DownloadManager.getQueue());
+        updateQueueContainerLayout(tableModel.contents.isEmpty(), true);
+        DownloadManager.addListener(EventThread.SWING_THREAD, downloadListener);
+    }
+
+    private void unSetupComponent() {
+        setRunningTask(null);
+        tableModel.removeAll();
+        updateQueueContainerLayout(true, true);
+        DownloadManager.removeListener(EventThread.SWING_THREAD, downloadListener);
+    }
+
+    private void setRunningTask(DownloadTask task) {
+        if (task == null) {
+            if (noDownloadLabel.getParent() == null) {
+                remove(runningTaskPanel);
+                add(noDownloadLabel, BorderLayout.NORTH);
+                stopTimer();
+                revalidate();
+                repaint();
+            }
+        } else {
+            runningTaskPanel.set(task);
+            startTimer();
+
+            if (runningTaskPanel.getParent() == null) {
+                remove(noDownloadLabel);
+                add(runningTaskPanel, BorderLayout.NORTH);
+                revalidate();
+                repaint();
+            }
+        }
+    }
+
+    private void startTimer() {
+        if (runningTaskPanel.task != null) {
+            timer.start();
+        }
+    }
+
+    private void stopTimer() {
+        timer.stop();
+    }
+
+
+
+
+
     private DownloadListener createDownloadListener() {
         return (event, task) -> {
             switch (event) {
@@ -112,82 +177,39 @@ public class DownloadQueuePanel extends JPanel {
                 }
                 case DownloadListener.Event.STARTED -> {
                     tableModel.removeTask(task);
-                    addRunningTask(task);
-                }
-                case DownloadListener.Event.FINISHED -> {
-                    removeRunningTask(task);
+                    setRunningTask(task);
                 }
                 case DownloadListener.Event.CANCELED -> {
-                    if (task != null) {
+                    if (task == runningTaskPanel.task) {
+                        setRunningTask(tableModel.contents.peekFirst());
+                    } else if (task != null) {
                         tableModel.removeTask(task);
                     } else {
                         tableModel.removeCancelledTasks();
                     }
                 }
+                case DownloadListener.Event.FINISHED -> {
+                    // set running task to the next one in the queue
+                    // it avoids stopping the timer
+                    setRunningTask(tableModel.contents.peekFirst());
+                }
                 case DownloadListener.Event.FAILED -> {
                     tableModel.removeTask(task);
-                    removeRunningTask(task);
+                    setRunningTask(tableModel.contents.peekFirst());
                 }
             }
 
-            if (DownloadManager.isQueueEmpty()) {
-                if (!emptyQueueLabel.isShowing()) {
-                    updateLayout(true);
-                }
-            } else if (!tableScrollPane.isShowing()) {
-                updateLayout(false);
-            }
+            updateQueueContainerLayout(DownloadManager.isQueueEmpty(), false);
         };
     }
 
-    private void addRunningTask(DownloadTask task) {
-        RunningTaskPanel panel;
-        if (usedPanels < runningTaskPanels.size()) {
-            panel = runningTaskPanels.get(usedPanels);
-            panel.set(task);
-        } else {
-            panel = new RunningTaskPanel(task);
-            runningTaskPanels.add(panel);
+    private void updateQueueContainerLayout(boolean empty, boolean force) {
+        if (!force && empty == this.empty) {
+            return;
         }
 
-        usedPanels++;
+        this.empty = empty;
 
-        if (usedPanels == 1) {
-            timer.start();
-            runningTaskContainer.remove(noDownloadLabel);
-        }
-
-        VerticalConstraint c = new VerticalConstraint();
-        c.fillXAxis = true;
-        c.topGap = 2;
-        c.bottomGap = 2;
-
-        runningTaskContainer.add(panel, c);
-        runningTaskContainer.revalidate();
-        runningTaskContainer.repaint();
-    }
-
-    private void removeRunningTask(DownloadTask task) {
-        for (int i = 0; i < runningTaskPanels.size(); i++) {
-            if (task == runningTaskPanels.get(i).task) {
-                RunningTaskPanel panel = runningTaskPanels.remove(i);
-                runningTaskPanels.add(panel);
-                runningTaskContainer.remove(panel);
-                usedPanels--;
-                break;
-            }
-        }
-
-        if (usedPanels == 0) {
-            runningTaskContainer.add(emptyQueueLabel);
-            timer.stop();
-        }
-
-        runningTaskContainer.revalidate();
-        runningTaskContainer.repaint();
-    }
-
-    private void updateLayout(boolean empty) {
         queueContainer.removeAll();
 
         GridBagConstraints c = new GridBagConstraints();
@@ -221,12 +243,6 @@ public class DownloadQueuePanel extends JPanel {
 
 
 
-    private void updateProgressComponents() {
-        for (int i = 0; i < usedPanels; i++) {
-            runningTaskPanels.get(i).updateProgressComponent();
-        }
-    }
-
 
     private static class RunningTaskPanel extends JPanel {
 
@@ -236,10 +252,9 @@ public class DownloadQueuePanel extends JPanel {
 
         private JButton cancel;
 
-        public RunningTaskPanel(DownloadTask task) {
+        public RunningTaskPanel() {
             initComponents();
             cancel.addActionListener(this::cancel);
-            set(task);
         }
 
         private void initComponents() {
@@ -302,6 +317,10 @@ public class DownloadQueuePanel extends JPanel {
 
 
 
+
+
+
+
     private static class TableModel extends AbstractTableModel {
 
         private final LinkedList<DownloadTask> contents = new LinkedList<>();
@@ -329,6 +348,17 @@ public class DownloadQueuePanel extends JPanel {
             }
         }
 
+        public void setTasks(Collection<DownloadTask> tasks) {
+            contents.clear();
+            contents.addAll(tasks);
+            fireTableDataChanged();
+        }
+
+        public void removeAll() {
+            contents.clear();
+            fireTableDataChanged();
+        }
+
         @Override
         public int getRowCount() {
             return contents.size();
@@ -336,7 +366,7 @@ public class DownloadQueuePanel extends JPanel {
 
         @Override
         public int getColumnCount() {
-            return 3;
+            return 4;
         }
 
         @Override
@@ -344,7 +374,8 @@ public class DownloadQueuePanel extends JPanel {
             return switch (column) {
                 case 0 -> "Status";
                 case 1 -> "Position";
-                case 2 -> "Description";
+                case 2 -> "ID";
+                case 3 -> "Description";
                 default -> throw new IllegalStateException("Unexpected value: " + column);
             };
         }
@@ -353,15 +384,10 @@ public class DownloadQueuePanel extends JPanel {
         public Object getValueAt(int rowIndex, int columnIndex) {
             DownloadTask task = contents.get(rowIndex);
             return switch (columnIndex) {
-                case 0 -> {
-                    if (task.isCanceled()) {
-                        yield "Canceled";
-                    } else {
-                        yield "Pending";
-                    }
-                }
+                case 0 -> task.getStateImmediately().toString();
                 case 1 -> rowIndex + 1;
-                case 2 -> task.getDescription();
+                case 2 -> task.getID();
+                case 3 -> task.getDescription();
                 default -> throw new IllegalStateException("Unexpected value: " + columnIndex);
             };
         }

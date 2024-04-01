@@ -59,6 +59,8 @@ public class YTDLPDownloadTask extends DownloadTask {
     private final Progress progress = new TaskProgress();
     private StringBuilder errors;
 
+    private Process process;
+
     public YTDLPDownloadTask(YTDLP ytdlp) {
         this.ytdlp = Objects.requireNonNull(ytdlp).copy();
     }
@@ -72,7 +74,8 @@ public class YTDLPDownloadTask extends DownloadTask {
 
         ProcessBuilder builder = ytdlp.createProcess();
         LOGGER.debug("Executing {}", builder.command());
-        Process process = ytdlp.createProcess().start();
+
+        process = ytdlp.createProcess().start();
 
         Future<?> err = READ_ERR_EXECUTOR.submit(() -> read(process.errorReader(), false));
         read(process.inputReader(), true);
@@ -112,7 +115,10 @@ public class YTDLPDownloadTask extends DownloadTask {
 
     @Override
     protected void cancelImpl() {
-
+        if (process != null) {
+            process.destroy();
+        }
+        progress.setCanceled();
     }
 
     @Override

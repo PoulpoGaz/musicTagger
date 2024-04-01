@@ -3,38 +3,25 @@ package fr.poulpogaz.musicdb.downloader;
 import org.apache.commons.collections4.MapIterator;
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DownloadManager {
 
-    public static final int DEFAULT_THREAD_COUNT = 2;
 
-
-    static {
-        ThreadFactory factory = Thread.ofVirtual().name("DownloadTask-", 0).factory();
-        EXECUTOR = Executors.newThreadPerTaskExecutor(factory);
-    }
-
-
-
-
-    private static final ExecutorService EXECUTOR;
-    static final Semaphore THREAD_GUARD = new Semaphore(DEFAULT_THREAD_COUNT);
-    static final Set<DownloadTask> TASKS = Collections.synchronizedSet(new HashSet<>());
-
+    private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
     private static final Object LOCK = new Object();
-    private static int maxThreadCount = DEFAULT_THREAD_COUNT;
-
-
+    private static final Worker WORKER = new Worker();
+    private static final Queue<DownloadTask> TASKS = new ConcurrentLinkedQueue<>();
 
     private static final MultiValuedMap<EventThread, DownloadListener> LISTENERS = new ArrayListValuedHashMap<>();
 
@@ -42,30 +29,18 @@ public class DownloadManager {
 
 
 
-
-    public static void setMaxThreadCount(int threads) {
-        synchronized (LOCK) {
-            if (threads > 0) {
-                if (maxThreadCount > threads) {
-                    THREAD_GUARD.reducePermits(maxThreadCount - threads);
-                } else {
-                    THREAD_GUARD.release(threads - maxThreadCount);
-                }
-
-                maxThreadCount = threads;
-            }
-        }
-    }
-
-    public static int getMaxThreadCount() {
-        return maxThreadCount;
-    }
-
-
     public static void offer(DownloadTask task) {
         if (task != null && task.state.compareAndSet(State.CREATED, State.QUEUED)) {
-            TASKS.add(task);
-            EXECUTOR.submit(task);
+            fireEvent(DownloadListener.Event.QUEUED, task);
+
+            TASKS.offer(task);
+
+            synchronized (LOCK) {
+                if (!WORKER.running) {
+                    WORKER.running = true;
+                    EXECUTOR.submit(WORKER);
+                }
+            }
         }
     }
 
@@ -83,6 +58,21 @@ public class DownloadManager {
 
 
 
+    public static boolean isDownloading() {
+        return WORKER.task != null;
+    }
+
+    public static boolean isQueueEmpty() {
+        return TASKS.isEmpty();
+    }
+
+    public static DownloadTask getRunningTask() {
+        return WORKER.task;
+    }
+
+    public static Collection<DownloadTask> getQueue() {
+        return Collections.unmodifiableCollection(TASKS);
+    }
 
 
     public static void addListener(DownloadListener listener) {
@@ -96,17 +86,6 @@ public class DownloadManager {
     public static void removeListener(EventThread thread, DownloadListener listener) {
         LISTENERS.removeMapping(thread, listener);
     }
-
-
-
-    public static boolean isDownloading() {
-        return !TASKS.isEmpty();
-    }
-
-    public static boolean isQueueEmpty() {
-        return TASKS.size() - maxThreadCount < 0;
-    }
-
 
 
     static void fireEvent(DownloadListener.Event event, DownloadTask task) {
@@ -151,15 +130,48 @@ public class DownloadManager {
         DownloadManager.downloadRoot = downloadRoot;
     }
 
-    static class Semaphore extends java.util.concurrent.Semaphore {
 
-        public Semaphore(int permits) {
-            super(permits, true);
-        }
+
+    private static class Worker implements Runnable {
+
+        private static final Logger LOGGER = LogManager.getLogger(Worker.class);
+
+        private boolean running = false;
+        private DownloadTask task;
 
         @Override
-        protected void reducePermits(int reduction) {
-            super.reducePermits(reduction);
+        public void run() {
+            while (true) {
+                synchronized (LOCK) {
+                    task = TASKS.poll();
+
+                    if (task == null) {
+                        running = false;
+                        break;
+                    }
+                }
+
+                LOGGER.debug("starting {}", task.id);
+
+                if (task.state.compareAndSet(State.QUEUED, State.RUNNING)) {
+                    DownloadManager.fireEvent(DownloadListener.Event.STARTED, task);
+
+                    try {
+                        task.download();
+                    } catch (Exception e) {
+                        LOGGER.warn("Task {} throws an exception", this, e);
+                        if (task.state.compareAndSet(State.RUNNING, State.FAILED)) {
+                            DownloadManager.fireEvent(DownloadListener.Event.FAILED, task);
+                            LOGGER.debug("failed {}", task.id);
+                        }
+                    }
+
+                    if (task.state.compareAndSet(State.RUNNING, State.FINISHED)) {
+                        DownloadManager.fireEvent(DownloadListener.Event.FINISHED, task);
+                        LOGGER.debug("finished {}", task.id);
+                    }
+                }
+            }
         }
     }
 }
