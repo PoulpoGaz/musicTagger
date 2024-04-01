@@ -8,8 +8,10 @@ import javax.swing.*;
 
 public class NewTemplateDialog extends TemplateDialogBase {
 
-    public static void showDialog(JFrame parent) {
-        new NewTemplateDialog(parent).setVisible(true);
+    public static int showDialog(JFrame parent) {
+        NewTemplateDialog d = new NewTemplateDialog(parent);
+        d.setVisible(true);
+        return d.getReturnValue();
     }
 
     public NewTemplateDialog(JFrame parent) {

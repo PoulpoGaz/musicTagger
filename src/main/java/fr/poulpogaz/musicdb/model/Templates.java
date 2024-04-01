@@ -7,6 +7,9 @@ import fr.poulpogaz.json.tree.JsonArray;
 import fr.poulpogaz.json.tree.JsonElement;
 import fr.poulpogaz.json.tree.JsonObject;
 import fr.poulpogaz.json.tree.JsonTreeReader;
+import fr.poulpogaz.musicdb.Directories;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,11 +18,21 @@ import java.util.*;
 
 public class Templates {
 
+    private static final Logger LOGGER = LogManager.getLogger(Templates.class);
+
     private static final Map<String, Template> templates = new HashMap<>();
     private static final List<TemplatesListener> listeners = new ArrayList<>();
 
 
     private Templates() {}
+
+    public static void readTemplates() throws JsonException, IOException {
+        readTemplates(Directories.getConfigurationDirectory().resolve("templates.json"));
+    }
+
+    public static void saveTemplates() throws JsonException, IOException {
+        saveTemplates(Directories.getConfigurationDirectory().resolve("templates.json"));
+    }
 
     public static void readTemplates(Path out) throws JsonException, IOException {
         if (Files.notExists(out) || Files.isDirectory(out)) {
@@ -33,7 +46,7 @@ public class Templates {
             template.setName(entry.getKey());
 
             JsonObject templateO = (JsonObject) entry.getValue();
-            template.setFormat(templateO.getAsString("format"));
+            template.setFormat(templateO.getOptionalString("format").orElse(null));
             JsonArray keys = templateO.getAsArray("keys");
 
             for (JsonElement e : keys) {
@@ -41,7 +54,7 @@ public class Templates {
 
                 Key key = new Key();
                 key.setName(keyO.getAsString("name"));
-                key.setMetadataKey(keyO.getAsString("metadataKey"));
+                key.setMetadataKey(keyO.getOptionalString("metadataKey").orElse(null));
                 template.addKey(key);
             }
 
@@ -49,17 +62,16 @@ public class Templates {
         }
     }
 
-
-
-
-
     public static void saveTemplates(Path in) throws JsonException, IOException {
+        LOGGER.info("Saving templates to {}", in);
+        Files.createDirectories(in.getParent());
+
         IJsonWriter jw = new JsonPrettyWriter(Files.newBufferedWriter(in));
 
         jw.beginObject();
         for (Map.Entry<String, Template> entry : templates.entrySet()) {
             jw.key(entry.getKey()).beginObject();
-            saveTemplate(jw, entry.getValue());
+            writeTemplate(jw, entry.getValue());
             jw.endObject();
         }
         jw.endObject();
@@ -67,14 +79,18 @@ public class Templates {
         jw.close();
     }
 
-    private static void saveTemplate(IJsonWriter jw, Template template) throws JsonException, IOException {
-        jw.field("format", template.getFormat());
+    public static void writeTemplate(IJsonWriter jw, Template template) throws JsonException, IOException {
+        if (template.getFormat() != null) {
+            jw.field("format", template.getFormat());
+        }
         jw.key("keys").beginArray();
 
         for (Key key : template.getKeys()) {
             jw.beginObject();
             jw.field("name", key.getName());
-            jw.field("metadataKey", key.getMetadataKey());
+            if (key.getMetadataKey() != null) {
+                jw.field("metadataKey", key.getMetadataKey());
+            }
             jw.endObject();
         }
 

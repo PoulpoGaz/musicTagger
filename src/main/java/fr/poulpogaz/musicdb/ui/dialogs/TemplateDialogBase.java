@@ -16,6 +16,10 @@ import java.awt.*;
 
 public abstract class TemplateDialogBase extends AbstractDialog {
 
+    public static final int CANCEL = 0;
+    public static final int DONE = 1;
+
+
     protected TemplateModel templateModel;
 
     // label and format
@@ -41,6 +45,8 @@ public abstract class TemplateDialogBase extends AbstractDialog {
 
     private boolean formatAdjusting = false;
     private boolean nameAdjusting = false;
+
+    private int returnValue = CANCEL;
 
     public TemplateDialogBase(JFrame owner, String title, boolean modal) {
         super(owner, title, modal);
@@ -113,6 +119,8 @@ public abstract class TemplateDialogBase extends AbstractDialog {
         errorLabelScroll = new JScrollPane(errorTextArea);
         errorLabelScroll.setVisible(false);
         errorLabelScroll.setMinimumSize(errorTextArea.getPreferredScrollableViewportSize());
+
+        getRootPane().setDefaultButton(doneButton);
 
         layoutComponent();
     }
@@ -328,11 +336,16 @@ public abstract class TemplateDialogBase extends AbstractDialog {
             repaint();
         }
 
+        returnValue = TemplateDialogBase.DONE;
         apply();
         dispose();
     }
 
     protected abstract void apply();
+
+    public int getReturnValue() {
+        return returnValue;
+    }
 
 
     private static class KeyTableCellRenderer extends CellRendererBase {

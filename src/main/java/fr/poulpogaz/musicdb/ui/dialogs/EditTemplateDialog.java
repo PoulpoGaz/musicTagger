@@ -9,9 +9,10 @@ import java.util.Objects;
 
 public class EditTemplateDialog extends TemplateDialogBase {
 
-    public static void showDialog(JFrame parent, Template template) {
-        new EditTemplateDialog(parent, Objects.requireNonNull(template))
-                .setVisible(true);
+    public static int showDialog(JFrame parent, Template template) {
+        EditTemplateDialog d = new EditTemplateDialog(parent, Objects.requireNonNull(template));
+        d.setVisible(true);
+        return d.getReturnValue();
     }
 
     private final Template template;

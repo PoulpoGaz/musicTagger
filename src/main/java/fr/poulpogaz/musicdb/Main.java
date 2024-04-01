@@ -18,9 +18,11 @@ public class Main {
 
     public static void main(String[] args) {
         LOGGER.info("--- MusicDB ---");
+        LOGGER.info("OS: {}", OS.getOS());
+        LOGGER.info("Configuration directory: {}", Directories.getConfigurationDirectory());
 
         try {
-            Templates.readTemplates(Path.of("templates.json"));
+            Templates.readTemplates();
         } catch (JsonException | IOException e) {
             LOGGER.fatal("Failed to read template file", e);
             return;

@@ -129,6 +129,8 @@ public class MusicDBFrame extends JFrame {
         newTemplate = templates.add(TemplateHelper.createCreateTemplateAction());
         editTemplate = templates.add(TemplateHelper.createEditTemplateAction(templatesPanel::getSelectedTemplate));
         deleteTemplate = templates.add(TemplateHelper.createDeleteTemplateAction(templatesPanel::getSelectedTemplate));
+        templates.add(TemplateHelper.createSaveTemplatesAction());
+        templates.add(TemplateHelper.createLoadTemplatesAction());
 
         JCheckBoxMenuItem downloadQueueItem = new JCheckBoxMenuItem();
         downloadQueueItem.setState(isDownloadQueueVisible());
