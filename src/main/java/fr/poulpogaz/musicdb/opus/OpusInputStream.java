@@ -218,93 +218,13 @@ public class OpusInputStream implements Closeable {
 
 
     private enum State {
-        READ_OPUS_HEAD,      // next state: READ_VENDOR_LENGTH
-        READ_VENDOR_LENGTH,  // previous: READ_OPUS_HEAD, next state: READ_VENDOR
-        READ_VENDOR,         // previous: READ_OPUS_HEAD, READ_VENDOR_LENGTH, next state: READ_COMMENT_COUNT
-        READ_COMMENT_COUNT,  // previous: READ_VENDOR
+        READ_OPUS_HEAD,
+        READ_VENDOR_LENGTH,
+        READ_VENDOR,
+        READ_COMMENT_COUNT,
         READ_COMMENT_LENGTH,
         READ_COMMENT,
         READ_COMMENT_VALUE,
         READ_OGG_PAGE
-    }
-
-
-
-
-
-
-
-
-
-
-
-    private static final AtomicInteger COUNTER = new AtomicInteger();
-
-
-    public static void main(String[] args) throws IOException {
-        testSingleThread();
-    }
-
-    private static void testSingleThread() throws IOException {
-        long time = System.currentTimeMillis();
-        Files.walkFileTree(Path.of("musics"), new FileVisitor<Path>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-                readOpus(path);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-        });
-        long time2 = System.currentTimeMillis();
-        System.out.println("Total time: " + (time2 - time));
-    }
-
-
-    private static void readOpus(Path path) {
-        // System.out.println(COUNTER.incrementAndGet());
-
-        try (OpusInputStream file = new OpusInputStream(path)) {
-            file.readOpusHead();
-            // System.out.println(head.getPage());
-            // System.out.println(head);
-            // LimitedInputStream vis = file.vendorInputStream();
-            // System.out.println(new String(vis.readAllBytes(), StandardCharsets.UTF_8));
-
-            LimitedInputStream lis = file.vendorInputStream();
-            lis.skipNBytes(lis.remainingBytes());
-
-            long c = file.readCommentCount();
-            // System.out.println(c);
-
-            for (long i = 0; i < c; i++) {
-                String key = file.readKey();
-
-                if (key.equals("METADATA_BLOCK_PICTURE")) {
-                    InputStream picIS = Base64.getDecoder().wrap(file.valueInputStream());
-                    MetadataPicture pic = MetadataPicture.fromInputStream(picIS);
-                    // System.out.println(pic);
-                    //Files.write(Path.of("pic.png"), pic.getData());
-                } else {
-                    file.readValue();
-                    // System.out.println(key + " = " + file.readValue());
-                }
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

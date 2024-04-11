@@ -13,6 +13,8 @@ public class Template implements Iterable<Key> {
     private final List<TemplateKeyListListener> templateListeners = new ArrayList<>();
     private final List<Key> keys = new ArrayList<>();
 
+    private final TemplateData data = new TemplateData(this);
+
     public Template() {
 
     }
@@ -73,6 +75,7 @@ public class Template implements Iterable<Key> {
 
         key.template = this;
         keys.add(index, key);
+        data.addKey(index, key);
         fireEvent(TemplateKeyListListener.KEYS_ADDED, index, index);
 
         return true;
@@ -91,6 +94,7 @@ public class Template implements Iterable<Key> {
         boolean removed = keys.remove(key);
         if (removed) {
             key.template = null;
+            data.removeKey(index, key);
             fireEvent(TemplateKeyListListener.KEYS_REMOVED, index, index);
         }
         return false;
@@ -108,6 +112,7 @@ public class Template implements Iterable<Key> {
         }
 
         Collections.swap(keys, index1, index2);
+        data.swapKey(index1, keys.get(index1), index2, keys.get(index2));
         fireEvent(TemplateKeyListListener.KEYS_SWAPPED, index1, index2);
     }
 
@@ -132,19 +137,21 @@ public class Template implements Iterable<Key> {
 
         int size = keys.size();
         this.keys.clear();
+        data.removeAllKeys();
         fireEvent(TemplateKeyListListener.KEYS_REMOVED, 0, size);
     }
 
     public void addAll(List<Key> keys) {
         Objects.requireNonNull(keys);
 
-        int index = keys.size();
+        int index = this.keys.size();
         for (Key k : keys) {
             addKey(k);
         }
 
-        if (index < keys.size()) {
-            fireEvent(TemplateKeyListListener.KEYS_ADDED, index, keys.size());
+        if (!keys.isEmpty()) {
+            data.addAllKeys(index, keys);
+            fireEvent(TemplateKeyListListener.KEYS_ADDED, index, this.keys.size());
         }
     }
 
@@ -178,6 +185,12 @@ public class Template implements Iterable<Key> {
     public Iterator<Key> iterator() {
         return keys.iterator();
     }
+
+
+    public TemplateData getData() {
+        return data;
+    }
+
 
     public void addTemplateKeyListListener(TemplateKeyListListener listener) {
         templateListeners.add(listener);

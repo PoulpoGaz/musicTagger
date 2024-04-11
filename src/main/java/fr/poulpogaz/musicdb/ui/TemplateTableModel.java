@@ -3,23 +3,23 @@ package fr.poulpogaz.musicdb.ui;
 import fr.poulpogaz.musicdb.downloader.DownloadManager;
 import fr.poulpogaz.musicdb.downloader.YTDLP;
 import fr.poulpogaz.musicdb.downloader.YTDLPDownloadTask;
-import fr.poulpogaz.musicdb.model.Key;
-import fr.poulpogaz.musicdb.model.Template;
-import fr.poulpogaz.musicdb.model.TemplateKeyListListener;
+import fr.poulpogaz.musicdb.model.*;
 
 import javax.swing.*;
+import javax.swing.event.TableModelEvent;
 import javax.swing.table.AbstractTableModel;
 import java.util.*;
 
 public class TemplateTableModel extends AbstractTableModel {
 
     private final Template template;
-    private final List<String[]> rows = new ArrayList<>();
+    private final TemplateData data;
 
     public TemplateTableModel(Template template) {
         this.template = template;
-
+        this.data = template.getData();
         template.addTemplateKeyListListener(this::updateTable);
+        data.addTemplateDataListener(this::dataListener);
 
         String[] musics = new String[] {
                 "https://www.youtube.com/watch?v=Urcnqat6P0s",
@@ -47,61 +47,25 @@ public class TemplateTableModel extends AbstractTableModel {
 
         int i = 0;
         for (String s : musics) {
-            String[] v =  new String[template.keyCount() + 1];
-            v[0] = s;
-            v[1] = Integer.toString(i);
+            Music m = new Music(template);
+            m.setDownloadURL(s);
+            m.putTag(0, Integer.toString(i));
             i++;
-            rows.add(v);
+            data.addMusic(m);
         }
     }
 
     private void updateTable(int eventType, int index0, int index1) {
-        // offset because first column is download url which is not a key
-        index0++;
-        index1++;
-
-        int affectLength = index1 - index0 + 1;
-
-        switch (eventType) {
-            case TemplateKeyListListener.KEYS_ADDED -> {
-                for (int i = 0; i < rows.size(); i++) {
-                    String[] row = rows.get(i);
-
-                    row = Arrays.copyOf(row, row.length + affectLength);
-                    System.arraycopy(row, index0,
-                                     row, index1 + 1,
-                                     row.length - index1 - 1);
-                    Arrays.fill(row, index0, index1 + 1, null);
-
-                    rows.set(i, row);
-                }
-            }
-            case TemplateKeyListListener.KEYS_REMOVED -> {
-                for (int i = 0; i < rows.size(); i++) {
-                    String[] row = rows.get(i);
-
-                    System.arraycopy(row, index1 + 1,
-                                     row, index0,
-                                     row.length - index1 - 1);
-                    row = Arrays.copyOf(row, row.length - affectLength);
-
-                    rows.set(i, row);
-                }
-            }
-            case TemplateKeyListListener.KEYS_SWAPPED -> {
-                for (String[] row : rows) {
-                    String temp = row[index0];
-                    row[index0] = row[index1];
-                    row[index1] = temp;
-                }
-            }
-        }
         fireTableStructureChanged();
+    }
+
+    private void dataListener(TemplateData templateData, int event, int firstRow, int lastRow) {
+        fireTableChanged(new TableModelEvent(this, firstRow, lastRow, TableModelEvent.ALL_COLUMNS, event));
     }
 
     @Override
     public int getRowCount() {
-        return rows.size();
+        return data.getMusicCount();
     }
 
     @Override
@@ -120,13 +84,23 @@ public class TemplateTableModel extends AbstractTableModel {
 
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
-        return rows.get(rowIndex)[columnIndex];
+        Music m = data.getMusic(rowIndex);
+        if (columnIndex == 0) {
+            return m.getDownloadURL();
+        } else {
+            return m.getTag(columnIndex - 1);
+        }
     }
 
     @Override
     public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
         if (isCellEditable(rowIndex, columnIndex)) {
-            rows.get(rowIndex)[columnIndex] = (String) aValue;
+            Music m = data.getMusic(rowIndex);
+            if (columnIndex == 0) {
+                m.setDownloadURL((String) aValue);
+            } else {
+                m.putTag(columnIndex - 1, (String) aValue);
+            }
             fireTableCellUpdated(rowIndex, columnIndex);
         }
     }
@@ -135,44 +109,42 @@ public class TemplateTableModel extends AbstractTableModel {
     public boolean isCellEditable(int rowIndex, int columnIndex) {
         return rowIndex >= 0 && rowIndex < getRowCount() &&
                 columnIndex >= 0 && columnIndex < getColumnCount();
-
     }
 
     public void addRow() {
-        addRow(rows.size());
+        addRow(data.getMusicCount());
     }
 
     public void addRow(int index) {
-        if (index < 0 || index > rows.size()) {
-            index = rows.size();
-        }
+        addMusic(index, new Music());
+    }
 
-        rows.add(index, new String[getColumnCount()]);
-        fireTableRowsInserted(index, index);
+    public void addMusic(Music music) {
+        addMusic(data.getMusicCount(), music);
+    }
+
+    public void addMusic(int index, Music music) {
+        if (music.getTemplate() != null && music.getTemplate() != template) {
+            return;
+        }
+        data.addMusic(index, music);
     }
 
     public void deleteRow(int rowIndex) {
-        if (rowIndex >= 0 && rowIndex < rows.size()) {
-            rows.remove(rowIndex);
-            fireTableRowsDeleted(rowIndex, rowIndex);
-        }
+        data.removeMusic(rowIndex);
     }
 
     public void deleteSelectedRows(ListSelectionModel model) {
         int min = model.getMinSelectionIndex();
         int max = Math.min(model.getMaxSelectionIndex() + 1, getRowCount());
 
-        for (int i = min, r = min; i < max; i++) {
-            if (model.isSelectedIndex(i)) {
-                rows.remove(r);
+        data.bulkExecute((index, music) -> {
+            if (model.isSelectedIndex(index)) {
+                return null;
             } else {
-                r++;
+                return music;
             }
-        }
-
-        if (min >= 0 && max >= 0) {
-            fireTableRowsDeleted(min, max);
-        }
+        }, min, max + 1);
     }
 
     public void setNullValues(ListSelectionModel selectedRows, ListSelectionModel selectedColumns) {
@@ -182,31 +154,32 @@ public class TemplateTableModel extends AbstractTableModel {
         int maxRow = selectedRows.getMaxSelectionIndex();
         int maxCol = selectedColumns.getMaxSelectionIndex();
 
-        for (int row = minRow; row <= maxRow; row++) {
-            if (selectedRows.isSelectedIndex(row)) {
+        data.bulkExecute((index, music) -> {
+            if (selectedRows.isSelectedIndex(index)) {
                 for (int col = minCol; col <= maxCol; col++) {
                     if (selectedColumns.isSelectedIndex(col)) {
-                        rows.get(row)[col] = null;
+                        if (col == 0) {
+                            music.setDownloadURL(null);
+                        } else {
+                            music.removeTag(col - 1);
+                        }
                     }
                 }
             }
-        }
-
-        if (0 <= minRow && minRow <= maxRow && 0 <= minCol && minCol <= maxCol) {
-            fireTableRowsUpdated(minRow, maxRow);
-        }
+            return music;
+        }, minRow, maxRow + 1);
     }
 
 
     public void download(int row) {
-        String[] r = rows.get(row);
-        YTDLP ytdlp = YTDLPDownloadTask.ytdlp(r[0]);
-
+        Music m = data.getMusic(row);
+        YTDLP ytdlp = YTDLPDownloadTask.ytdlp(m.getDownloadURL());
+        ytdlp.setMetadata("template", template.getName());
 
         Map<String, String> t = new HashMap<>();
         for (int i = 0; i < template.keyCount(); i++) {
             Key key = template.getKey(i);
-            String tag = r[i + 1];
+            String tag = m.getTag(i);
 
             if (tag != null) {
                 ytdlp.setMetadata(key.getMetadataKey(), tag);
@@ -229,9 +202,9 @@ public class TemplateTableModel extends AbstractTableModel {
     public String[][] getContent() {
         String[][] content = new String[getRowCount()][getColumnCount()];
 
-        for (int y = 0; y < getRowCount(); y++) {
+        /* for (int y = 0; y < getRowCount(); y++) {
             System.arraycopy(rows.get(y), 0, content[y], 0, getColumnCount());
-        }
+        } */
 
         return content;
     }

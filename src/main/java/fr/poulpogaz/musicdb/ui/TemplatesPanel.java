@@ -103,6 +103,10 @@ public class TemplatesPanel extends JPanel {
         return ((TemplateTable) templatesPane.getSelectedComponent()).getModel().getTemplate();
     }
 
+    public TemplateTable getTemplateTableFor(Template template) {
+        return panels.get(template);
+    }
+
 
     private class TabPane extends JTabbedPane {
 

@@ -1,19 +1,18 @@
 package fr.poulpogaz.musicdb.ui;
 
+import fr.poulpogaz.musicdb.downloader.DownloadListener;
 import fr.poulpogaz.musicdb.downloader.DownloadManager;
-import fr.poulpogaz.musicdb.model.Template;
-import fr.poulpogaz.musicdb.model.Templates;
-import fr.poulpogaz.musicdb.model.TemplatesListener;
-import fr.poulpogaz.musicdb.ui.dialogs.EditTemplateDialog;
-import fr.poulpogaz.musicdb.ui.dialogs.NewTemplateDialog;
-import fr.poulpogaz.musicdb.ui.layout.VerticalConstraint;
-import fr.poulpogaz.musicdb.ui.layout.VerticalLayout;
+import fr.poulpogaz.musicdb.downloader.DownloadTask;
+import fr.poulpogaz.musicdb.model.*;
+import fr.poulpogaz.musicdb.ui.dialogs.Dialogs;
+import fr.poulpogaz.musicdb.ui.layout.*;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.nio.file.Path;
 
 public class MusicDBFrame extends JFrame {
 
@@ -35,40 +34,39 @@ public class MusicDBFrame extends JFrame {
     private JMenuItem editTemplate;
     private JMenuItem deleteTemplate;
 
+
+    private JPanel bottomBar;
+    private JLabel loadingMusicsLabel;
+    private JLabel loadedMusicsLabel;
+    private JLabel newMusicsLabel;
+    private JLabel downloadCountLabel;
+
+    private TemplateDataListener templateDataListener;
+
     private MusicDBFrame() {
         super("MusicDB");
 
-        Templates.addTemplateListener(createTemplatesListener());
         initComponents();
+        setupListeners();
+
         setJMenuBar(menuBar);
-        addWindowListener(createWindowListener());
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         setSize(1280, 720);
 
         setLocationRelativeTo(null);
     }
 
-    private TemplatesListener createTemplatesListener() {
-        return (event, template) -> {
-            if (Templates.templateCount() == 0) {
-                deleteTemplate.setEnabled(false);
-                editTemplate.setEnabled(false);
-            } else {
-                deleteTemplate.setEnabled(true);
-                editTemplate.setEnabled(true);
-            }
-        };
-    }
-
     private void initComponents() {
         downloadQueue = createQueuePanel();
         templatesPanel = new TemplatesPanel();
         splitPane = new MusicDBSplitPane(templatesPanel, downloadQueue);
+        bottomBar = createBottomBar();
 
         menuBar = createJMenuBar();
 
         setLayout(new BorderLayout());
         add(splitPane, BorderLayout.CENTER);
+        add(bottomBar, BorderLayout.SOUTH);
     }
 
 
@@ -81,7 +79,7 @@ public class MusicDBFrame extends JFrame {
 
         JButton closeButton = new JButton(Icons.get("close.svg"));
         closeButton.setToolTipText("Close download queue");
-        closeButton.addActionListener(e -> setDownloadQueueVisible(!isDownloadQueueVisible()));
+        closeButton.addActionListener(_ -> setDownloadQueueVisible(!isDownloadQueueVisible()));
 
         JToolBar bar = new JToolBar();
         bar.add(Box.createHorizontalGlue());
@@ -116,13 +114,48 @@ public class MusicDBFrame extends JFrame {
 
 
 
+    private JPanel createBottomBar() {
+        loadingMusicsLabel = new JLabel("0 musics loading");
+        loadedMusicsLabel = new JLabel(Templates.totalMusicCount() + " musics");
+
+        newMusicsLabel = new JLabel("New");
+        downloadCountLabel = new JLabel(DownloadManager.getTaskCount() + " downloads");
+
+        JPanel bottomBar = new JPanel();
+        bottomBar.setLayout(new HorizontalLayout());
+
+        HorizontalConstraint c = new HorizontalConstraint();
+        c.orientation = HCOrientation.RIGHT;
+        c.leftGap = 10;
+        c.rightGap = 5;
+
+        bottomBar.add(downloadCountLabel, c);
+        bottomBar.add(newMusicsLabel, c);
+        bottomBar.add(loadedMusicsLabel, c);
+        bottomBar.add(loadingMusicsLabel, c);
+
+        return bottomBar;
+    }
+
+    public void setLoadingMusicCount(int count) {
+        loadingMusicsLabel.setText(count + " musics loading");
+    }
+
 
 
     private JMenuBar createJMenuBar() {
         JMenu file = new JMenu("File");
+        JMenuItem load = file.add("Load musics");
+        load.addActionListener(_ -> {
+            Path path = Dialogs.showFileChooser(this, JFileChooser.DIRECTORIES_ONLY);
+            if (path != null) {
+                new MusicLoader(path).execute();
+            }
+        });
+        file.addSeparator();
 
         JMenuItem quit = file.add("Quit");
-        quit.addActionListener((e) -> close());
+        quit.addActionListener(_ -> close());
 
 
         JMenu templates = new JMenu("Templates");
@@ -135,8 +168,8 @@ public class MusicDBFrame extends JFrame {
         JCheckBoxMenuItem downloadQueueItem = new JCheckBoxMenuItem();
         downloadQueueItem.setState(isDownloadQueueVisible());
         downloadQueueItem.setText("Open download queue");
-        downloadQueueItem.addActionListener(e -> setDownloadQueueVisible(!isDownloadQueueVisible()));
-        splitPane.addPropertyChangeListener(MusicDBSplitPane.RIGHT_VISIBILITY, e -> downloadQueueItem.setState(isDownloadQueueVisible()));
+        downloadQueueItem.addActionListener(_ -> setDownloadQueueVisible(!isDownloadQueueVisible()));
+        splitPane.addPropertyChangeListener(MusicDBSplitPane.RIGHT_VISIBILITY, _ -> downloadQueueItem.setState(isDownloadQueueVisible()));
 
         JMenu view = new JMenu("View");
         view.add(downloadQueueItem);
@@ -151,7 +184,44 @@ public class MusicDBFrame extends JFrame {
     }
 
 
+    private void setupListeners() {
+        for (Template template : Templates.getTemplates()) {
+            template.getData().addTemplateDataListener(createTemplateDataListener());
+        }
 
+        Templates.addTemplateListener(createTemplatesListener());
+        DownloadManager.addListener(createDownloadListener());
+        addWindowListener(createWindowListener());
+    }
+
+    private TemplateDataListener createTemplateDataListener() {
+        if (templateDataListener == null) {
+            templateDataListener = (_, _, _, _) -> {
+                int count = Templates.totalMusicCount();
+                loadedMusicsLabel.setText(count + " musics");
+            };
+        }
+
+        return templateDataListener;
+    }
+
+    private TemplatesListener createTemplatesListener() {
+        return (_, _) -> {
+            if (Templates.templateCount() == 0) {
+                deleteTemplate.setEnabled(false);
+                editTemplate.setEnabled(false);
+            } else {
+                deleteTemplate.setEnabled(true);
+                editTemplate.setEnabled(true);
+            }
+        };
+    }
+
+    private DownloadListener createDownloadListener() {
+        return (_, _) -> {
+            downloadCountLabel.setText(DownloadManager.getTaskCount() + " downloads");
+        };
+    }
 
 
     private WindowListener createWindowListener() {

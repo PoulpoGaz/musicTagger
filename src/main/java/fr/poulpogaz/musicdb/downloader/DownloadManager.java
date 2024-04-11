@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class DownloadManager {
 
@@ -21,7 +22,7 @@ public class DownloadManager {
     private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
     private static final Object LOCK = new Object();
     private static final Worker WORKER = new Worker();
-    private static final Queue<DownloadTask> TASKS = new ConcurrentLinkedQueue<>();
+    private static final Queue<DownloadTask> TASKS = new ArrayDeque<>();
 
     private static final MultiValuedMap<EventThread, DownloadListener> LISTENERS = new ArrayListValuedHashMap<>();
 
@@ -33,9 +34,9 @@ public class DownloadManager {
         if (task != null && task.state.compareAndSet(State.CREATED, State.QUEUED)) {
             fireEvent(DownloadListener.Event.QUEUED, task);
 
-            TASKS.offer(task);
-
             synchronized (LOCK) {
+                TASKS.offer(task);
+
                 if (!WORKER.running) {
                     WORKER.running = true;
                     EXECUTOR.submit(WORKER);
@@ -72,6 +73,10 @@ public class DownloadManager {
 
     public static Collection<DownloadTask> getQueue() {
         return Collections.unmodifiableCollection(TASKS);
+    }
+
+    public static int getTaskCount() {
+        return TASKS.size() + (isDownloading() ? 1 : 0);
     }
 
 

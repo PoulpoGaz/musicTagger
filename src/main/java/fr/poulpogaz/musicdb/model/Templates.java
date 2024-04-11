@@ -126,6 +126,13 @@ public class Templates {
         return templates.size();
     }
 
+    public static int totalMusicCount() {
+        int sum = 0;
+        for (Template t : templates.values()) {
+            sum += t.getData().getMusicCount();
+        }
+        return sum;
+    }
 
     private static void fireEvent(int event, Template template) {
         for (TemplatesListener listener : listeners) {
