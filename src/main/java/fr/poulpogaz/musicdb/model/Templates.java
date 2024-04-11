@@ -8,6 +8,8 @@ import fr.poulpogaz.json.tree.JsonElement;
 import fr.poulpogaz.json.tree.JsonObject;
 import fr.poulpogaz.json.tree.JsonTreeReader;
 import fr.poulpogaz.musicdb.Directories;
+import fr.poulpogaz.musicdb.properties.Property;
+import fr.poulpogaz.musicdb.properties.PropertyListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,6 +25,12 @@ public class Templates {
     private static final Map<String, Template> templates = new HashMap<>();
     private static final List<TemplatesListener> listeners = new ArrayList<>();
 
+    private static final PropertyListener<String> templateNameListener = (property, oldValue, newValue) -> {
+        Template t = templates.remove(oldValue);
+        if (t != null) {
+            templates.put(newValue, t);
+        }
+    };
 
     private Templates() {}
 
@@ -69,9 +77,9 @@ public class Templates {
         IJsonWriter jw = new JsonPrettyWriter(Files.newBufferedWriter(in));
 
         jw.beginObject();
-        for (Map.Entry<String, Template> entry : templates.entrySet()) {
-            jw.key(entry.getKey()).beginObject();
-            writeTemplate(jw, entry.getValue());
+        for (Template template : templates.values()) {
+            jw.key(template.getName()).beginObject();
+            writeTemplate(jw, template);
             jw.endObject();
         }
         jw.endObject();
@@ -109,11 +117,13 @@ public class Templates {
         }
 
         templates.put(template.getName(), template);
+        template.nameProperty().addListener(templateNameListener);
         fireEvent(TemplatesListener.TEMPLATE_ADDED, template);
     }
 
     public static void removeTemplate(Template template) {
         if (templates.remove(template.getName(), template)) {
+            template.nameProperty().removeListener(templateNameListener);
             fireEvent(TemplatesListener.TEMPLATE_REMOVED, template);
         }
     }

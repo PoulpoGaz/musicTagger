@@ -202,9 +202,14 @@ public class TemplateTableModel extends AbstractTableModel {
     public String[][] getContent() {
         String[][] content = new String[getRowCount()][getColumnCount()];
 
-        /* for (int y = 0; y < getRowCount(); y++) {
-            System.arraycopy(rows.get(y), 0, content[y], 0, getColumnCount());
-        } */
+        for (int row = 0; row < getRowCount(); row++) {
+            Music m = data.getMusic(row);
+
+            content[row][0] = m.getDownloadURL();
+            for (int key = 1; key < getColumnCount(); key++) {
+                content[row][key] = m.getTag(key - 1);
+            }
+        }
 
         return content;
     }

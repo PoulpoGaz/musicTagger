@@ -354,7 +354,7 @@ public class TemplateModel extends AbstractTableModel {
                 continue;
             }
 
-            template.swap(i, kModel.index);
+            template.swap(i, kModel.originalIndex);
         }
     }
 
