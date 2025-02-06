@@ -1,6 +1,5 @@
 package fr.poulpogaz.musicdb.ui;
 
-import com.formdev.flatlaf.extras.components.FlatTabbedPane;
 import fr.poulpogaz.musicdb.model.Template;
 import fr.poulpogaz.musicdb.model.Templates;
 import fr.poulpogaz.musicdb.model.TemplatesListener;
@@ -8,8 +7,6 @@ import fr.poulpogaz.musicdb.properties.Property;
 import fr.poulpogaz.musicdb.properties.PropertyListener;
 
 import javax.swing.*;
-import javax.swing.plaf.TabbedPaneUI;
-import javax.swing.plaf.basic.BasicTabbedPaneUI;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -26,8 +23,6 @@ public class TemplatesPanel extends JPanel {
     private final Map<Template, TemplateTable> panels = new HashMap<>();
     private final PropertyListener<String> templateNameListener = this::setTabName;
 
-    private JPopupMenu tabPopup;
-
     public TemplatesPanel() {
         toolBar = createToolBar();
         templatesPane = createTemplatesPane();
@@ -39,7 +34,7 @@ public class TemplatesPanel extends JPanel {
             templatesPane.setSelectedIndex(0);
         }
 
-        Templates.addTemplateListener(createTemplateListener());
+        Templates.addTemplatesListener(createTemplateListener());
 
         setLayout(new BorderLayout());
         add(toolBar, BorderLayout.WEST);

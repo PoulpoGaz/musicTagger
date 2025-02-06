@@ -1,21 +1,14 @@
 package fr.poulpogaz.musicdb.opus;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
-import java.util.concurrent.ForkJoinTask;
-import java.util.concurrent.RecursiveAction;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
+import java.util.Objects;
 
 public class OpusInputStream implements Closeable {
 
-    private static final byte[] OPUS_TAGS = "OpusTags".getBytes(StandardCharsets.UTF_8);
+    public static final byte[] OPUS_TAGS = "OpusTags".getBytes(StandardCharsets.UTF_8);
 
     private final OggInputStream oggis;
     private State state = State.READ_OPUS_HEAD;

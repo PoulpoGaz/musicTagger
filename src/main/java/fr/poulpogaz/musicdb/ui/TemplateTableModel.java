@@ -3,12 +3,16 @@ package fr.poulpogaz.musicdb.ui;
 import fr.poulpogaz.musicdb.downloader.DownloadManager;
 import fr.poulpogaz.musicdb.downloader.YTDLP;
 import fr.poulpogaz.musicdb.downloader.YTDLPDownloadTask;
-import fr.poulpogaz.musicdb.model.*;
+import fr.poulpogaz.musicdb.model.Key;
+import fr.poulpogaz.musicdb.model.Music;
+import fr.poulpogaz.musicdb.model.Template;
+import fr.poulpogaz.musicdb.model.TemplateData;
 
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
 import javax.swing.table.AbstractTableModel;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TemplateTableModel extends AbstractTableModel {
 
@@ -21,7 +25,7 @@ public class TemplateTableModel extends AbstractTableModel {
         template.addTemplateKeyListListener(this::updateTable);
         data.addTemplateDataListener(this::dataListener);
 
-        String[] musics = new String[] {
+        /* String[] musics = new String[] {
                 "https://www.youtube.com/watch?v=Urcnqat6P0s",
                 "https://music.youtube.com/watch?v=yKPka2qGRh8",
                 "https://music.youtube.com/watch?v=oSgGnmh4sQo",
@@ -52,7 +56,7 @@ public class TemplateTableModel extends AbstractTableModel {
             m.putTag(0, Integer.toString(i));
             i++;
             data.addMusic(m);
-        }
+        } */
     }
 
     private void updateTable(int eventType, int index0, int index1) {

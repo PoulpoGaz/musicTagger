@@ -2,8 +2,10 @@ package fr.poulpogaz.musicdb.ui;
 
 import fr.poulpogaz.musicdb.downloader.DownloadListener;
 import fr.poulpogaz.musicdb.downloader.DownloadManager;
-import fr.poulpogaz.musicdb.downloader.DownloadTask;
-import fr.poulpogaz.musicdb.model.*;
+import fr.poulpogaz.musicdb.model.Template;
+import fr.poulpogaz.musicdb.model.TemplateDataListener;
+import fr.poulpogaz.musicdb.model.Templates;
+import fr.poulpogaz.musicdb.model.TemplatesListener;
 import fr.poulpogaz.musicdb.ui.dialogs.Dialogs;
 import fr.poulpogaz.musicdb.ui.layout.*;
 
@@ -189,7 +191,7 @@ public class MusicDBFrame extends JFrame {
             template.getData().addTemplateDataListener(createTemplateDataListener());
         }
 
-        Templates.addTemplateListener(createTemplatesListener());
+        Templates.addTemplatesListener(createTemplatesListener());
         DownloadManager.addListener(createDownloadListener());
         addWindowListener(createWindowListener());
     }

@@ -1,6 +1,5 @@
 package fr.poulpogaz.musicdb.opus;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -55,7 +54,7 @@ public class PacketInputStream extends InputStream {
     public void skipNBytes(long n) throws IOException {
         while (n > 0) {
             if (readNextPageIfNeeded()) {
-                int read = (int) Math.min(n, currentPage.getPacketSize());
+                int read = (int) Math.min(n, currentPage.getPacketSize() - position);
                 n -= read;
                 position += read;
             } else {

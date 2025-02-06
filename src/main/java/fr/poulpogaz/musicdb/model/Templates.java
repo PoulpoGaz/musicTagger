@@ -8,7 +8,6 @@ import fr.poulpogaz.json.tree.JsonElement;
 import fr.poulpogaz.json.tree.JsonObject;
 import fr.poulpogaz.json.tree.JsonTreeReader;
 import fr.poulpogaz.musicdb.Directories;
-import fr.poulpogaz.musicdb.properties.Property;
 import fr.poulpogaz.musicdb.properties.PropertyListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,12 +19,14 @@ import java.util.*;
 
 public class Templates {
 
+    private static final String UNASSIGNED_MUSIC_TEMPLATE_KEY = "__unassigned_music_template_key";
+
     private static final Logger LOGGER = LogManager.getLogger(Templates.class);
 
     private static final Map<String, Template> templates = new HashMap<>();
     private static final List<TemplatesListener> listeners = new ArrayList<>();
 
-    private static final PropertyListener<String> templateNameListener = (property, oldValue, newValue) -> {
+    private static final PropertyListener<String> templateNameListener = (_, oldValue, newValue) -> {
         Template t = templates.remove(oldValue);
         if (t != null) {
             templates.put(newValue, t);
@@ -53,9 +54,9 @@ public class Templates {
             Template template = new Template();
             template.setName(entry.getKey());
 
-            JsonObject templateO = (JsonObject) entry.getValue();
-            template.setFormat(templateO.getOptionalString("format").orElse(null));
-            JsonArray keys = templateO.getAsArray("keys");
+            JsonObject templateObj = (JsonObject) entry.getValue();
+            template.setFormat(templateObj.getOptionalString("format").orElse(null));
+            JsonArray keys = templateObj.getAsArray("keys");
 
             for (JsonElement e : keys) {
                 JsonObject keyO = (JsonObject) e;
@@ -112,7 +113,7 @@ public class Templates {
     }
 
     public static void addTemplate(Template template) {
-        if (templates.containsKey(template.getName())) {
+        if (UNASSIGNED_MUSIC_TEMPLATE_KEY.equals(template.getName()) || templates.containsKey(template.getName())) {
             return;
         }
 
@@ -126,6 +127,20 @@ public class Templates {
             template.nameProperty().removeListener(templateNameListener);
             fireEvent(TemplatesListener.TEMPLATE_REMOVED, template);
         }
+    }
+
+    public static boolean isNameInternal(String templateName) {
+        return UNASSIGNED_MUSIC_TEMPLATE_KEY.equals(templateName);
+    }
+
+    public static Template getDefaultTemplate() {
+        Template template = templates.get(UNASSIGNED_MUSIC_TEMPLATE_KEY);
+        if (template == null) {
+            template = new Template();
+            template.setName("Unassigned musics");
+        }
+
+        return null;
     }
 
     public static Collection<Template> getTemplates() {
@@ -151,11 +166,11 @@ public class Templates {
     }
 
 
-    public static void addTemplateListener(TemplatesListener listener) {
+    public static void addTemplatesListener(TemplatesListener listener) {
         listeners.add(listener);
     }
 
-    public static void removeTemplateListener(TemplatesListener listener) {
+    public static void removeTemplatesListener(TemplatesListener listener) {
         listeners.remove(listener);
     }
 }

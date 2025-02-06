@@ -9,17 +9,12 @@ import fr.poulpogaz.musicdb.model.Template;
 import fr.poulpogaz.musicdb.model.Templates;
 import fr.poulpogaz.musicdb.ui.dialogs.*;
 import fr.poulpogaz.musicdb.ui.text.ErrorTextField;
-import fr.poulpogaz.musicdb.ui.text.PPTextField;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.xml.transform.sax.TemplatesHandler;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -144,6 +139,9 @@ public class TemplateHelper {
 
     public static void loadTemplates(MusicDBFrame frame) {
         Path path = Dialogs.showFileChooser(frame);
+        if (path == null) {
+            return;
+        }
 
         try {
             Templates.readTemplates(path);

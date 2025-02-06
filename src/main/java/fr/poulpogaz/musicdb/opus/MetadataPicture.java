@@ -2,7 +2,6 @@ package fr.poulpogaz.musicdb.opus;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 
 public class MetadataPicture {
 

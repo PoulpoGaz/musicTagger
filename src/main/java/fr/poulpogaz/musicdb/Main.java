@@ -10,7 +10,6 @@ import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import java.io.IOException;
-import java.nio.file.Path;
 
 public class Main {
 

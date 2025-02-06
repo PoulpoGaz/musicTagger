@@ -1,7 +1,6 @@
 package fr.poulpogaz.musicdb.opus;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 

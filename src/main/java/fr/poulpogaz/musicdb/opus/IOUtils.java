@@ -126,4 +126,57 @@ public class IOUtils {
             return new String(bytes, StandardCharsets.UTF_8);
         }
     }
+
+
+
+    /**
+     * Data should be in buffer.
+     * Buffer position should be at the beginning of the page
+     * The buffer position will be set to the end of the page's header.
+     */
+    public static void readPageHeader(OggPage page, ByteBuffer buffer) throws IOException {
+        IOUtils.assertByte(buffer, (byte) 'O');
+        IOUtils.assertByte(buffer, (byte) 'g');
+        IOUtils.assertByte(buffer, (byte) 'g');
+        IOUtils.assertByte(buffer, (byte) 'S');
+
+        page.version = buffer.get();
+        page.headerType = buffer.get();
+        page.granulePosition = buffer.getLong();
+        page.bitstreamSerialNumber = buffer.getInt();
+        page.pageSequenceNumber = buffer.getInt();
+        page.CRC = buffer.getInt();
+
+        int segments = Byte.toUnsignedInt(buffer.get());
+        page.oggSegments = new int[segments];
+
+        page.headerSize = 27 + page.oggSegments.length;
+        page.packetSize = 0;
+        for (int i = 0; i < page.oggSegments.length; i++) {
+            page.oggSegments[i] = Byte.toUnsignedInt(buffer.get());
+            page.packetSize += page.oggSegments[i];
+        }
+    }
+
+    /**
+     * Data should be in buffer. Buffer position is at the start of data.
+     * CRC is verified.
+     * At the end of the method, buffer position is after the page.
+     */
+    public static void finishReadPage(OggPage page, ByteBuffer buffer) throws IOException {
+        byte[] data = new byte[page.getPacketSize()];
+        buffer.get(data);
+        page.setData(data);
+
+        int pageStart = buffer.position() - page.getPageSize();
+
+        buffer.putInt(pageStart + 22, 0);
+        int crc = CRC32.getCRC(buffer, pageStart, page.getPageSize());
+        buffer.putInt(pageStart + 22, page.getCRC());
+
+        if (crc != page.getCRC()) {
+            throw new IOException(
+                    "CRC verification failed. (expected: " + page.getCRC() + ", got: " + crc + ")");
+        }
+    }
 }

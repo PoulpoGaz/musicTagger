@@ -113,7 +113,7 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Data> {
 
     private Music createMusic(Template template) {
         if (template == null) {
-            return null;
+            return null; // template = Templates.getDefaultTemplate();
         }
 
         Music m = new Music(template);
