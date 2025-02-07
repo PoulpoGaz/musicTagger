@@ -74,4 +74,12 @@ public class Utils {
             return hours + " h " + remaining / 60 + " min " + (remaining % 60) + " s";
         }
     }
+
+    public static boolean equals(double a, double b) {
+        return equals(a, b, 1e-3);
+    }
+
+    public static boolean equals(double a, double b, double epsilon) {
+        return Math.abs(a - b) <= epsilon;
+    }
 }

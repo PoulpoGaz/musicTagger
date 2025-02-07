@@ -78,7 +78,11 @@ public class MetadataDialog extends AbstractDialog {
                     int modelRow = table.convertRowIndexToModel(row);
 
                     if (modelRow >= model.rows.size()) {
+                        int i = modelRow - model.rows.size();
+                        BufferedImage buffImg = music.getPictures().get(i).createBufferedImage();
 
+                        new ImageDialog(buffImg, MetadataDialog.this, "Picture", false)
+                                .setVisible(true);
                     }
                 }
             }

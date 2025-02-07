@@ -9,6 +9,10 @@ public abstract class AbstractDialog extends JDialog {
         super(owner, title, modal);
     }
 
+    public AbstractDialog(Dialog owner, String title, boolean modal) {
+        super(owner, title, modal);
+    }
+
     protected void init() {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         initComponents();
