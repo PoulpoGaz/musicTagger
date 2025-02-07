@@ -103,15 +103,7 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
                 }
             }
 
-
-            OggPage previous = null;
-            OggPage page;
-            while ((page = file.readPage()) != null) {
-                previous = page;
-            }
-            if (previous != null) {
-                System.out.println(previous.getGranulePosition());
-            }
+            music.setLength(file.fileLength());
 
         } catch (IOException e) {
             LOGGER.debug("Failed to read opus file: {}", path, e);

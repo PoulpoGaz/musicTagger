@@ -11,6 +11,8 @@ public class OpusInputStream implements Closeable {
 
     public static final byte[] OPUS_TAGS = "OpusTags".getBytes(StandardCharsets.UTF_8);
 
+    private OpusHead head;
+
     private final OggInputStream oggis;
     private State state = State.READ_OPUS_HEAD;
 
@@ -30,6 +32,10 @@ public class OpusInputStream implements Closeable {
     }
 
     public OpusHead readOpusHead() throws IOException {
+        if (head != null) {
+            return head;
+        }
+
         checkState(State.READ_OPUS_HEAD, true);
 
         OggPage page = oggis.nextPage();
@@ -37,7 +43,7 @@ public class OpusInputStream implements Closeable {
             throw new IOException("No first page");
         }
 
-        OpusHead head = new OpusHead(page);
+        head = new OpusHead(page);
         state = State.READ_VENDOR_LENGTH;
         return head;
     }
@@ -177,6 +183,14 @@ public class OpusInputStream implements Closeable {
     public OggPage readPage() throws IOException {
         checkState(State.READ_OGG_PAGE, true);
         return oggis.nextPage();
+    }
+
+
+    public double fileLength() throws IOException {
+        checkState(State.READ_OGG_PAGE, true);
+        OggPage lastPage = oggis.readLastPage(head.getPage().getBitstreamSerialNumber());
+
+        return head.computeStreamLength(lastPage);
     }
 
 

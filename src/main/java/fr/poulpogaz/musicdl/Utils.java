@@ -62,4 +62,16 @@ public class Utils {
             return format.format(bytes / (1024 * 1024 * 1024d)) + " GiB";
         }
     }
+
+    public static String prettyPrintSeconds(int length) {
+        if (length < 60) {
+            return length + " s";
+        } else if (length < 60 * 60) {
+            return (length / 60) + " min " + (length % 60) + " s";
+        } else {
+            int hours = length / (60 * 60);
+            int remaining = length - hours * 60 * 60;
+            return hours + " h " + remaining / 60 + " min " + (remaining % 60) + " s";
+        }
+    }
 }

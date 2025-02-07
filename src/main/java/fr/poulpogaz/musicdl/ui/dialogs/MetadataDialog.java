@@ -54,7 +54,7 @@ public class MetadataDialog extends AbstractDialog {
                          Channels: %s
                          """.formatted(music.getPath().toAbsolutePath(),
                                        Utils.prettyPrintBytes(music.getSize()),
-                                       null,
+                                       Utils.prettyPrintSeconds((int) music.getLength()),
                                        music.getChannels()));
         }
 

@@ -19,17 +19,16 @@ public class OpusHead {
     private int preSkip;
     private long rate;
     private int outputGain;
-    private byte channelMappingFamily;
-    private byte streamCount;
-    private byte twoChannelStreamCount;
+    private int channelMappingFamily;
+    private int streamCount;
+    private int twoChannelStreamCount;
     private byte[] channelMapping;
 
     OpusHead(OggPage page) throws IOException {
         this.page = page;
 
-        byte[] data = page.getData();
-        IOUtils.assertBytes(data, MAGIC_HEADER_BYTES);
-        this.version = data[8];
+        page.assertBytes(MAGIC_HEADER_BYTES);
+        this.version = page.getByte(8);
         majorVersion = version >> 4;
         minorVersion = version & 0xF;
 
@@ -37,20 +36,29 @@ public class OpusHead {
             throw new IOException("Unsupported Opus version: " + version);
         }
 
-        channelCount = Byte.toUnsignedInt(data[9]);
-        preSkip = Short.toUnsignedInt(IOUtils.getShort(data, 10, page));
-        rate = Integer.toUnsignedLong(IOUtils.getInt(data, 12, page));
-        outputGain = IOUtils.getShort(data, 16, page);
+        channelCount = page.getUByte(9);
+        preSkip = page.getUShort(10);
+        rate = page.getUInt(12);
+        outputGain = page.getShort(16);
 
-        channelMappingFamily = data[18];
+        channelMappingFamily = page.getUByte(18);
         if (channelMappingFamily != 0) {
-            streamCount = data[19];
-            twoChannelStreamCount = data[20];
+            streamCount = page.getUByte(19);
+            twoChannelStreamCount = page.getUByte(20);
             channelMapping = new byte[channelCount];
-            IOUtils.assertEndOfArray(data, 20 + channelCount, page);
-            System.arraycopy(data, 21, channelMapping, 0, channelCount);
+            assertEndOfPage(page, 20 + channelCount);
+            System.arraycopy(page.getData(), 21, channelMapping, 0, channelCount);
         } else {
-            IOUtils.assertEndOfArray(data, 19, page);
+            assertEndOfPage(page, 19);
+        }
+    }
+
+    private void assertEndOfPage(OggPage page, int pos) throws IOException {
+        int size = page.getPacketSize();
+        if (pos < size) {
+            throw new IOException("Error while reading OpusHead: too many bytes: " + pos + " < " + size);
+        } else if (pos > size) {
+            throw new IOException("Error while reading OpusHead: Not enough bytes: " + pos + " > " + size);
         }
     }
 
@@ -86,8 +94,12 @@ public class OpusHead {
         return outputGain;
     }
 
-    public byte getChannelMappingFamily() {
+    public int getChannelMappingFamily() {
         return channelMappingFamily;
+    }
+
+    public double computeStreamLength(OggPage lastPage) {
+        return (lastPage.getGranulePosition() - preSkip) / 48000.0;
     }
 
     public Channels getChannels() {
@@ -104,11 +116,11 @@ public class OpusHead {
         };
     }
 
-    public byte getStreamCount() {
+    public int getStreamCount() {
         return streamCount;
     }
 
-    public byte getTwoChannelStreamCount() {
+    public int getTwoChannelStreamCount() {
         return twoChannelStreamCount;
     }
 

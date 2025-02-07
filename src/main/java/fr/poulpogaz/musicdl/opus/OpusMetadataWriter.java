@@ -34,7 +34,7 @@ public class OpusMetadataWriter implements Closeable {
         IOUtils.assertBytes(currentPage.getData(), OpusInputStream.OPUS_TAGS);
 
         // skip vendor
-        long vendorLength = IOUtils.getInt(currentPage.getData(), 8, currentPage);
+        long vendorLength = currentPage.getUInt(8);
         skipBytes(vendorLength);
     }
 

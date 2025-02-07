@@ -23,6 +23,7 @@ public class Music {
     private String downloadURL;
 
     private long size;
+    private double length;
     private Channels channels;
 
     public Music() {
@@ -120,6 +121,14 @@ public class Music {
 
     public long getSize() {
         return size;
+    }
+
+    public double getLength() {
+        return length;
+    }
+
+    public void setLength(double length) {
+        this.length = length;
     }
 
     public Channels getChannels() {
