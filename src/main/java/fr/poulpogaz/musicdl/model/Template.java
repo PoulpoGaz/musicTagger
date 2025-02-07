@@ -168,6 +168,10 @@ public class Template implements Iterable<Key> {
         return keys.get(index).getName();
     }
 
+    public String getKeyMetadata(int index) {
+        return keys.get(index).getMetadataKey();
+    }
+
     public List<Key> getKeys() {
         return Collections.unmodifiableList(keys);
     }
@@ -184,6 +188,11 @@ public class Template implements Iterable<Key> {
 
     public TemplateData getData() {
         return data;
+    }
+
+
+    public boolean isInternalTemplate() {
+        return Templates.isNameInternal(name.get());
     }
 
 

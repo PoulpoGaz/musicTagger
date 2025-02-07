@@ -139,7 +139,7 @@ public class MusicdlFrame extends JFrame {
         return bottomBar;
     }
 
-    public void setLoadingMusicCount(int count) {
+    public void setLoadingMusicCount(long count) {
         loadingMusicsLabel.setText(count + " musics loading");
     }
 

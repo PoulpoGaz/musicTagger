@@ -174,7 +174,11 @@ public class TemplateHelper {
         @Override
         protected void initComponents() {
             DefaultListModel<Template> model = new DefaultListModel<>();
-            model.addAll(Templates.getTemplates());
+            for (Template t : Templates.getTemplates()) {
+                if (!t.isInternalTemplate()) {
+                    model.addElement(t);
+                }
+            }
             templates = new JList<>(model);
             templates.addListSelectionListener(e -> {
                 if (templates.isSelectionEmpty()) {

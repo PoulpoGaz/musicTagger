@@ -1,9 +1,17 @@
 package fr.poulpogaz.musicdl.opus;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 public class MetadataPicture {
+
+    private static final Logger LOGGER = LogManager.getLogger(MetadataPicture.class);
 
     public static MetadataPicture fromInputStream(InputStream is) throws IOException {
         MetadataPicture pic = new MetadataPicture();
@@ -37,6 +45,20 @@ public class MetadataPicture {
 
     public MetadataPicture() {
 
+    }
+
+    public BufferedImage createBufferedImage() {
+        if (!mimeType.startsWith("image/")) {
+            return null;
+        }
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(data);
+        try {
+            return ImageIO.read(bais);
+        } catch (IOException e) {
+            LOGGER.debug("Failed to create buffered image from metadata picture", e);
+            return null;
+        }
     }
 
     public Type getType() {

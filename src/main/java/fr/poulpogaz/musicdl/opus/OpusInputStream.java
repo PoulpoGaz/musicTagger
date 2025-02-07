@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Objects;
 
+// https://datatracker.ietf.org/doc/html/rfc7845
 public class OpusInputStream implements Closeable {
 
     public static final byte[] OPUS_TAGS = "OpusTags".getBytes(StandardCharsets.UTF_8);

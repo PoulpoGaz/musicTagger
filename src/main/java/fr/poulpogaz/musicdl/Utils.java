@@ -1,6 +1,10 @@
 package fr.poulpogaz.musicdl;
 
+import java.text.DecimalFormat;
+
 public class Utils {
+
+    private static final DecimalFormat format = new DecimalFormat("#.##");
 
     public static String escapeCharacter(String str, char quote, char escape) {
         return addQuote(str, quote, escape, false);
@@ -45,5 +49,17 @@ public class Utils {
         }
 
         return n;
+    }
+
+    public static String prettyPrintBytes(long bytes) {
+        if (bytes < 1024) {
+            return bytes + " B";
+        } else if (bytes < 1024 * 1024) {
+            return format.format(bytes / 1024d) + " KiB";
+        } else if (bytes < 1024 * 1024 * 1024L) {
+            return format.format(bytes / (1024 * 1024d)) + " MiB";
+        } else {
+            return format.format(bytes / (1024 * 1024 * 1024d)) + " GiB";
+        }
     }
 }

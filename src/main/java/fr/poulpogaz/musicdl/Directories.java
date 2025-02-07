@@ -4,7 +4,7 @@ import java.nio.file.Path;
 
 public class Directories {
 
-    public static final String APP_FOLDER_NAME = "musicdb2";
+    public static final String APP_FOLDER_NAME = "music-dl";
 
     private static Path config;
 

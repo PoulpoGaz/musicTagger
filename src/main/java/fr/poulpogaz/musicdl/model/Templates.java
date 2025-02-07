@@ -19,7 +19,7 @@ import java.util.*;
 
 public class Templates {
 
-    private static final String UNASSIGNED_MUSIC_TEMPLATE_KEY = "__unassigned_music_template_key";
+    private static final String UNASSIGNED_MUSIC_TEMPLATE_NAME = "Unassigned musics";
 
     private static final Logger LOGGER = LogManager.getLogger(Templates.class);
 
@@ -32,6 +32,22 @@ public class Templates {
             templates.put(newValue, t);
         }
     };
+
+
+    static {
+        Template template = new Template();
+        template.setName(UNASSIGNED_MUSIC_TEMPLATE_NAME);
+
+        Key title = new Key("Title");
+        title.setMetadataKey("title");
+        template.addKey(title);
+
+        Key artist = new Key("Artist");
+        artist.setMetadataKey("artist");
+        template.addKey(artist);
+
+        templates.put(UNASSIGNED_MUSIC_TEMPLATE_NAME, template);
+    }
 
     private Templates() {}
 
@@ -79,6 +95,10 @@ public class Templates {
 
         jw.beginObject();
         for (Template template : templates.values()) {
+            if (isNameInternal(template.getName())) {
+                continue;
+            }
+
             jw.key(template.getName()).beginObject();
             writeTemplate(jw, template);
             jw.endObject();
@@ -113,7 +133,7 @@ public class Templates {
     }
 
     public static void addTemplate(Template template) {
-        if (UNASSIGNED_MUSIC_TEMPLATE_KEY.equals(template.getName()) || templates.containsKey(template.getName())) {
+        if (UNASSIGNED_MUSIC_TEMPLATE_NAME.equals(template.getName()) || templates.containsKey(template.getName())) {
             return;
         }
 
@@ -130,17 +150,11 @@ public class Templates {
     }
 
     public static boolean isNameInternal(String templateName) {
-        return UNASSIGNED_MUSIC_TEMPLATE_KEY.equals(templateName);
+        return UNASSIGNED_MUSIC_TEMPLATE_NAME.equals(templateName);
     }
 
     public static Template getDefaultTemplate() {
-        Template template = templates.get(UNASSIGNED_MUSIC_TEMPLATE_KEY);
-        if (template == null) {
-            template = new Template();
-            template.setName("Unassigned musics");
-        }
-
-        return null;
+        return templates.get(UNASSIGNED_MUSIC_TEMPLATE_NAME);
     }
 
     public static Collection<Template> getTemplates() {

@@ -5,13 +5,8 @@ import fr.poulpogaz.musicdl.properties.Property;
 
 public class Key {
 
-    private final ObjectProperty<String> name = new ObjectProperty<>() {
-        @Override
-        public boolean isValid(String value) {
-            return isNameValid(value);
-        }
-    };
-    private final ObjectProperty<String> metadataKey = new ObjectProperty<>();
+    private String name;
+    private String metadataKey;
 
     Template template;
 
@@ -22,38 +17,36 @@ public class Key {
         if (!isNameValid(name)) {
             throw new IllegalArgumentException("Invalid name");
         }
-        setName(name);
+        this.name = name;
     }
 
 
 
     public String getName() {
-        return name.get();
+        return name;
     }
 
     public void setName(String name) {
-        this.name.set(name);
+        if (isNameValid(name)) {
+            this.name = name;
+        }
     }
 
     public boolean isNameValid(String name) {
         return name != null && !name.isEmpty() && (template == null || !template.containsKey(name));
     }
 
-    public Property<String> nameProperty() {
-        return name;
-    }
-
 
     public String getMetadataKey() {
-        return metadataKey.get();
+        if (metadataKey == null) {
+            return name;
+        } else {
+            return metadataKey;
+        }
     }
 
     public void setMetadataKey(String metadataKey) {
-        this.metadataKey.set(metadataKey);
-    }
-
-    public Property<String> metadataKeyProperty() {
-        return metadataKey;
+        this.metadataKey = metadataKey;
     }
 
 

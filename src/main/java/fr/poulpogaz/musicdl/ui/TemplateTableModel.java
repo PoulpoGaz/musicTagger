@@ -116,6 +116,8 @@ public class TemplateTableModel extends AbstractTableModel {
                 return music;
             }
         }, min, max + 1);
+
+        fireTableDataChanged();
     }
 
     public void setNullValues(ListSelectionModel selectedRows, ListSelectionModel selectedColumns) {

@@ -1,6 +1,7 @@
 package fr.poulpogaz.musicdl.ui;
 
 import fr.poulpogaz.musicdl.model.Template;
+import fr.poulpogaz.musicdl.ui.dialogs.MetadataDialog;
 
 import javax.swing.*;
 import java.awt.*;
@@ -49,7 +50,7 @@ public class TemplateTable extends JPanel {
         if (row == -1) {
             tableModel.addRow(table.getRowCount());
         } else {
-            tableModel.addRow(row + 1);
+            tableModel.addRow(Math.min(row + 1, table.getRowCount()));
         }
     }
 
@@ -95,6 +96,8 @@ public class TemplateTable extends JPanel {
 
         protected JMenuItem addMenuItem;
         protected JMenuItem removeMenuItem;
+        protected JMenuItem changeTemplate;
+        protected JMenuItem showMetadata;
         protected JMenuItem unset;
         protected JMenuItem download;
 
@@ -105,14 +108,24 @@ public class TemplateTable extends JPanel {
         protected void initPopup() {
             addMenuItem = add("Add music");
             removeMenuItem = add("Remove music");
+            changeTemplate = add("Change template");
+            showMetadata = add("Show metadata");
             addSeparator();
             unset = add("Unset");
             download = add("Download music");
 
-            addMenuItem.addActionListener((ActionEvent e) -> addMusicBelowSelection());
-            removeMenuItem.addActionListener((ActionEvent e) -> deleteSelectedMusics());
-            unset.addActionListener((ActionEvent e) -> unsetSelectedCell());
-            download.addActionListener((ActionEvent e) -> downloadSelectedMusics());
+            addMenuItem.addActionListener(_ -> addMusicBelowSelection());
+            removeMenuItem.addActionListener(_ -> deleteSelectedMusics());
+            showMetadata.addActionListener(_ -> {
+                int row = table.getSelectionModel().getMinSelectionIndex();
+
+                if (row >= 0) {
+                    MetadataDialog.showDialog(MusicdlFrame.getInstance(),
+                                              tableModel.getTemplate().getData().getMusic(row));
+                }
+            });
+            unset.addActionListener(_ -> unsetSelectedCell());
+            download.addActionListener(_ -> downloadSelectedMusics());
         }
     }
 }
