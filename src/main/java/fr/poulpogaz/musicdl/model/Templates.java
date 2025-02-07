@@ -95,7 +95,7 @@ public class Templates {
 
         jw.beginObject();
         for (Template template : templates.values()) {
-            if (isNameInternal(template.getName())) {
+            if (template.isInternalTemplate()) {
                 continue;
             }
 
@@ -133,7 +133,7 @@ public class Templates {
     }
 
     public static void addTemplate(Template template) {
-        if (UNASSIGNED_MUSIC_TEMPLATE_NAME.equals(template.getName()) || templates.containsKey(template.getName())) {
+        if (template.isInternalTemplate() || templates.containsKey(template.getName())) {
             return;
         }
 
@@ -142,8 +142,13 @@ public class Templates {
         fireEvent(TemplatesListener.TEMPLATE_ADDED, template);
     }
 
-    public static void removeTemplate(Template template) {
-        if (templates.remove(template.getName(), template)) {
+    public static void removeTemplate(Template template, boolean moveToUnassignedMusics) {
+        if (!template.isInternalTemplate() && templates.remove(template.getName(), template)) {
+            if (moveToUnassignedMusics) {
+                Template unassignedMusics = templates.get(UNASSIGNED_MUSIC_TEMPLATE_NAME);
+                template.getData().transferAllTo(unassignedMusics.getData());
+            }
+
             template.nameProperty().removeListener(templateNameListener);
             fireEvent(TemplatesListener.TEMPLATE_REMOVED, template);
         }

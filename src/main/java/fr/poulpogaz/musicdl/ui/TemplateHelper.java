@@ -117,13 +117,17 @@ public class TemplateHelper {
     }
 
     public static void deleteTemplate(MusicdlFrame frame, Template template) {
+        if (template.isInternalTemplate()) {
+            return;
+        }
+
         int r = JOptionPane.showConfirmDialog(frame,
-                                              "This operation will remove all data of template " + template.getName(),
+                                              "All musics will be transferred to \"Unassigned musics\" template",
                                               "Confirm deletion",
                                               JOptionPane.YES_NO_OPTION);
 
         if (r == JOptionPane.YES_OPTION) {
-            Templates.removeTemplate(template);
+            Templates.removeTemplate(template, true);
             saveTemplates();
         }
     }

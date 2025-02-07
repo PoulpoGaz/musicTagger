@@ -57,6 +57,26 @@ public class TemplateData implements Iterable<Music> {
         return musics.size();
     }
 
+    public void transferAllTo(TemplateData dest) {
+        if (dest == this || getMusicCount() == 0) {
+            return;
+        }
+
+        int prevDstSize = dest.getMusicCount();
+        for (Music m : musics) {
+            m.template = dest.getTemplate();
+            dest.musics.add(m);
+        }
+
+        int srcSize = getMusicCount();
+        musics.clear();
+
+        dest.fireEvent(TemplateDataListener.INSERT,
+                  prevDstSize, dest.musics.size());
+        fireEvent(TemplateDataListener.DELETE,
+                         0, srcSize);
+    }
+
     public void addMusic(Music music) {
         addMusic(musics.size(), music);
     }
