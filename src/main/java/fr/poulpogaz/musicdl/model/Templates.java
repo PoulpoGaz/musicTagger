@@ -19,6 +19,9 @@ import java.util.*;
 
 public class Templates {
 
+    private static final boolean DEBUG = true;
+
+
     private static final String UNASSIGNED_MUSIC_TEMPLATE_NAME = "Unassigned musics";
 
     private static final Logger LOGGER = LogManager.getLogger(Templates.class);
@@ -45,6 +48,19 @@ public class Templates {
         Key artist = new Key("Artist");
         artist.setMetadataKey("artist");
         template.addKey(artist);
+
+
+        if (DEBUG) {
+            for (int i = 0; i < 26; i++) {
+                Music m = new Music();
+                template.getData().addMusic(m);
+
+                m.setDownloadURL("url " + i);
+                m.putTag(0, "Title " + i);
+                m.putTag(1, "Artist " + i);
+            }
+        }
+
 
         templates.put(UNASSIGNED_MUSIC_TEMPLATE_NAME, template);
     }

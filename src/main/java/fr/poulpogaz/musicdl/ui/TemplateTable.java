@@ -1,9 +1,12 @@
 package fr.poulpogaz.musicdl.ui;
 
 import fr.poulpogaz.musicdl.model.Template;
+import fr.poulpogaz.musicdl.model.Templates;
 import fr.poulpogaz.musicdl.ui.dialogs.MetadataDialog;
 
 import javax.swing.*;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 
@@ -77,6 +80,10 @@ public class TemplateTable extends JPanel {
         }
     }
 
+    public void transferSelectionTo(Template template) {
+        tableModel.transferSelectionTo(table.getSelectionModel(), template);
+    }
+
     public TemplateTableModel getModel() {
         return tableModel;
     }
@@ -92,23 +99,25 @@ public class TemplateTable extends JPanel {
 
 
 
-    private class TemplateTablePopupMenu extends JPopupMenu {
+    private class TemplateTablePopupMenu extends JPopupMenu implements PopupMenuListener {
 
         protected JMenuItem addMenuItem;
         protected JMenuItem removeMenuItem;
-        protected JMenuItem changeTemplate;
+        protected JMenu changeTemplate;
         protected JMenuItem showMetadata;
         protected JMenuItem unset;
         protected JMenuItem download;
 
         public TemplateTablePopupMenu() {
             initPopup();
+            addPopupMenuListener(this);
         }
 
         protected void initPopup() {
             addMenuItem = add("Add music");
             removeMenuItem = add("Remove music");
-            changeTemplate = add("Change template");
+            changeTemplate = new JMenu("Change template");
+            add(changeTemplate);
             showMetadata = add("Show metadata");
             addSeparator();
             unset = add("Unset");
@@ -126,6 +135,55 @@ public class TemplateTable extends JPanel {
             });
             unset.addActionListener(_ -> unsetSelectedCell());
             download.addActionListener(_ -> downloadSelectedMusics());
+        }
+
+        @Override
+        public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+            if (Templates.templateCount() <= 1) {
+                changeTemplate.setEnabled(false);
+            } else {
+                changeTemplate.setEnabled(true);
+                TemplatesPanel panel = MusicdlFrame.getInstance().getTemplatesPanel();
+
+                int i;
+                for (i = 0; i < panel.getTemplateTableCount(); i++) {
+                    Template template = panel.getTemplateTable(i).getModel().getTemplate();
+
+                    if (template == panel.getSelectedTemplate()) {
+                        continue;
+                    }
+
+                    if (i < changeTemplate.getItemCount()) {
+                        changeTemplate.setName(template.getName());
+                    } else {
+                        JMenuItem item = changeTemplate.add(template.getName());
+                        item.addActionListener(this::transferTemplate);
+                    }
+                }
+
+                int expectedSize = panel.getTemplateTableCount() - 1;
+                while (changeTemplate.getItemCount() > expectedSize) {
+                    changeTemplate.remove(expectedSize);
+                }
+            }
+        }
+
+        private void transferTemplate(ActionEvent actionEvent) {
+            JMenuItem item = (JMenuItem) actionEvent.getSource();
+            String templateName = item.getText();
+
+            Template dest = Templates.getTemplate(templateName);
+            transferSelectionTo(dest);
+        }
+
+        @Override
+        public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+
+        }
+
+        @Override
+        public void popupMenuCanceled(PopupMenuEvent e) {
+
         }
     }
 }

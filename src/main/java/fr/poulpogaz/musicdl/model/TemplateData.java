@@ -3,7 +3,8 @@ package fr.poulpogaz.musicdl.model;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 
 public class TemplateData implements Iterable<Music> {
 
@@ -14,43 +15,6 @@ public class TemplateData implements Iterable<Music> {
 
     public TemplateData(Template template) {
         this.template = template;
-    }
-
-    public void bulkExecute(BiFunction<Integer, Music, Music> bulkFunction) {
-        bulkExecute(bulkFunction, 0, musics.size());
-    }
-
-    /**
-     * Iterates over the music between 'start' (inclusive) and 'end' (exclusive) allowing
-     * removing and insertion of new music. The first parameter of the bulkFunction is the index
-     * of the music <strong>before any changes were done</strong>.
-     * If the bulkFunction returns null, then the music is removed,
-     * if it returns the same music, the music is not removed,
-     * if it returns a new music, it is inserted before the current music and
-     * the next iteration will the same music as before.
-     */
-    public void bulkExecute(BiFunction<Integer, Music, Music> bulkFunction, int start, int end) {
-        start = Math.max(start, 0);
-        end = Math.min(end, musics.size());
-
-        int funcI = start;
-        int listI = start;
-        for (; funcI < end; listI++, funcI++) {
-            Music m = musics.get(listI);
-            Music m2 = bulkFunction.apply(funcI, m);
-
-            if (m2 == null) {
-                musics.remove(listI);
-                listI--;
-            } else if (m2 != m) {
-                m2.template = template;
-                musics.add(listI, m2);
-                funcI--;
-                end++;
-            }
-        }
-
-        fireEvent(TemplateDataListener.UPDATE, start, end);
     }
 
     public int getMusicCount() {
@@ -75,6 +39,79 @@ public class TemplateData implements Iterable<Music> {
                   prevDstSize, dest.musics.size());
         fireEvent(TemplateDataListener.DELETE,
                          0, srcSize);
+    }
+
+    public void transferMatchingTo(TemplateData dest, BiPredicate<Integer, Music> cond, int start, int end) {
+        start = Math.max(start, 0);
+        end = Math.min(end, musics.size());
+
+        if (dest == this || end - start <= 0) {
+            return;
+        }
+
+        int prevDstSize = dest.getMusicCount();
+        int internalI = start;
+        for (int i = start; i < end; i++) {
+            Music m = musics.get(internalI);
+
+            if (cond.test(i, m)) {
+                m.template = dest.getTemplate();
+                dest.musics.add(m);
+                musics.remove(internalI);
+            } else {
+                internalI++;
+            }
+        }
+
+        dest.fireEvent(TemplateDataListener.INSERT,
+                       prevDstSize, dest.musics.size());
+        fireEvent(TemplateDataListener.DELETE,
+                  start, end);
+    }
+
+    public void removeMatching(BiPredicate<Integer, Music> cond, int start, int end) {
+        start = Math.max(start, 0);
+        end = Math.min(end, musics.size());
+
+        int minI = Integer.MAX_VALUE;
+        int maxI = Integer.MIN_VALUE;
+        int internalI = start;
+        for (int i = start; i < end; i++) {
+            Music m = musics.get(internalI);
+
+            if (cond.test(i, m)) {
+                musics.remove(internalI);
+                minI = Math.min(i, minI);
+                maxI = Math.max(i, maxI);
+            } else {
+                internalI++;
+            }
+        }
+
+        if (minI != Integer.MAX_VALUE) {
+            fireEvent(TemplateDataListener.DELETE, minI, maxI);
+        }
+    }
+
+    public void modifyMatching(BiPredicate<Integer, Music> cond, Consumer<Music> modifier, int start, int end) {
+        start = Math.max(start, 0);
+        end = Math.min(end, musics.size());
+
+        int minI = Integer.MAX_VALUE;
+        int maxI = Integer.MIN_VALUE;
+        for (int i = start; i < end; i++) {
+            Music m = musics.get(i);
+
+            if (cond.test(i, m)) {
+                modifier.accept(m);
+                minI = Math.min(i, minI);
+                maxI = Math.max(i, maxI);
+            }
+        }
+
+        if (minI != Integer.MAX_VALUE) {
+            fireEvent(TemplateDataListener.UPDATE, minI, maxI);
+        }
     }
 
     public void addMusic(Music music) {

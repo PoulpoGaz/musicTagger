@@ -102,6 +102,14 @@ public class TemplatesPanel extends JPanel {
         return panels.get(template);
     }
 
+    public TemplateTable getTemplateTable(int index) {
+        return (TemplateTable) templatesPane.getComponentAt(index);
+    }
+
+    public int getTemplateTableCount() {
+        return templatesPane.getTabCount();
+    }
+
 
     private class TabPane extends JTabbedPane {
 

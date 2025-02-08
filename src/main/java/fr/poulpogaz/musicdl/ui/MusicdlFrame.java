@@ -248,4 +248,8 @@ public class MusicdlFrame extends JFrame {
             dispose();
         }
     }
+
+    public TemplatesPanel getTemplatesPanel() {
+        return templatesPanel;
+    }
 }

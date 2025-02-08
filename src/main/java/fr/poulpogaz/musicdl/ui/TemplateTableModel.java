@@ -109,15 +109,18 @@ public class TemplateTableModel extends AbstractTableModel {
         int min = model.getMinSelectionIndex();
         int max = Math.min(model.getMaxSelectionIndex() + 1, getRowCount());
 
-        data.bulkExecute((index, music) -> {
-            if (model.isSelectedIndex(index)) {
-                return null;
-            } else {
-                return music;
-            }
-        }, min, max + 1);
+        data.removeMatching((index, _) -> model.isSelectedIndex(index)
+                , min, max);;
+    }
 
-        fireTableDataChanged();
+    public void transferSelectionTo(ListSelectionModel model, Template template) {
+        int min = model.getMinSelectionIndex();
+        int max = Math.min(model.getMaxSelectionIndex() + 1, getRowCount());
+
+        this.template.getData()
+                     .transferMatchingTo(template.getData(),
+                                         (i, _) -> model.isSelectedIndex(i),
+                                         min, max);
     }
 
     public void setNullValues(ListSelectionModel selectedRows, ListSelectionModel selectedColumns) {
@@ -127,20 +130,18 @@ public class TemplateTableModel extends AbstractTableModel {
         int maxRow = selectedRows.getMaxSelectionIndex();
         int maxCol = selectedColumns.getMaxSelectionIndex();
 
-        data.bulkExecute((index, music) -> {
-            if (selectedRows.isSelectedIndex(index)) {
-                for (int col = minCol; col <= maxCol; col++) {
-                    if (selectedColumns.isSelectedIndex(col)) {
-                        if (col == 0) {
-                            music.setDownloadURL(null);
-                        } else {
-                            music.removeTag(col - 1);
-                        }
-                    }
-                }
-            }
-            return music;
-        }, minRow, maxRow + 1);
+        data.modifyMatching((index, _) -> selectedRows.isSelectedIndex(index),
+                            music -> {
+                                for (int col = minCol; col <= maxCol; col++) {
+                                    if (selectedColumns.isSelectedIndex(col)) {
+                                        if (col == 0) {
+                                            music.setDownloadURL(null);
+                                        } else {
+                                            music.removeTag(col - 1);
+                                        }
+                                    }
+                                }
+                            }, minRow, maxRow + 1);
     }
 
 

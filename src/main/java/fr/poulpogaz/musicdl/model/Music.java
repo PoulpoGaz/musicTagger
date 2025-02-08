@@ -91,11 +91,15 @@ public class Music {
 
     public void putTag(int key, String value) {
         if (template != null) {
-            String metadataKey = transform(template.getKeyMetadata(key));
-            checkKey(metadataKey);
-            List<String> values = metadata.get(metadataKey);
-            values.clear();
-            values.add(value);
+            if (value == null) {
+                removeTag(key);
+            } else {
+                String metadataKey = transform(template.getKeyMetadata(key));
+                checkKey(metadataKey);
+                List<String> values = metadata.get(metadataKey);
+                values.clear();
+                values.add(value);
+            }
         }
     }
 
