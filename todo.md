@@ -5,4 +5,5 @@
 * ui:
   * TemplateTable: disable menu items when clicking outside the table
   * disable menu items when right+click on template tab
-* reduce memory consumption by loading only thumbnails or loading images lazily
+* DONE: reduce memory consumption by loading only thumbnails or loading images lazily
+  * reuse OggPage and MetadataPicture data

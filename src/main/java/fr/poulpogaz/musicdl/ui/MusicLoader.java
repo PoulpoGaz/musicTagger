@@ -1,14 +1,10 @@
 package fr.poulpogaz.musicdl.ui;
 
-import fr.poulpogaz.musicdl.model.Music;
-import fr.poulpogaz.musicdl.model.Template;
-import fr.poulpogaz.musicdl.model.Templates;
+import fr.poulpogaz.musicdl.model.*;
 import fr.poulpogaz.musicdl.opus.MetadataPicture;
-import fr.poulpogaz.musicdl.opus.OggPage;
+import fr.poulpogaz.musicdl.opus.OggInputStream;
 import fr.poulpogaz.musicdl.opus.OpusHead;
 import fr.poulpogaz.musicdl.opus.OpusInputStream;
-import org.apache.commons.collections4.MultiValuedMap;
-import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -18,6 +14,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
@@ -79,7 +76,9 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
         music.setPath(path);
 
         String templateName = null;
-        try (OpusInputStream file = new OpusInputStream(path)) {
+        try (OggInputStream ois = new OggInputStream(path)) {
+            OpusInputStream file = new OpusInputStream(ois);
+
             music.setSize(Files.size(path));
 
             OpusHead head = file.readOpusHead();
@@ -93,9 +92,13 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
 
                 switch (key) {
                     case "METADATA_BLOCK_PICTURE" -> {
+                        long position = ois.currentPagePosition();
+                        int offset = file.positionInPage();
                         InputStream picIS = Base64.getDecoder().wrap(file.valueInputStream());
-                        MetadataPicture pic = MetadataPicture.fromInputStream(picIS);
-                        music.addPicture(pic);
+                        MetadataPicture pic = MetadataPicture.readPicture(picIS);
+
+                        SoftCoverArt cover = pic.createSoftCoverArt(path, position, offset);
+                        music.addCoverArt(cover);
                     }
                     case "TEMPLATE" -> templateName = file.readValue();
                     case "PURL" -> music.setDownloadURL(file.readValue());
@@ -137,6 +140,15 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
 
         Chunk d = chunks.getLast();
         MusicdlFrame.getInstance().setLoadingMusicCount(d.remaining);
+    }
+
+    @Override
+    protected void done() {
+        try {
+            get();
+        } catch (InterruptedException | ExecutionException e) {
+            LOGGER.error("Loading musics failed", e);
+        }
     }
 
     protected static class Chunk {

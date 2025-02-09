@@ -74,4 +74,8 @@ public class PacketInputStream extends InputStream {
 
         return currentPage != null;
     }
+
+    public int getPositionInPage() {
+        return position;
+    }
 }

@@ -3,6 +3,8 @@ package fr.poulpogaz.musicdl.ui.dialogs;
 import com.formdev.flatlaf.FlatClientProperties;
 import fr.poulpogaz.musicdl.Utils;
 import fr.poulpogaz.musicdl.Zoom;
+import fr.poulpogaz.musicdl.model.CoverArt;
+import fr.poulpogaz.musicdl.model.ExecutionStrategy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -18,29 +20,34 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.EventListener;
 import java.util.EventObject;
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ImageDialog extends AbstractDialog {
 
-    private final BufferedImage image;
+    public static void showDialog(CoverArt art, Dialog owner, String title, boolean modal) {
+        ImageDialog dialog = new ImageDialog(owner, title, modal);
+        art.getImageLater((image, error) -> {
+            dialog.model.setImage(image);
+        }, ExecutionStrategy.eventQueue());
+        dialog.setVisible(true);
+    }
 
-    public ImageDialog(BufferedImage image, JFrame owner, String title, boolean modal) {
+    private ViewerModel model;
+
+    public ImageDialog(Frame owner, String title, boolean modal) {
         super(owner, title, modal);
-        this.image = image;
         init();
     }
 
-    public ImageDialog(BufferedImage image, Dialog owner, String title, boolean modal) {
+    public ImageDialog(Dialog owner, String title, boolean modal) {
         super(owner, title, modal);
-        this.image = image;
         init();
     }
 
     @Override
     protected void initComponents() {
-        ViewerModel model = new ViewerModel(image);
+        model = new ViewerModel();
 
         setLayout(new BorderLayout());
         add(new ImagePanel(model), BorderLayout.CENTER);
@@ -57,15 +64,15 @@ public class ImageDialog extends AbstractDialog {
         private static final Logger LOGGER = LogManager.getLogger(ViewerModel.class);
 
         private final EventListenerList listenerList = new EventListenerList();
-        private final BufferedImage image;
+        private BufferedImage image;
 
         private Zoom zoom = Zoom.Fit.INSTANCE;
         private int viewWidth;
         private int viewHeight;
         private double scaleFactor;
 
-        public ViewerModel(BufferedImage image) {
-            this.image = Objects.requireNonNull(image);
+        public ViewerModel() {
+
         }
 
         public void setZoom(Zoom zoom) {
@@ -102,11 +109,13 @@ public class ImageDialog extends AbstractDialog {
         private void computeScaleFactor(boolean forceEvent) {
             boolean fireEvent = forceEvent;
 
-            double scaleFactor = zoom.getScaleFactor(image, viewWidth, viewHeight);
+            if (image != null) {
+                double scaleFactor = zoom.getScaleFactor(image, viewWidth, viewHeight);
 
-            if (scaleFactor != this.scaleFactor) {
-                this.scaleFactor = scaleFactor;
-                fireEvent = true;
+                if (scaleFactor != this.scaleFactor) {
+                    this.scaleFactor = scaleFactor;
+                    fireEvent = true;
+                }
             }
 
             if (fireEvent) {
@@ -132,8 +141,35 @@ public class ImageDialog extends AbstractDialog {
             listenerList.remove(ZoomListener.class, listener);
         }
 
+        public void setImage(BufferedImage image) {
+            if (image != this.image) {
+                BufferedImage old = this.image;
+                this.image = image;
+                fireImageEvent(old, image);
+                computeScaleFactor(false);
+            }
+        }
+
         public BufferedImage getImage() {
             return image;
+        }
+
+        private void fireImageEvent(BufferedImage oldImg, BufferedImage newImg) {
+            Object[] listeners = listenerList.getListenerList();
+
+            for (int i = 0; i < listeners.length; i += 2) {
+                if (listeners[i] == ImageListener.class) {
+                    ((ImageListener) listeners[i + 1]).imageChanged(oldImg, newImg);
+                }
+            }
+        }
+
+        public void addImageListener(ImageListener listener) {
+            listenerList.add(ImageListener.class, listener);
+        }
+
+        public void removeImageListener(ImageListener listener) {
+            listenerList.remove(ImageListener.class, listener);
         }
     }
 
@@ -170,11 +206,15 @@ public class ImageDialog extends AbstractDialog {
     }
 
 
-    public static interface ZoomListener extends EventListener {
+    public interface ZoomListener extends EventListener {
 
         void zoomChanged(ZoomEvent event);
     }
 
+    public interface ImageListener extends EventListener {
+
+        void imageChanged(BufferedImage oldImg, BufferedImage newImg);
+    }
 
 
     private static class ImagePanel extends JPanel {
@@ -189,6 +229,10 @@ public class ImageDialog extends AbstractDialog {
         public ImagePanel(ViewerModel model) {
             this.model = model;
 
+            model.addImageListener((_, _) -> {
+                computeOffset();
+                repaint();
+            });
             model.addZoomListener(_ -> {
                 computeOffset();
                 repaint();
@@ -257,22 +301,35 @@ public class ImageDialog extends AbstractDialog {
             super.paintComponent(g);
             Graphics2D g2d = (Graphics2D) g;
 
-            double scale = model.getScaleFactor();
-
-            AffineTransform old = g2d.getTransform();
-            AffineTransform base = (AffineTransform) old.clone();
-
-            base.translate(offsetX, offsetY);
-            base.scale(scale, scale);
-
-            g2d.setTransform(base);
-            if (scale >= 1) {
-                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+            BufferedImage img = model.getImage();
+            if (img == null) {
+                drawStringCentered(g2d, "Loading image...", 0, 0, getWidth(), getHeight());
             } else {
-                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                double scale = model.getScaleFactor();
+
+                AffineTransform old = g2d.getTransform();
+                AffineTransform base = (AffineTransform) old.clone();
+
+                base.translate(offsetX, offsetY);
+                base.scale(scale, scale);
+
+                g2d.setTransform(base);
+                if (scale >= 1) {
+                    g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                                         RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+                } else {
+                    g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                }
+                g2d.drawImage(model.getImage(), 0, 0, null);
+                g2d.setTransform(old);
             }
-            g2d.drawImage(model.getImage(), 0, 0, null);
-            g2d.setTransform(old);
+        }
+
+        private void drawStringCentered(Graphics2D g2d, String str, int x, int y, int width, int height) {
+            FontMetrics fm = g2d.getFontMetrics();
+
+            int stringWidth = fm.stringWidth(str);
+            g2d.drawString(str, x + (width - stringWidth) / 2, y  + ((height - fm.getHeight()) / 2) + fm.getAscent());
         }
 
         private void computeOffset() {
@@ -281,6 +338,10 @@ public class ImageDialog extends AbstractDialog {
 
         private void computeOffset(int dragX, int dragY) {
             BufferedImage image = model.getImage();
+            if (image == null) {
+                return;
+            }
+
             double scaledWidth = image.getWidth() * model.getScaleFactor();
             double scaledHeight = image.getHeight() * model.getScaleFactor();
 

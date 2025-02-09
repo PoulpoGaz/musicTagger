@@ -1,22 +1,19 @@
 package fr.poulpogaz.musicdl.model;
 
 import fr.poulpogaz.musicdl.opus.Channels;
-import fr.poulpogaz.musicdl.opus.MetadataPicture;
 import org.apache.commons.collections4.ListValuedMap;
 import org.apache.commons.collections4.MapIterator;
-import org.apache.commons.collections4.functors.IfClosure;
 import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
 public class Music {
 
     private final ListValuedMap<String, String> metadata = new ArrayListValuedHashMap<>();
-    private final List<MetadataPicture> pictures = new ArrayList<>();
+    private final List<CoverArt> covers = new ArrayList<>();
     Template template;
 
     private Path path; // location on disk
@@ -66,16 +63,16 @@ public class Music {
     }
 
 
-    public void addPicture(MetadataPicture picture) {
-        pictures.add(picture);
+    public void addCoverArt(CoverArt cover) {
+        covers.add(cover);
     }
 
-    public void removePicture(MetadataPicture picture) {
-        pictures.remove(picture);
+    public void removeCoverArt(CoverArt cover) {
+        covers.remove(cover);
     }
 
-    public List<MetadataPicture> getPictures() {
-        return pictures;
+    public List<CoverArt> getCovers() {
+        return covers;
     }
 
 

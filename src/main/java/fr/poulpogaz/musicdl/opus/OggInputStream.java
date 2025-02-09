@@ -20,6 +20,8 @@ public class OggInputStream implements Closeable {
                                                 .order(ByteOrder.LITTLE_ENDIAN);
 
     private OggPage nextPage = null;
+    private long lastPageSize = 0;
+    private long currentPagePosition = -1;
 
     public OggInputStream(Path file) throws IOException {
         channel = FileChannel.open(file, StandardOpenOption.READ);
@@ -46,6 +48,7 @@ public class OggInputStream implements Closeable {
 
         next.finishReadPage(buffer);
 
+        lastPageSize = nextPage.getPageSize();
         nextPage = null;
         return next;
     }
@@ -56,6 +59,12 @@ public class OggInputStream implements Closeable {
      */
     public OggPage peekNextPage() throws IOException {
         if (nextPage == null) {
+            if (currentPagePosition < 0) {
+                currentPagePosition = 0;
+            } else {
+                currentPagePosition += lastPageSize;
+            }
+
             if (ensureDataAvailable(OggPage.MAX_HEADER_SIZE)) {
                 if (buffer.remaining() == 0) {
                     return null; // no more data,
@@ -105,6 +114,19 @@ public class OggInputStream implements Closeable {
     }
 
     /**
+     * Returns the position of the first byte of the current page.
+     * The current page is the page that was returned by the last
+     * call to {@link #peekNextPage()}, {@link #nextPage()} or
+     * {@link #readLastPage(int)}
+     *
+     * @return position of the first byte of the current page.
+     */
+    public long currentPagePosition() {
+        return currentPagePosition;
+    }
+
+
+    /**
      * @return skip all pages and read last page
      */
     public OggPage readLastPage(int bitstreamSerialNumber) throws IOException {
@@ -126,6 +148,7 @@ public class OggInputStream implements Closeable {
         OggPage page = nextPage();
 
         if (page.bitstreamSerialNumber == bitstreamSerialNumber && page.isLastPage()) {
+            currentPagePosition = newPos;
             return page;
         }
 

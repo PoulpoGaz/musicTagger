@@ -180,6 +180,17 @@ public class OpusInputStream implements Closeable {
         return lis;
     }
 
+
+    public int positionInPage() {
+        if (state == State.READ_OPUS_HEAD || state == State.READ_OGG_PAGE) {
+            throw new IllegalStateException();
+        }
+
+        return pis.getPositionInPage();
+    }
+
+
+
     public OggPage readPage() throws IOException {
         checkState(State.READ_OGG_PAGE, true);
         return oggis.nextPage();

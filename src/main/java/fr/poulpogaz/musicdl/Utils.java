@@ -5,6 +5,7 @@ import java.text.DecimalFormat;
 public class Utils {
 
     private static final DecimalFormat format = new DecimalFormat("#.##");
+    private static final char[] HEX_CHARS = "0123456789ABCDEF".toCharArray();
 
     public static String escapeCharacter(String str, char quote, char escape) {
         return addQuote(str, quote, escape, false);
@@ -81,5 +82,16 @@ public class Utils {
 
     public static boolean equals(double a, double b, double epsilon) {
         return Math.abs(a - b) <= epsilon;
+    }
+
+    public static String bytesToHex(byte[] bytes) {
+        char[] chars = new char[bytes.length * 2];
+
+        for (int i = 0; i < bytes.length; i++) {
+            chars[2 * i] = HEX_CHARS[(bytes[i] & 0xF) >>> 4];
+            chars[2 * i + 1] = HEX_CHARS[bytes[i] & 0xF];
+        }
+
+        return new String(chars);
     }
 }

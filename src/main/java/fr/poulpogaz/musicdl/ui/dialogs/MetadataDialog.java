@@ -3,19 +3,15 @@ package fr.poulpogaz.musicdl.ui.dialogs;
 import fr.poulpogaz.musicdl.ImageUtils;
 import fr.poulpogaz.musicdl.Utils;
 import fr.poulpogaz.musicdl.Zoom;
-import fr.poulpogaz.musicdl.model.Music;
-import fr.poulpogaz.musicdl.opus.MetadataPicture;
+import fr.poulpogaz.musicdl.model.*;
 import org.apache.commons.collections4.MapIterator;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -79,10 +75,9 @@ public class MetadataDialog extends AbstractDialog {
 
                     if (modelRow >= model.rows.size()) {
                         int i = modelRow - model.rows.size();
-                        BufferedImage buffImg = music.getPictures().get(i).createBufferedImage();
+                        CoverArt cover = music.getCovers().get(i);
 
-                        new ImageDialog(buffImg, MetadataDialog.this, "Picture", false)
-                                .setVisible(true);
+                        ImageDialog.showDialog(cover, MetadataDialog.this, "Picture", false);
                     }
                 }
             }
@@ -101,7 +96,7 @@ public class MetadataDialog extends AbstractDialog {
     private class MetadataModel extends AbstractTableModel {
 
         private final List<Row> rows = new ArrayList<>();
-        private final List<Icon> coverArts = new ArrayList<>();
+        private final List<ImageIcon> coverArts = new ArrayList<>();
 
         public MetadataModel() {
             MapIterator<String, String> it = music.metadataIterator();
@@ -113,27 +108,27 @@ public class MetadataDialog extends AbstractDialog {
 
             rows.sort(Comparator.comparing(Row::tag).thenComparing(Row::value));
 
-            List<MetadataPicture> pictures = music.getPictures();
-            for (int i = 0; i < pictures.size(); i++) {
-                BufferedImage buffImg = pictures.get(i).createBufferedImage();
+            List<CoverArt> covers = music.getCovers();
+            for (int i = 0; i < covers.size(); i++) {
+                coverArts.add(new ImageIcon());
 
-                Image img = ImageUtils.scale(buffImg, 384, 384, Zoom.Fit.INSTANCE);
-                img.getHeight(onImageLoaded(i));
-
-                coverArts.add(new ImageIcon(img));
+                CoverArt cover = covers.get(i);
+                fetchCover(cover, i);
             }
         }
 
-        private ImageObserver onImageLoaded(int imageIndex) {
-            return (img, infoflags, x, y, width, height) -> {
-                if ((infoflags & HEIGHT) != 0) {
-                    SwingUtilities.invokeLater(() -> {
-                        table.setRowHeight(rows.size() + imageIndex, height);
-                    });
-                }
+        private void fetchCover(CoverArt cover, int index) {
+            cover.getImageLater((image, _) -> {
+                if (image != null) {
+                    Image img = ImageUtils.scale(image, 384, 384, Zoom.Fit.INSTANCE);
+                    int height = img.getHeight(null); // call is blocking, because BufferedImage uses an OffScreenImageProducer
 
-                return (infoflags & (ALLBITS|ABORT)) == 0;
-            };
+                    int n = getRowCount();
+                    coverArts.get(index).setImage(img);
+                    table.setRowHeight(rows.size() + index, height);
+                    fireTableCellUpdated(n, 1);
+                }
+            }, ExecutionStrategy.eventQueue());
         }
 
         @Override

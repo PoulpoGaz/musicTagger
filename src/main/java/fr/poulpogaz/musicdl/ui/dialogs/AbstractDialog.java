@@ -5,7 +5,7 @@ import java.awt.*;
 
 public abstract class AbstractDialog extends JDialog {
 
-    public AbstractDialog(JFrame owner, String title, boolean modal) {
+    public AbstractDialog(Frame owner, String title, boolean modal) {
         super(owner, title, modal);
     }
 
