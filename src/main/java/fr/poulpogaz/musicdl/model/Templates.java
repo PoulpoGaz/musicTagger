@@ -20,7 +20,30 @@ import java.util.*;
 public class Templates {
 
     private static final boolean DEBUG = true;
-
+    private static final String[] URLS = new String[] {
+        "https://www.youtube.com/watch?v=yDVEuISEr1Q",
+        "https://www.youtube.com/watch?v=Urcnqat6P0s",
+        "https://music.youtube.com/watch?v=yKPka2qGRh8",
+        "https://music.youtube.com/watch?v=oSgGnmh4sQo",
+        "https://music.youtube.com/watch?v=GtPLYvYeZ_4",
+        "https://music.youtube.com/watch?v=DNCN1II0G-4",
+        "https://music.youtube.com/watch?v=qiLO9YDOxYg",
+        "https://music.youtube.com/watch?v=qXoghQAzQF0",
+        "https://music.youtube.com/watch?v=7ddebyXI8-Q",
+        "https://music.youtube.com/watch?v=SxhJ6pVGaio",
+        "https://music.youtube.com/watch?v=XIwtX5aNO4w",
+        "https://music.youtube.com/watch?v=VQIv_2249Sc",
+        "https://music.youtube.com/watch?v=Sdb4nZgcETI",
+        "https://music.youtube.com/watch?v=zoi6ofeC4rY",
+        "https://music.youtube.com/watch?v=fhZMRwAs2Ys",
+        "https://music.youtube.com/watch?v=26W7rVonsEs",
+        "https://music.youtube.com/watch?v=jHVy3kkYiFY",
+        "https://music.youtube.com/watch?v=lyzjJYugE3o",
+        "https://music.youtube.com/watch?v=YYlcR-hBuXY",
+        "https://music.youtube.com/watch?v=kKEkoeUHeyM",
+        "https://music.youtube.com/watch?v=QnF41gLkuuE",
+        "https://music.youtube.com/watch?v=gegcg4hVN0A"
+    };
 
     private static final String UNASSIGNED_MUSIC_TEMPLATE_NAME = "Unassigned musics";
 
@@ -51,11 +74,11 @@ public class Templates {
 
 
         if (DEBUG) {
-            for (int i = 0; i < 26; i++) {
+            for (int i = 0; i < URLS.length; i++) {
                 Music m = new Music();
                 template.getData().addMusic(m);
 
-                m.setDownloadURL("url " + i);
+                m.setDownloadURL(URLS[i]);
                 m.putTag(0, "Title " + i);
                 m.putTag(1, "Artist " + i);
             }

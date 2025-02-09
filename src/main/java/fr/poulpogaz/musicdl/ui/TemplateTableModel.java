@@ -3,10 +3,7 @@ package fr.poulpogaz.musicdl.ui;
 import fr.poulpogaz.musicdl.downloader.DownloadManager;
 import fr.poulpogaz.musicdl.downloader.YTDLP;
 import fr.poulpogaz.musicdl.downloader.YTDLPDownloadTask;
-import fr.poulpogaz.musicdl.model.Key;
-import fr.poulpogaz.musicdl.model.Music;
-import fr.poulpogaz.musicdl.model.Template;
-import fr.poulpogaz.musicdl.model.TemplateData;
+import fr.poulpogaz.musicdl.model.*;
 
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
@@ -161,8 +158,10 @@ public class TemplateTableModel extends AbstractTableModel {
             }
         }
 
-        ytdlp.setOutput(template.getFormatter().format(t));
-
+        Formatter formatter = template.getFormatter();
+        if (formatter != null) {
+            ytdlp.setOutput(formatter.format(t));
+        }
 
         DownloadManager.offer(new YTDLPDownloadTask(ytdlp));
     }
