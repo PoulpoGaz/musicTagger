@@ -16,7 +16,7 @@ public class LimitedInputStream extends InputStream {
 
     private Runnable closeAction;
 
-    LimitedInputStream(InputStream is, long length) {
+    public LimitedInputStream(InputStream is, long length) {
         this.is = is;
         this.remaining = length;
 
@@ -64,8 +64,8 @@ public class LimitedInputStream extends InputStream {
 
     @Override
     public byte[] readNBytes(int len) throws IOException {
-        if (remaining >= Integer.MAX_VALUE) {
-            throw new IOException("Can't allocate array of size " + remaining);
+        if (len < 0) {
+            throw new IOException("Negative length");
         }
 
         int toRead = (int) Math.min(len, remaining);
