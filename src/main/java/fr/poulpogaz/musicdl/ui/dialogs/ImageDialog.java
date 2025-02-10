@@ -402,6 +402,7 @@ public class ImageDialog extends AbstractDialog {
 
         private boolean setZoom = true;
         private JButton save;
+        private JLabel info;
         private JToggleButton fitButton;
         private JSlider zoomSlider;
         private JComboBox<Zoom> zoomComboBox;
@@ -410,6 +411,7 @@ public class ImageDialog extends AbstractDialog {
             this.model = model;
 
             model.addZoomListener(this);
+            model.addImageListener((_, newImg) -> imageChanged(newImg));
 
             initComponents();
             revalidateZoomComponents(model.getZoom(), model.getScaleFactor());
@@ -436,6 +438,8 @@ public class ImageDialog extends AbstractDialog {
                     }
                 }
             });
+
+            info = new JLabel();
 
             fitButton = new JToggleButton("Fit");
             fitButton.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
@@ -479,6 +483,8 @@ public class ImageDialog extends AbstractDialog {
                 }
             });
 
+            imageChanged(model.getImage());
+
             // layout
             GridBagConstraints c = new GridBagConstraints();
             c.gridx = 0;
@@ -487,11 +493,7 @@ public class ImageDialog extends AbstractDialog {
 
             c.gridx++;
             c.weightx = 1;
-            add(Box.createHorizontalGlue(), c);
-
-            c.gridx++;
-            c.weightx = 1;
-            add(Box.createHorizontalGlue(), c);
+            add(info, c);
 
             c.gridx++;
             c.weightx = 0;
@@ -504,6 +506,15 @@ public class ImageDialog extends AbstractDialog {
             c.gridx++;
             c.weightx = 0;
             add(zoomComboBox, c);
+        }
+
+        private void imageChanged(BufferedImage image) {
+            save.setEnabled(image != null);
+            if (image != null) {
+                info.setText(image.getWidth() + " x " + image.getHeight());
+            } else {
+                info.setText(null);
+            }
         }
 
         private void revalidateZoomComponents(Zoom zoom, double scale) {

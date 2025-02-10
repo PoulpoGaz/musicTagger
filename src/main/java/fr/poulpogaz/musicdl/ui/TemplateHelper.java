@@ -24,7 +24,6 @@ public class TemplateHelper {
 
     private static final Logger LOGGER = LogManager.getLogger(TemplateHelper.class);
 
-
     public static final String CREATE_TEMPLATE = "Create new template";
     public static final Icon CREATE_TEMPLATE_ICON = Icons.get("add.svg");
 
@@ -37,12 +36,13 @@ public class TemplateHelper {
     public static final String LOAD_TEMPLATES = "Load templates";
     public static final String SAVE_TEMPLATES = "Save templates";
 
-
     private static Action CREATE_TEMPLATE_ACTION;
+    private static Action EDIT_TEMPLATE_ACTION;
+    private static Action DELETE_TEMPLATE_ACTION;
     private static Action SAVE_TEMPLATES_ACTION;
     private static Action LOAD_TEMPLATES_ACTION;
 
-    public static Action createCreateTemplateAction() {
+    public static Action createAction() {
         if (CREATE_TEMPLATE_ACTION == null) {
             CREATE_TEMPLATE_ACTION = new AbstractAction(CREATE_TEMPLATE, CREATE_TEMPLATE_ICON) {
                 @Override
@@ -55,8 +55,16 @@ public class TemplateHelper {
         return CREATE_TEMPLATE_ACTION;
     }
 
+    public static Action editAction() {
+        if (EDIT_TEMPLATE_ACTION == null) {
+            EDIT_TEMPLATE_ACTION = editAction(
+                    () -> MusicdlFrame.getInstance().getTemplatesPanel().getSelectedTemplate());
+        }
 
-    public static Action createEditTemplateAction(Supplier<Template> getTemplate) {
+        return EDIT_TEMPLATE_ACTION;
+    }
+
+    public static Action editAction(Supplier<Template> getTemplate) {
         return new AbstractAction(EDIT_TEMPLATE, EDIT_TEMPLATE_ICON) {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -65,8 +73,16 @@ public class TemplateHelper {
         };
     }
 
+    public static Action deleteAction() {
+        if (DELETE_TEMPLATE_ACTION == null) {
+            DELETE_TEMPLATE_ACTION = deleteAction(
+                    () -> MusicdlFrame.getInstance().getTemplatesPanel().getSelectedTemplate());
+        }
 
-    public static Action createDeleteTemplateAction(Supplier<Template> getTemplate) {
+        return DELETE_TEMPLATE_ACTION;
+    }
+
+    public static Action deleteAction(Supplier<Template> getTemplate) {
         return new AbstractAction(DELETE_TEMPLATE, DELETE_TEMPLATE_ICON) {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -75,7 +91,7 @@ public class TemplateHelper {
         };
     }
 
-    public static Action createSaveTemplatesAction() {
+    public static Action saveAction() {
         if (SAVE_TEMPLATES_ACTION == null) {
             SAVE_TEMPLATES_ACTION = new AbstractAction(SAVE_TEMPLATES) {
                 @Override
@@ -88,7 +104,7 @@ public class TemplateHelper {
         return SAVE_TEMPLATES_ACTION;
     }
 
-    public static Action createLoadTemplatesAction() {
+    public static Action loadAction() {
         if (LOAD_TEMPLATES_ACTION == null) {
             LOAD_TEMPLATES_ACTION = new AbstractAction(LOAD_TEMPLATES) {
                 @Override

@@ -161,11 +161,13 @@ public class MusicdlFrame extends JFrame {
 
 
         JMenu templates = new JMenu("Templates");
-        newTemplate = templates.add(TemplateHelper.createCreateTemplateAction());
-        editTemplate = templates.add(TemplateHelper.createEditTemplateAction(templatesPanel::getSelectedTemplate));
-        deleteTemplate = templates.add(TemplateHelper.createDeleteTemplateAction(templatesPanel::getSelectedTemplate));
-        templates.add(TemplateHelper.createSaveTemplatesAction());
-        templates.add(TemplateHelper.createLoadTemplatesAction());
+        newTemplate = templates.add(TemplateHelper.createAction());
+        editTemplate = templates.add(TemplateHelper.editAction());
+        deleteTemplate = templates.add(TemplateHelper.deleteAction());
+        templates.add(TemplateHelper.saveAction());
+        templates.add(TemplateHelper.loadAction());
+
+
 
         JCheckBoxMenuItem downloadQueueItem = new JCheckBoxMenuItem();
         downloadQueueItem.setState(isDownloadQueueVisible());
@@ -194,6 +196,20 @@ public class MusicdlFrame extends JFrame {
         Templates.addTemplatesListener(createTemplatesListener());
         DownloadManager.addListener(createDownloadListener());
         addWindowListener(createWindowListener());
+
+        templatesPanel.addChangeListener(_ -> updateTemplateActions());
+        updateTemplateActions();
+    }
+
+    private void updateTemplateActions() {
+        Template t = templatesPanel.getSelectedTemplate();
+        if (t != null) {
+            TemplateHelper.editAction().setEnabled(true);
+            TemplateHelper.deleteAction().setEnabled(!t.isInternalTemplate());
+        } else {
+            TemplateHelper.editAction().setEnabled(false);
+            TemplateHelper.deleteAction().setEnabled(false);
+        }
     }
 
     private TemplateDataListener createTemplateDataListener() {

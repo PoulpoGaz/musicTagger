@@ -7,6 +7,7 @@ import fr.poulpogaz.musicdl.properties.Property;
 import fr.poulpogaz.musicdl.properties.PropertyListener;
 
 import javax.swing.*;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -95,7 +96,7 @@ public class TemplatesPanel extends JPanel {
     }
 
     public Template getSelectedTemplate() {
-        return ((TemplateTable) templatesPane.getSelectedComponent()).getModel().getTemplate();
+        return ((TemplateTable) templatesPane.getSelectedComponent()).getTemplate();
     }
 
     public TemplateTable getTemplateTableFor(Template template) {
@@ -108,6 +109,14 @@ public class TemplatesPanel extends JPanel {
 
     public int getTemplateTableCount() {
         return templatesPane.getTabCount();
+    }
+
+    public void addChangeListener(ChangeListener listener) {
+        templatesPane.addChangeListener(listener);
+    }
+
+    public void removeChangeListener(ChangeListener listener) {
+        templatesPane.removeChangeListener(listener);
     }
 
 
@@ -125,10 +134,12 @@ public class TemplatesPanel extends JPanel {
                     if (e.isPopupTrigger()) {
                         int index = getUI().tabForCoordinate(TabPane.this, e.getX(), e.getY());
 
+                        Template template = null;
                         if (index >= 0) {
-                            Template template = ((TemplateTable) getComponentAt(index)).getModel().getTemplate();
-                            popupMenu.show(template, TabPane.this, e.getX(), e.getY());
+                            template = ((TemplateTable) getComponentAt(index)).getTemplate();
                         }
+
+                        popupMenu.show(template, TabPane.this, e.getX(), e.getY());
                     }
                 }
             });
@@ -137,7 +148,7 @@ public class TemplatesPanel extends JPanel {
         @Override
         public void insertTab(String title, Icon icon, Component component, String tip, int index) {
             if (component instanceof TemplateTable panel) {
-                Template t = panel.getModel().getTemplate();
+                Template t = panel.getTemplate();
                 t.nameProperty().addListener(templateNameListener);
                 panels.put(t, panel);
                 super.insertTab(title, icon, component, tip, index);
@@ -147,7 +158,7 @@ public class TemplatesPanel extends JPanel {
         @Override
         public void removeTabAt(int index) {
             TemplateTable table = (TemplateTable) getComponentAt(index);
-            table.getModel().getTemplate().nameProperty().removeListener(templateNameListener);
+            table.getTemplate().nameProperty().removeListener(templateNameListener);
 
             super.removeTabAt(index);
         }
@@ -156,16 +167,26 @@ public class TemplatesPanel extends JPanel {
     private static class TabPopupMenu extends JPopupMenu {
 
         private Template template;
+        private JMenuItem edit;
+        private JMenuItem delete;
 
         public TabPopupMenu() {
-            add(TemplateHelper.createCreateTemplateAction());
-            add(TemplateHelper.createEditTemplateAction(() -> template));
-            add(TemplateHelper.createDeleteTemplateAction(() -> template));
+            add(TemplateHelper.createAction());
+            edit = add(TemplateHelper.editAction(() -> template));
+            delete = add(TemplateHelper.deleteAction(() -> template));
         }
 
         public void show(Template template, Component component, int x, int y) {
             this.template = template;
+            if (template != null) {
+                edit.setEnabled(true);
+                delete.setEnabled(!template.isInternalTemplate());
+            } else {
+                edit.setEnabled(false);
+                delete.setEnabled(false);
+            }
             show(component, x, y);
+            repaint();
         }
     }
 }

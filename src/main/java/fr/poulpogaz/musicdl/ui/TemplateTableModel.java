@@ -106,8 +106,8 @@ public class TemplateTableModel extends AbstractTableModel {
         int min = model.getMinSelectionIndex();
         int max = Math.min(model.getMaxSelectionIndex() + 1, getRowCount());
 
-        data.removeMatching((index, _) -> model.isSelectedIndex(index)
-                , min, max);;
+        data.removeMatching((index, _) -> model.isSelectedIndex(index),
+                            min, max);;
     }
 
     public void transferSelectionTo(ListSelectionModel model, Template template) {

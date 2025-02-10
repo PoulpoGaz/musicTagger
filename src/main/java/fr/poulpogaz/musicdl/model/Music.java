@@ -33,7 +33,7 @@ public class Music {
 
     private void checkKey(String key) {
         if (key.equals("METADATA_BLOCK_PICTURE")) {
-            throw new IllegalArgumentException("To add a picture, please use #addPicture");
+            throw new IllegalArgumentException("To add a picture, please use #addCoverArt");
         } else if (key.equals("TEMPLATE")) {
             throw new IllegalArgumentException("Reserved metadata key");
         }

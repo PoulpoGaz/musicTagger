@@ -88,6 +88,9 @@ public class TemplateTable extends JPanel {
         return tableModel;
     }
 
+    public Template getTemplate() {
+        return tableModel.getTemplate();
+    }
 
     private static class CellRenderer extends CellRendererBase {
 
@@ -147,7 +150,7 @@ public class TemplateTable extends JPanel {
 
                 int i;
                 for (i = 0; i < panel.getTemplateTableCount(); i++) {
-                    Template template = panel.getTemplateTable(i).getModel().getTemplate();
+                    Template template = panel.getTemplateTable(i).getTemplate();
 
                     if (template == panel.getSelectedTemplate()) {
                         continue;
