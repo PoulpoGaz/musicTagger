@@ -36,7 +36,7 @@ public class PacketInputStream extends InputStream {
             }
 
             byte[] data = currentPage.getData();
-            int length = Math.min(remaining, data.length - position);
+            int length = Math.min(remaining, currentPage.getPacketSize() - position);
             System.arraycopy(data, position, b, pos, length);
             position += length;
             pos += length;
@@ -68,7 +68,7 @@ public class PacketInputStream extends InputStream {
      */
     private boolean readNextPageIfNeeded() throws IOException {
         if (currentPage == null || position == currentPage.getPacketSize()) {
-            currentPage = ois.nextPage();
+            currentPage = ois.nextPage(currentPage);
             position = 0;
         }
 

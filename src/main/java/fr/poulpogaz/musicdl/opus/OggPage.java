@@ -22,10 +22,10 @@ public class OggPage {
     int pageSequenceNumber;
     int CRC;
     int[] oggSegments;
+    int oggSegmentCount;
 
     int headerSize;
     int packetSize;
-
 
     private byte[] data;
 
@@ -53,16 +53,16 @@ public class OggPage {
         pageSequenceNumber = buffer.getInt();
         CRC = buffer.getInt();
 
-        int segments = Byte.toUnsignedInt(buffer.get());
-        oggSegments = new int[segments];
-
-        if (buffer.remaining() < oggSegments.length) {
+        oggSegmentCount = Byte.toUnsignedInt(buffer.get());
+        if (buffer.remaining() < oggSegmentCount) {
             throw new IOException("Not enough bytes to read page header");
         }
 
-        headerSize = 27 + oggSegments.length;
+        oggSegments = growArrayIfNeeded(oggSegments, oggSegmentCount);
+
+        headerSize = 27 + oggSegmentCount;
         packetSize = 0;
-        for (int i = 0; i < oggSegments.length; i++) {
+        for (int i = 0; i < oggSegmentCount; i++) {
             oggSegments[i] = Byte.toUnsignedInt(buffer.get());
             packetSize += oggSegments[i];
         }
@@ -84,11 +84,49 @@ public class OggPage {
         }
 
         buffer.position(buffer.position() + getHeaderSize());
-        byte[] data = new byte[getPacketSize()];
-        buffer.get(data);
-        setData(data);
+
+        data = growArrayIfNeeded(data, packetSize);
+        buffer.get(data, 0, packetSize);
     }
 
+
+    public void copyHeaderFrom(OggPage other) {
+        version = other.version;
+        headerType = other.headerType;
+        granulePosition = other.granulePosition;
+        bitstreamSerialNumber = other.bitstreamSerialNumber;
+        pageSequenceNumber = other.pageSequenceNumber;
+        CRC = other.CRC;
+        oggSegmentCount = other.oggSegmentCount;
+        oggSegments = growArrayIfNeeded(oggSegments, oggSegmentCount);
+        System.arraycopy(other.oggSegments, 0, oggSegments, 0, oggSegmentCount);
+        headerSize = other.headerSize;
+        packetSize = other.packetSize;
+    }
+
+    private void growOggSegmentsIfNeeded(int oggSegmentCount) {
+        this.oggSegmentCount = oggSegmentCount;
+
+        if (oggSegments == null || oggSegments.length < oggSegmentCount) {
+            oggSegments = new int[oggSegmentCount];
+        }
+    }
+
+    private int[] growArrayIfNeeded(int[] array, int minCapacity) {
+        if (array == null || array.length < minCapacity) {
+            return new int[minCapacity];
+        } else {
+            return array;
+        }
+    }
+
+    private byte[] growArrayIfNeeded(byte[] array, int minCapacity) {
+        if (array == null || array.length < minCapacity) {
+            return new byte[minCapacity];
+        } else {
+            return array;
+        }
+    }
 
     public void assertBytes(byte[] expected) throws IOException {
         if (data.length < expected.length) {
@@ -194,10 +232,6 @@ public class OggPage {
 
     public byte[] getData() {
         return data;
-    }
-
-    public void setData(byte[] data) {
-        this.data = data;
     }
 
     @Override

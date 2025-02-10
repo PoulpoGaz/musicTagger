@@ -7,6 +7,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Objects;
 
 public class OggInputStream implements Closeable {
 
@@ -36,7 +37,11 @@ public class OggInputStream implements Closeable {
      * Read the next page and perform CRC verification.
      */
     public OggPage nextPage() throws IOException {
-        OggPage next = peekNextPage();
+        return nextPage(null);
+    }
+
+    public OggPage nextPage(OggPage page) throws IOException {
+        OggPage next = peekNextPage(page);
         if (next == null) {
             return null;
         }
@@ -58,25 +63,42 @@ public class OggInputStream implements Closeable {
      * Data inside the page won't be read and CRC won't be verified.
      */
     public OggPage peekNextPage() throws IOException {
-        if (nextPage == null) {
-            if (currentPagePosition < 0) {
-                currentPagePosition = 0;
-            } else {
-                currentPagePosition += lastPageSize;
-            }
+        return peekNextPage(null);
+    }
 
-            if (ensureDataAvailable(OggPage.MAX_HEADER_SIZE)) {
-                if (buffer.remaining() == 0) {
-                    return null; // no more data,
-                } else if (buffer.remaining() < OggPage.MIN_HEADER_SIZE) {
-                    throw new IOException("Not enough bytes to read page header");
-                }
-            }
-            nextPage = new OggPage();
-            nextPage.readPageHeader(buffer);
-            buffer.position(buffer.position() - nextPage.getHeaderSize());
-            // buffer position is at page start
+    public OggPage peekNextPage(OggPage dest) throws IOException {
+        if (nextPage == null) {
+            return doPeakNextPage(dest);
+        } else if (dest == null) {
+            return nextPage;
+        } else if (nextPage != dest) {
+            dest.copyHeaderFrom(nextPage);
+            nextPage = dest;
+            return dest;
+        } else {
+            return dest;
         }
+    }
+
+    private OggPage doPeakNextPage(OggPage dest) throws IOException {
+        if (currentPagePosition < 0) {
+            currentPagePosition = 0;
+        } else {
+            currentPagePosition += lastPageSize;
+        }
+
+        if (ensureDataAvailable(OggPage.MAX_HEADER_SIZE)) {
+            if (buffer.remaining() == 0) {
+                return null; // no more data,
+            } else if (buffer.remaining() < OggPage.MIN_HEADER_SIZE) {
+                throw new IOException("Not enough bytes to read page header");
+            }
+        }
+
+        nextPage = Objects.requireNonNullElseGet(dest, OggPage::new);
+        nextPage.readPageHeader(buffer);
+        buffer.position(buffer.position() - nextPage.getHeaderSize());
+        // buffer position is at page start
 
         return nextPage;
     }
@@ -191,11 +213,15 @@ public class OggInputStream implements Closeable {
     }
 
     public static void main(String[] args) throws IOException {
+        long time = System.currentTimeMillis();
         try (OggInputStream ois = new OggInputStream(Path.of("Fate · Ending [FakeIt · Hiroyuki Sawano].opus"))) {
-            OggPage page;
-            while ((page = ois.nextPage()) != null) {
+            OggPage page = null;
+            while ((page = ois.nextPage(page)) != null) {
                 System.out.println(page);
             }
         }
+
+        long time2 = System.currentTimeMillis();
+        System.out.println("Reading done in " + (time2 - time) + " ms");
     }
 }

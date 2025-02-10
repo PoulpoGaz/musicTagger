@@ -37,7 +37,7 @@ public abstract class SoftCoverArt extends CoverArt {
     private int colorCount;
 
     private final Object lock = new Object();
-    private boolean loading = true;
+    private boolean loading = false;
     private boolean waitCallbackAdded = false;
     private int waiting = 0;
     private final BufferedImage[] out = new BufferedImage[1];
