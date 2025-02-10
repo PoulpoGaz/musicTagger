@@ -2,17 +2,19 @@ package fr.poulpogaz.musicdl.model;
 
 import fr.poulpogaz.musicdl.ExecutorWithException;
 import org.apache.commons.collections4.ListValuedMap;
-import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.map.ReferenceMap;
 import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.swing.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public abstract class SoftCoverArt extends CoverArt {
 
@@ -34,9 +36,13 @@ public abstract class SoftCoverArt extends CoverArt {
     private int colorDepth;
     private int colorCount;
 
-    private final Object futureLock = new Object();
-    private Future<?> future;
+    private final Object lock = new Object();
+    private boolean loading = true;
+    private boolean waitCallbackAdded = false;
+    private int waiting = 0;
+    private final BufferedImage[] out = new BufferedImage[1];
     private ListValuedMap<ExecutionStrategy, CoverArtCallback> callbacks;
+
     private Exception exception;
 
     public SoftCoverArt(String hash) {
@@ -51,13 +57,15 @@ public abstract class SoftCoverArt extends CoverArt {
     @Override
     public BufferedImage getImageLater(CoverArtCallback callback, ExecutionStrategy strategy) {
         BufferedImage image;
-        synchronized (futureLock) {
+        synchronized (lock) {
             image = getImageNow();
 
             if (image == null && exception == null) {
-                if (future == null) {
+                if (!loading) {
+                    loading = true;
+                    waitCallbackAdded = false;
                     callbacks = new ArrayListValuedHashMap<>();
-                    future = executor.submit(this::run);
+                    executor.submit(this::run);
                 }
                 callbacks.put(strategy, callback);
             }
@@ -71,8 +79,53 @@ public abstract class SoftCoverArt extends CoverArt {
     }
 
     @Override
-    public BufferedImage waitImage() {
-        return null;
+    public BufferedImage waitImage() throws InterruptedException {
+        boolean callRun = false;
+        synchronized (lock) {
+            BufferedImage image = getImageNow();
+
+            if (image == null && exception == null) {
+                if (!loading) {
+                    loading = true;
+                    waitCallbackAdded = false;
+                    callbacks = new ArrayListValuedHashMap<>();
+                    callRun = true; // load in current thread
+                } else if (!waitCallbackAdded) {
+                    callbacks.put(ExecutionStrategy.sameThread(), (img, _) -> {
+                        synchronized (out) {
+                            out[0] = img;
+                            out.notifyAll();
+                        }
+                    });
+
+                    waitCallbackAdded = true;
+                    waiting++;
+                } else {
+                    waiting++;
+                }
+            } else {
+                return image;
+            }
+        }
+
+        if (callRun) {
+            return run();
+        } else {
+            // wait image
+            synchronized (out) {
+                while (out[0] == null && exception == null) {
+                    out.wait();
+                }
+
+                BufferedImage img = out[0];
+                waiting--;
+                if (waiting == 0) {
+                    out[0] = null;
+                }
+
+                return img;
+            }
+        }
     }
 
     @Override
@@ -81,7 +134,7 @@ public abstract class SoftCoverArt extends CoverArt {
     }
 
 
-    private void run() {
+    private BufferedImage run() {
         BufferedImage image = null;
         try {
             image = loadImage();
@@ -99,9 +152,9 @@ public abstract class SoftCoverArt extends CoverArt {
         }
 
         ListValuedMap<ExecutionStrategy, CoverArtCallback> callbacks;
-        synchronized (futureLock) {
+        synchronized (lock) {
             callbacks = this.callbacks;
-            this.future = null;
+            loading = false;
             this.callbacks = null;
         }
 
@@ -110,6 +163,8 @@ public abstract class SoftCoverArt extends CoverArt {
                 s.execute(callbacks.get(s), image, exception);
             }
         }
+
+        return image;
     }
 
     private void setFields(BufferedImage image) {
