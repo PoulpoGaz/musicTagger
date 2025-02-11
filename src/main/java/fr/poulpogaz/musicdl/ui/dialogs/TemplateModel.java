@@ -5,14 +5,12 @@ import fr.poulpogaz.musicdl.model.Key;
 import fr.poulpogaz.musicdl.model.Template;
 import fr.poulpogaz.musicdl.model.Templates;
 
-import javax.swing.table.AbstractTableModel;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class TemplateModel extends AbstractTableModel {
+public class TemplateModel {
 
     private final PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
 
@@ -21,10 +19,8 @@ public class TemplateModel extends AbstractTableModel {
     private String name;
     private String format;
 
-    private final List<KeyModel> keys = new ArrayList<>();
-    private final List<KeyModel> removedKeys = new ArrayList<>();
-
-    private boolean oldPositionVisible;
+    private final KeyTableModel keyTable = new KeyTableModel();
+    private final MetadataGeneratorTableModel metadataGeneratorTable = new MetadataGeneratorTableModel();
 
     public TemplateModel() {
         this.template = null;
@@ -37,194 +33,15 @@ public class TemplateModel extends AbstractTableModel {
         this.format = template.getFormat();
 
         for (int i = 0; i < template.keyCount(); i++) {
-            keys.add(new KeyModel(template.getKey(i), i));
+            keyTable.newRow(new KeyRow(template.getKey(i), i));
+        }
+
+        for (Template.MetadataGenerator g : template.getGenerators()) {
+            metadataGeneratorTable.newRow(new MetadataGeneratorRow(g));
         }
     }
 
-    public KeyModel newKey() {
-        int index = keys.size();
-        KeyModel key = new KeyModel(index);
-        keys.add(key);
-        fireTableRowsInserted(index, index);
-        return key;
-    }
 
-    public void removeKey(int index) {
-        KeyModel key = keys.remove(index);
-        if (key.isDeleted()) {
-            return;
-        }
-
-        if (key.isNew()) {
-            fireTableRowsDeleted(index, index);
-        } else {
-            key.deleted = true;
-            key.index = -1;
-            keys.remove(key);
-            removedKeys.add(key);
-
-            resetIndex(index);
-            fireTableDataChanged();
-        }
-    }
-
-    public KeyModel restoreKey(int keyRow) {
-        int index = keyRow - keys.size();
-
-        if (index >= 0 && index < removedKeys.size()) {
-            KeyModel key = removedKeys.get(index);
-
-            key.deleted = false;
-            key.index = keys.size();
-            removedKeys.remove(keyRow - keys.size());
-            keys.add(key);
-            fireTableDataChanged();
-            return key;
-        }
-
-        return null;
-    }
-
-    public void revertKeyValue(int keyRow, int column) {
-        if (0 <= keyRow && keyRow < getRowCount()
-                && 1 <= column && column < getColumnCount()) {
-            KeyModel key = keys.get(keyRow);
-
-            if (key.original == null) {
-                return;
-            }
-
-            if (column == 1) {
-                key.setName(key.original.getName());
-            } else if (column == 2) {
-                key.setName(key.original.getMetadataKey());
-            }
-        }
-    }
-
-    public boolean swap(int i, int j) {
-        if (i < 0 || i >= keys.size() || j < 0 || j >= keys.size() || i == j) {
-            return false; // Swapping is only allowed between keys that aren't deleted
-        }
-
-        KeyModel keyI = keys.get(i);
-        KeyModel keyJ = keys.get(j);
-        keys.set(i, keyJ);
-        keys.set(j, keyI);
-        keyI.index = j;
-        keyJ.index = i;
-
-        if (i < j) {
-            fireTableRowsUpdated(i, j);
-        } else {
-            fireTableRowsUpdated(j, i);
-        }
-
-        return true;
-    }
-
-    public boolean moveUp(int index) {
-        return swap(index - 1, index);
-    }
-
-    public boolean moveDown(int index) {
-        return swap(index, index + 1);
-    }
-
-    private void resetIndex(int startInclusive) {
-        for (int i = startInclusive; i < keys.size(); i++) {
-            keys.get(i).index = i;
-        }
-    }
-
-    @Override
-    public int getRowCount() {
-        return keys.size() + removedKeys.size();
-    }
-
-    @Override
-    public int getColumnCount() {
-        return oldPositionVisible ? 4 : 3;
-    }
-
-    @Override
-    public Object getValueAt(int rowIndex, int columnIndex) {
-        KeyModel row = getKeyModel(rowIndex);
-
-        return switch (columnIndex) {
-            case 0 -> {
-                if (row.isDeleted()) {
-                    yield "Removed";
-                } else {
-                    yield rowIndex + 1;
-                }
-            }
-            case 1 -> row.getName();
-            case 2 -> row.getMetadataKey();
-            default -> {
-                if (columnIndex == 3 && oldPositionVisible) {
-                    if (row.hasBeenMoved()) {
-                        yield row.originalIndex + 1;
-                    } else {
-                        yield "";
-                    }
-                }
-                throw new IllegalStateException("Unexpected value: " + columnIndex);
-            }
-        };
-    }
-
-    @Override
-    public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-        if (columnIndex == 1 && aValue != null) {
-            getKeyModel(rowIndex).setName(aValue.toString());
-        } else if (columnIndex == 2) {
-            getKeyModel(rowIndex).setMetadataKey(aValue == null ? null : aValue.toString());
-        }
-    }
-
-    @Override
-    public boolean isCellEditable(int rowIndex, int columnIndex) {
-        return columnIndex == 1 || columnIndex == 2;
-    }
-
-    @Override
-    public String getColumnName(int column) {
-        return switch (column) {
-            case 0 -> "Order";
-            case 1 -> "Name";
-            case 2 -> "Metadata key";
-            default -> {
-                if (column == 3 && oldPositionVisible) {
-                    yield "Old position";
-                }
-                throw new IllegalStateException("Unexpected value: " + column);
-            }
-        };
-    }
-
-    public KeyModel getKeyModel(int index) {
-        if (index < keys.size()) {
-            return keys.get(index);
-        } else {
-            return removedKeys.get(index - keys.size());
-        }
-    }
-
-    public int getFirstDeletedKeyIndex() {
-        return keys.size();
-    }
-
-    public boolean isOldPositionVisible() {
-        return oldPositionVisible;
-    }
-
-    public void setOldPositionVisible(boolean oldPositionVisible) {
-        if (oldPositionVisible != this.oldPositionVisible) {
-            this.oldPositionVisible = oldPositionVisible;
-            fireTableStructureChanged();
-        }
-    }
 
     public String getName() {
         return name;
@@ -236,6 +53,10 @@ public class TemplateModel extends AbstractTableModel {
             this.name = name;
             propertyChangeSupport.firePropertyChange("name", old, name);
         }
+    }
+
+    public boolean hasNameChanged() {
+        return template != null && !Objects.equals(name, template.getName());
     }
 
     public String getFormat() {
@@ -250,19 +71,54 @@ public class TemplateModel extends AbstractTableModel {
         }
     }
 
-    public void addPropertyChangeListener(String property, PropertyChangeListener listener) {
-        propertyChangeSupport.addPropertyChangeListener(property, listener);
+    public boolean hasFormatChanged() {
+        return template != null && !Objects.equals(format, template.getFormat());
     }
 
-    public String[] checkValid() {
-        String nameError = checkTemplateName();
-        String keyError = checkKeys();
 
-        if (nameError != null || keyError != null) {
-            return new String[] {nameError, keyError};
-        } else {
-            return null;
-        }
+
+    public void newKey() {
+        keyTable.newRow(new KeyRow());
+    }
+
+    public void removeKey(int row) {
+        keyTable.removeRow(row);
+    }
+
+    public void restoreKey(int row) {
+        keyTable.restoreRow(row);
+    }
+
+    public void revertKeyValue(int row, int column) {
+        keyTable.revertValue(row, column);
+    }
+
+    public boolean swapKeys(int rowI, int rowJ) {
+        return keyTable.swap(rowI, rowJ);
+    }
+
+    public boolean moveKeyUp(int row) {
+        return swapKeys(row - 1, row);
+    }
+
+    public boolean moveKeyDown(int row) {
+        return swapKeys(row, row + 1);
+    }
+
+    public KeyTableModel getKeyTableModel() {
+        return keyTable;
+    }
+
+
+
+    public MetadataGeneratorTableModel getMetadataGeneratorTableModel() {
+        return metadataGeneratorTable;
+    }
+
+
+
+    public void addPropertyChangeListener(String property, PropertyChangeListener listener) {
+        propertyChangeSupport.addPropertyChangeListener(property, listener);
     }
 
     public void assertValid() {
@@ -277,12 +133,12 @@ public class TemplateModel extends AbstractTableModel {
         }
     }
 
-    protected String checkTemplateName() {
+    public String checkTemplateName() {
         if (name == null || name.isBlank()) {
             return "Name is required";
         }
 
-        if (Templates.isNameInternal(name)) {
+        if (hasNameChanged() && Templates.isNameInternal(name)) {
             return "Cannot use internal name";
         }
 
@@ -294,14 +150,15 @@ public class TemplateModel extends AbstractTableModel {
         return null;
     }
 
-    protected String checkKeys() {
-        if (keys.isEmpty()) {
+    public String checkKeys() {
+        int keyCount = keyTable.notRemovedRowCount();
+        if (keyCount == 0) {
             return "A template should have at least one key";
         }
 
         StringBuilder sb = null;
-        for (int i = 0; i < keys.size(); i++) {
-            KeyModel a = keys.get(i);
+        for (int i = 0; i < keyCount; i++) {
+            KeyRow a = keyTable.getRow(i);
 
             if (a.getName() == null) {
                 sb = Objects.requireNonNullElseGet(sb, StringBuilder::new)
@@ -309,8 +166,8 @@ public class TemplateModel extends AbstractTableModel {
                 continue;
             }
 
-            for (int j = i + 1; j < keys.size(); j++) {
-                KeyModel b = keys.get(j);
+            for (int j = i + 1; j < keyCount; j++) {
+                KeyRow b = keyTable.getRow(j);
 
                 if (b.getName() != null && a.getName().equals(b.getName())) {
                     sb = Objects.requireNonNullElseGet(sb, StringBuilder::new)
@@ -327,39 +184,92 @@ public class TemplateModel extends AbstractTableModel {
         }
     }
 
-    public void applyChanges() {
+    public void apply() {
         if (template == null) {
-            throw new IllegalStateException("New template");
+            createNewTemplate();
+        } else {
+            applyChanges();
         }
+    }
 
+    private void createNewTemplate() {
+        Template template = new Template();
         template.setName(name);
         template.setFormat(format);
 
-        // remove keys
-        for (KeyModel k : removedKeys) {
-            template.removeKey(k.originalIndex);
-        }
+        for (int i = 0; i < keyTable.getRowCount(); i++) {
+            TemplateModel.KeyRow key = keyTable.getRow(i);
+            if (key.isRemoved()) {
+                break;
+            }
 
-        // insert keys or update keys
-        for (KeyModel k : keys) {
-            if (k.isNew()) {
-                template.addKey(k.index, k.asKey());
-            } else {
-                k.updateKey();
+            if (!template.addKey(key.asKey())) {
+                throw new MusicdlException("Cannot create template: key " + key + " wasn't added to template " + template);
             }
         }
 
-        // swap keys
-        for (int i = 0; i < template.keyCount(); i++) {
-            KeyModel kModel = keys.get(i);
+        for (int i = 0; i < metadataGeneratorTable.getRowCount(); i++) {
+            MetadataGeneratorRow row = metadataGeneratorTable.getRow(i);
+            template.addMetadataGenerator(new Template.MetadataGenerator(row.getKey(), row.getValue()));
+        }
+
+        Templates.addTemplate(template);
+    }
+
+    private void applyChanges() {
+        template.setName(name);
+        template.setFormat(format);
+
+        // update existing keys
+        int i;
+        int lim = Math.min(template.keyCount(), keyTable.notRemovedRowCount());
+        for (i = 0; i < lim; i++) {
             Key key = template.getKey(i);
+            KeyRow row = keyTable.getRow(i);
 
-            if (kModel.isNew() || kModel.getOriginal() == key) {
-                continue;
+            int i2 = template.indexOfKey(row.getName());
+            if (i2 >= 0 && i2 != i) { // template already contains a key with the same name
+                template.swap(i, i2);
+                key = template.getKey(i);
+            } else {
+                key.setName(row.getName());
             }
 
-            template.swap(i, kModel.originalIndex);
+            key.setMetadataKey(row.getMetadataKey());
         }
+
+        for (; i < keyTable.notRemovedRowCount(); i++) {
+            template.addKey(keyTable.getRow(i).asKey());
+        }
+
+        // remove keys
+        while (template.keyCount() > keyTable.notRemovedRowCount()) {
+            template.removeKey(template.keyCount() - 1);
+        }
+
+        // update generators
+        List<Template.MetadataGenerator> gens = template.getGenerators();
+        lim = Math.min(gens.size(), metadataGeneratorTable.getRowCount());
+        for (i = 0; i < lim; i++) {
+            Template.MetadataGenerator gen = gens.get(i);
+            MetadataGeneratorRow row = metadataGeneratorTable.getRow(i);
+
+            gen.setKey(row.getKey());
+            gen.setValue(row.getValue());
+        }
+
+        for (; i < metadataGeneratorTable.notRemovedRowCount(); i++) {
+            MetadataGeneratorRow row = metadataGeneratorTable.getRow(i);
+            gens.add(new Template.MetadataGenerator(row.getKey(), row.getValue()));
+        }
+
+        // remove generators
+        while (gens.size() > metadataGeneratorTable.notRemovedRowCount()) {
+            gens.removeLast();
+        }
+
+
+        template.fireTemplateKeysEvent();
     }
 
 
@@ -367,48 +277,68 @@ public class TemplateModel extends AbstractTableModel {
         return template;
     }
 
-    public int getId() {
-        return template == null ? -1 : 0;
+
+    public static class KeyTableModel extends RevertTableModel<KeyRow> {
+
+        private boolean oldPositionVisible;
+
+        @Override
+        public int getColumnCount() {
+            return oldPositionVisible ? 4 : 3;
+        }
+
+        @Override
+        public boolean isCellEditable(int rowIndex, int columnIndex) {
+            return columnIndex == 1 || columnIndex == 2;
+        }
+
+        @Override
+        public String getColumnName(int column) {
+            return switch (column) {
+                case 0 -> "Order";
+                case 1 -> "Name";
+                case 2 -> "Metadata key";
+                default -> {
+                    if (column == 3 && oldPositionVisible) {
+                        yield "Old position";
+                    }
+                    throw new IllegalStateException("Unexpected value: " + column);
+                }
+            };
+        }
+
+        public boolean isOldPositionVisible() {
+            return oldPositionVisible;
+        }
+
+        public void setOldPositionVisible(boolean oldPositionVisible) {
+            if (oldPositionVisible != this.oldPositionVisible) {
+                this.oldPositionVisible = oldPositionVisible;
+                fireTableStructureChanged();
+            }
+        }
     }
 
-    public boolean hasNameChanged() {
-        return template != null && !Objects.equals(name, template.getName());
-    }
-
-    public boolean hasFormatChanged() {
-        return template != null && !Objects.equals(format, template.getFormat());
-    }
-
-    public class KeyModel {
+    public static class KeyRow extends RevertTableModel.Row {
 
         private final Key original;
         private final int originalIndex;
 
-        private int index;
         private String name;
         private String metadataKey;
 
-        private boolean deleted;
-
-        public KeyModel(int index) {
+        public KeyRow() {
             original = null;
             originalIndex = -1;
-
-            if (index < 0) {
-                throw new IllegalArgumentException("negative index");
-            }
-
-            this.index = index;
         }
 
-        public KeyModel(Key original, int originalIndex) {
+        public KeyRow(Key original, int originalIndex) {
             this.original = Objects.requireNonNull(original);
             if (originalIndex < 0) {
                 throw new IllegalArgumentException("negative index");
             }
 
             this.originalIndex = originalIndex;
-            this.index = originalIndex;
             this.name = original.getName();
             this.metadataKey = original.getMetadataKey();
         }
@@ -418,9 +348,9 @@ public class TemplateModel extends AbstractTableModel {
         }
 
         public void setName(String name) {
-            if (!isDeleted() && !Objects.equals(name, this.name)) {
+            if (!isRemoved() && !Objects.equals(name, this.name)) {
                 this.name = name;
-                fireTableCellUpdated(index, 1);
+                table.fireTableCellUpdated(index, 1);
             }
         }
 
@@ -429,9 +359,9 @@ public class TemplateModel extends AbstractTableModel {
         }
 
         public void setMetadataKey(String metadataKey) {
-            if (!isDeleted() && !Objects.equals(metadataKey, this.metadataKey)) {
+            if (!isRemoved() && !Objects.equals(metadataKey, this.metadataKey)) {
                 this.metadataKey = metadataKey;
-                fireTableCellUpdated(index, 2);
+                table.fireTableCellUpdated(index, 2);
             }
         }
 
@@ -442,35 +372,64 @@ public class TemplateModel extends AbstractTableModel {
             return key;
         }
 
-        public Key updateKey() {
+        public void updateKey() {
             if (original == null) {
                 throw new IllegalStateException();
             }
 
             original.setName(name);
             original.setMetadataKey(metadataKey);
-
-            return original;
         }
 
         public Key getOriginal() {
             return original;
         }
 
+        @Override
+        public Object getValue(int column) {
+            return switch (column) {
+                case 0 -> isRemoved() ? "Removed" : index;
+                case 1 -> name;
+                case 2 -> metadataKey;
+                default -> {
+                    if (column == 3 && ((KeyTableModel) table).oldPositionVisible) {
+                        if (hasBeenMoved()) {
+                            yield originalIndex + 1;
+                        } else {
+                            yield "";
+                        }
+                    }
+                    throw new IllegalStateException("Unexpected value: " + column);
+                }
+            };
+        }
+
+        @Override
+        public void setValue(Object value, int column) {
+            if (column == 1) {
+                setName(value.toString());
+            } else if (column == 2) {
+                setMetadataKey(value.toString());
+            }
+        }
+
+        @Override
+        public void revert(int column) {
+            if (column == 1) {
+                setName(original.getName());
+            } else if (column == 2) {
+                setMetadataKey(original.getMetadataKey());
+            }
+        }
+
+        @Override
         public boolean isNew() {
             return original == null;
         }
 
-        public boolean isDeleted() {
-            return deleted;
-        }
-
-        public boolean hasBeenMoved() {
-            return !isNew() && !isDeleted() && originalIndex != index;
-        }
-
+        @Override
         public boolean hasChanged(int column) {
-            if (isNew() || isDeleted()) {
+            if (isNew() || isRemoved()) {
                 return false;
             } if (column == 1) {
                 return !Objects.equals(name, original.getName());
@@ -481,8 +440,125 @@ public class TemplateModel extends AbstractTableModel {
             }
         }
 
-        public boolean hasChanges() {
-            return !isNew() && !isDeleted() && (hasBeenMoved() || hasChanged(1) || hasChanged(2));
+        public boolean hasBeenMoved() {
+            return !isNew() && !isRemoved() && originalIndex != index;
+        }
+    }
+
+
+    public static class MetadataGeneratorTableModel extends RevertTableModel<MetadataGeneratorRow> {
+
+        public void newRow() {
+            newRow(new MetadataGeneratorRow());
+        }
+
+        @Override
+        public int getColumnCount() {
+            return 2;
+        }
+
+        @Override
+        public boolean isCellEditable(int rowIndex, int columnIndex) {
+            return true;
+        }
+
+        @Override
+        public String getColumnName(int column) {
+            return switch (column) {
+                case 0 -> "Metadata key";
+                case 1 -> "Value";
+                default -> throw new IllegalStateException("Unexpected value: " + column);
+            };
+        }
+    }
+
+    public static class MetadataGeneratorRow extends RevertTableModel.Row {
+
+        private final Template.MetadataGenerator original;
+
+        private String key;
+        private String value;
+
+        public MetadataGeneratorRow() {
+            this(null);
+        }
+
+        public MetadataGeneratorRow(Template.MetadataGenerator original) {
+            this.original = original;
+
+            if (original != null) {
+                key = original.getKey();
+                value = original.getValue();
+            }
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        public void setKey(String key) {
+            if (!isRemoved() && !Objects.equals(key, this.key)) {
+                this.key = key;
+                table.fireTableCellUpdated(index, 0);
+            }
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            if (!isRemoved() && !Objects.equals(value, this.value)) {
+                this.value = value;
+                table.fireTableCellUpdated(index, 1);
+            }
+        }
+
+        @Override
+        public Object getValue(int column) {
+            return switch (column) {
+                case 0 -> key;
+                case 1 -> value;
+                default -> throw new IndexOutOfBoundsException(column);
+            };
+        }
+
+        @Override
+        public void setValue(Object value, int column) {
+            if (column == 0) {
+                setKey((String) value);
+            } else if (column == 1) {
+                setValue((String) value);
+            }
+        }
+
+        @Override
+        public void revert(int column) {
+            if (column == 0) {
+                setKey(original.getKey());
+            } else if (column == 1) {
+                setValue(original.getValue());
+            }
+        }
+
+        public boolean isNew() {
+            return original == null;
+        }
+
+        public boolean isRemoved() {
+            return removed;
+        }
+
+        public boolean hasChanged(int column) {
+            if (isNew() || isRemoved()) {
+                return false;
+            } if (column == 0) {
+                return !Objects.equals(key, original.getKey());
+            } else if (column == 1) {
+                return !Objects.equals(value, original.getValue());
+            } else {
+                return false;
+            }
         }
     }
 }

@@ -1,8 +1,5 @@
 package fr.poulpogaz.musicdl.model;
 
-import fr.poulpogaz.musicdl.properties.ObjectProperty;
-import fr.poulpogaz.musicdl.properties.Property;
-
 public class Key {
 
     private String name;
@@ -36,6 +33,9 @@ public class Key {
         return name != null && !name.isEmpty() && (template == null || !template.containsKey(name));
     }
 
+    public boolean isMetadataKeySet() {
+        return metadataKey != null;
+    }
 
     public String getMetadataKey() {
         if (metadataKey == null) {

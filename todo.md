@@ -1,7 +1,8 @@
 * update "Music" metadata after downloading
-* don't use yt-dlp to write metadata
+* REFUSED: don't use yt-dlp to write metadata
+  * yt-dlp handles properly metadata with a trick (see YTDLP#setMetadata)
 * better internal template handling (saving internal template without having to rename it)
-* template: allow creation of new metadata key based on yt-dlp expression
+* DONE: template: allow creation of new metadata key based on yt-dlp expression
 * ui:
   * TemplateTable: disable menu items when clicking outside the table
   * DONE: disable menu items when right+click on template tab

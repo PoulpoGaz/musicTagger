@@ -37,7 +37,6 @@ public class Music {
         } else if (key.equals("TEMPLATE")) {
             throw new IllegalArgumentException("Reserved metadata key");
         }
-
     }
 
     public void addMetadata(String key, String value) {

@@ -19,12 +19,8 @@ public class TemplateTableModel extends AbstractTableModel {
     public TemplateTableModel(Template template) {
         this.template = template;
         this.data = template.getData();
-        template.addTemplateKeyListListener(this::updateTable);
+        template.addTemplateKeyListListener(_ -> fireTableStructureChanged());
         data.addTemplateDataListener(this::dataListener);
-    }
-
-    private void updateTable(int eventType, int index0, int index1) {
-        fireTableStructureChanged();
     }
 
     private void dataListener(TemplateData templateData, int event, int firstRow, int lastRow) {
@@ -156,6 +152,10 @@ public class TemplateTableModel extends AbstractTableModel {
                 ytdlp.setMetadata(key.getMetadataKey(), tag);
                 t.put(key.getName(), tag);
             }
+        }
+
+        for (Template.MetadataGenerator generator : template.getGenerators()) {
+            ytdlp.setMetadata(generator.getKey(), generator.getFormatter().format(t));
         }
 
         Formatter formatter = template.getFormatter();

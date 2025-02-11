@@ -81,7 +81,7 @@ public class YTDLP {
     public YTDLP setMetadata(String key, String value) {
         // " {value}: %(meta_{key})s"
         // This tries to copy the left part into the right part
-        // therefore the space is copied into the space
+        // therefore the first space is copied into the second space
         // and {value} is copied into %(meta_{key})s".
         // Without the space, yt-dlp thinks that {key} is a
         // field (ie translates {value} into %({value})s) but

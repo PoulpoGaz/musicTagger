@@ -3,8 +3,6 @@ package fr.poulpogaz.musicdl.ui.dialogs;
 import fr.poulpogaz.musicdl.model.Template;
 
 import javax.swing.*;
-import javax.swing.event.PopupMenuEvent;
-import javax.swing.event.PopupMenuListener;
 import java.util.Objects;
 
 public class EditTemplateDialog extends TemplateDialogBase {
@@ -25,54 +23,21 @@ public class EditTemplateDialog extends TemplateDialogBase {
     }
 
     @Override
-    protected JPopupMenu createTablePopupMenu() {
-        JPopupMenu menu = super.createTablePopupMenu();
-        JMenuItem revert = menu.add("Revert");
-        JMenuItem restore = menu.add("Restore key");
+    protected JPopupMenu createKeyTablePopupMenu() {
+        return createPopupMenuForTable(keyTable, templateModel.getKeyTableModel(),
+                                       TemplateModel.KeyRow::new, "key", true, true);
+    }
 
-        revert.addActionListener(l -> templateModel.revertKeyValue(keyTable.getSelectedRow(), keyTable.getSelectedColumn()));
-        restore.addActionListener(l -> templateModel.restoreKey(keyTable.getSelectedRow()));
-
-        menu.addPopupMenuListener(new PopupMenuListener() {
-            @Override
-            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
-                int rowIndex = keyTable.getSelectedRow();
-                int colIndex = keyTable.getSelectedColumn();
-
-                if (rowIndex >= 0 && colIndex >= 0) {
-                    TemplateModel.KeyModel row = templateModel.getKeyModel(rowIndex);
-
-                    revert.setEnabled(templateModel.isCellEditable(rowIndex, colIndex) && row.hasChanged(colIndex));
-                    restore.setEnabled(row.isDeleted());
-                } else {
-                    revert.setEnabled(false);
-                    restore.setEnabled(false);
-                }
-            }
-
-            @Override
-            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-
-            }
-
-            @Override
-            public void popupMenuCanceled(PopupMenuEvent e) {
-
-            }
-        });
-
-        return menu;
+    @Override
+    protected JPopupMenu createGeneratorTablePopupMenu() {
+        return createPopupMenuForTable(generatorTable, templateModel.getMetadataGeneratorTableModel(),
+                                       TemplateModel.MetadataGeneratorRow::new, "metadata generator", false, true);
     }
 
     @Override
     protected TemplateModel createTemplateModel() {
         TemplateModel model = new TemplateModel(template);
-        model.setOldPositionVisible(true);
+        model.getKeyTableModel().setOldPositionVisible(true);
         return model;
-    }
-
-    @Override
-    protected void apply() {
-        templateModel.applyChanges();
     }
 }

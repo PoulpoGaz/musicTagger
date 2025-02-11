@@ -3,6 +3,7 @@ package fr.poulpogaz.musicdl.model;
 import fr.poulpogaz.musicdl.properties.ObjectProperty;
 import fr.poulpogaz.musicdl.properties.Property;
 
+import java.text.Format;
 import java.util.*;
 
 public class Template implements Iterable<Key> {
@@ -10,8 +11,9 @@ public class Template implements Iterable<Key> {
     private final ObjectProperty<String> name = new ObjectProperty<>(null, this);
     private final ObjectProperty<Formatter> formatter = new ObjectProperty<>(null, this);
 
-    private final List<TemplateKeyListListener> templateListeners = new ArrayList<>();
+    private final List<TemplateKeysListener> templateListeners = new ArrayList<>();
     private final List<Key> keys = new ArrayList<>();
+    private final List<MetadataGenerator> generators = new ArrayList<>();
 
     private final TemplateData data = new TemplateData(this);
 
@@ -75,7 +77,6 @@ public class Template implements Iterable<Key> {
 
         key.template = this;
         keys.add(index, key);
-        fireEvent(TemplateKeyListListener.KEYS_ADDED, index, index);
 
         return true;
     }
@@ -93,7 +94,6 @@ public class Template implements Iterable<Key> {
         boolean removed = keys.remove(key);
         if (removed) {
             key.template = null;
-            fireEvent(TemplateKeyListListener.KEYS_REMOVED, index, index);
         }
         return false;
     }
@@ -110,21 +110,11 @@ public class Template implements Iterable<Key> {
         }
 
         Collections.swap(keys, index1, index2);
-        fireEvent(TemplateKeyListListener.KEYS_SWAPPED, index1, index2);
     }
 
     public Key getKey(String name) {
-        if (name == null) {
-            return null;
-        }
-
-        for (Key key : keys) {
-            if (key.getName().equals(name)) {
-                return key;
-            }
-        }
-
-        return null;
+        int i = indexOfKey(name);
+        return i == -1 ? null : keys.get(i);
     }
 
     public void removeAllKeys() {
@@ -132,9 +122,7 @@ public class Template implements Iterable<Key> {
             key.template = null;
         }
 
-        int size = keys.size();
         this.keys.clear();
-        fireEvent(TemplateKeyListListener.KEYS_REMOVED, 0, size);
     }
 
     public void addAll(List<Key> keys) {
@@ -143,10 +131,6 @@ public class Template implements Iterable<Key> {
         int index = this.keys.size();
         for (Key k : keys) {
             addKey(k);
-        }
-
-        if (!keys.isEmpty()) {
-            fireEvent(TemplateKeyListListener.KEYS_ADDED, index, this.keys.size());
         }
     }
 
@@ -162,6 +146,18 @@ public class Template implements Iterable<Key> {
 
     public boolean containsKey(Key key) {
         return key.getTemplate() == this;
+    }
+
+    public int indexOfKey(String name) {
+        if (name != null) {
+            for (int i = 0; i < keys.size(); i++) {
+                if (keys.get(i).getName().equals(name)) {
+                    return i;
+                }
+            }
+        }
+
+        return -1;
     }
 
     public String getKeyName(int index) {
@@ -180,6 +176,22 @@ public class Template implements Iterable<Key> {
         return keys.size();
     }
 
+
+    public void addTemplateKeyListListener(TemplateKeysListener listener) {
+        templateListeners.add(listener);
+    }
+
+    public void removeTemplateKeyListListener(TemplateKeysListener listener) {
+        templateListeners.remove(listener);
+    }
+
+    public void fireTemplateKeysEvent() {
+        for (TemplateKeysListener listener : templateListeners) {
+            listener.keysModified(this);
+        }
+    }
+
+
     @Override
     public Iterator<Key> iterator() {
         return keys.iterator();
@@ -196,17 +208,49 @@ public class Template implements Iterable<Key> {
     }
 
 
-    public void addTemplateKeyListListener(TemplateKeyListListener listener) {
-        templateListeners.add(listener);
+    public void addMetadataGenerator(MetadataGenerator generator) {
+        generators.add(generator);
     }
 
-    public void removeTemplateKeyListListener(TemplateKeyListListener listener) {
-        templateListeners.remove(listener);
+    public void removeMetadataGenerator(MetadataGenerator generator) {
+        generators.remove(generator);
     }
 
-    private void fireEvent(int type, int index1, int index2) {
-        for (TemplateKeyListListener listener : templateListeners) {
-            listener.keyListModified(type, index1, index2);
+    public List<MetadataGenerator> getGenerators() {
+        return generators;
+    }
+
+    public static class MetadataGenerator {
+
+        private String key;
+        private final Formatter formatter = new Formatter();
+
+        public MetadataGenerator() {
+        }
+
+        public MetadataGenerator(String key, String value) {
+            this.key = key;
+            formatter.setFormat(value);
+        }
+
+        public Formatter getFormatter() {
+            return formatter;
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        public void setKey(String key) {
+            this.key = key;
+        }
+
+        public String getValue() {
+            return formatter.getFormat();
+        }
+
+        public void setValue(String value) {
+            formatter.setFormat(value);
         }
     }
 }

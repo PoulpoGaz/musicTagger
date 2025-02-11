@@ -111,6 +111,7 @@ public class Formatter {
 
     public void setFormat(String format) {
         if (!Objects.equals(format, this.format)) {
+            formatString.clear();
             this.format = format;
             compiled = false;
         }

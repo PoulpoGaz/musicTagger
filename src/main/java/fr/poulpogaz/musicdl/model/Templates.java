@@ -111,8 +111,8 @@ public class Templates {
 
             JsonObject templateObj = (JsonObject) entry.getValue();
             template.setFormat(templateObj.getOptionalString("format").orElse(null));
-            JsonArray keys = templateObj.getAsArray("keys");
 
+            JsonArray keys = templateObj.getAsArray("keys");
             for (JsonElement e : keys) {
                 JsonObject keyO = (JsonObject) e;
 
@@ -120,6 +120,18 @@ public class Templates {
                 key.setName(keyO.getAsString("name"));
                 key.setMetadataKey(keyO.getOptionalString("metadataKey").orElse(null));
                 template.addKey(key);
+            }
+
+            JsonArray generators = templateObj.getAsArray("generators");
+            if (generators != null) {
+                for (JsonElement e : generators) {
+                    JsonObject g = (JsonObject) e;
+
+                    Template.MetadataGenerator gen = new Template.MetadataGenerator();
+                    gen.setKey(g.getAsString("key"));
+                    gen.setValue(g.getAsString("value"));
+                    template.addMetadataGenerator(gen);
+                }
             }
 
             addTemplate(template);
@@ -151,17 +163,25 @@ public class Templates {
         if (template.getFormat() != null) {
             jw.field("format", template.getFormat());
         }
-        jw.key("keys").beginArray();
 
+        jw.key("keys").beginArray();
         for (Key key : template.getKeys()) {
             jw.beginObject();
             jw.field("name", key.getName());
-            if (key.getMetadataKey() != null) {
+            if (key.isMetadataKeySet()) {
                 jw.field("metadataKey", key.getMetadataKey());
             }
             jw.endObject();
         }
+        jw.endArray();
 
+        jw.key("generators").beginArray();
+        for (Template.MetadataGenerator gen : template.getGenerators()) {
+            jw.beginObject()
+              .field("key", gen.getKey())
+              .field("value", gen.getValue())
+              .endObject();
+        }
         jw.endArray();
     }
 
