@@ -54,9 +54,7 @@ public abstract class AbstractProgress implements Progress {
                     return true;
                 }
             }
-        } catch (NumberFormatException e) {
-            // ignored
-        }
+        } catch (NumberFormatException _) {}
 
         return false;
     }

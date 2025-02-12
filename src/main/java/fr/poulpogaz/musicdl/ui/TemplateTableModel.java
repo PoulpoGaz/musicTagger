@@ -1,8 +1,6 @@
 package fr.poulpogaz.musicdl.ui;
 
-import fr.poulpogaz.musicdl.downloader.DownloadManager;
-import fr.poulpogaz.musicdl.downloader.YTDLP;
-import fr.poulpogaz.musicdl.downloader.YTDLPDownloadTask;
+import fr.poulpogaz.musicdl.downloader.*;
 import fr.poulpogaz.musicdl.model.*;
 
 import javax.swing.*;
@@ -72,7 +70,8 @@ public class TemplateTableModel extends AbstractTableModel {
     @Override
     public boolean isCellEditable(int rowIndex, int columnIndex) {
         return rowIndex >= 0 && rowIndex < getRowCount() &&
-                columnIndex >= 0 && columnIndex < getColumnCount();
+                columnIndex >= 0 && columnIndex < getColumnCount() &&
+                !data.getMusic(rowIndex).isDownloading();
     }
 
     public void addRow() {
@@ -138,9 +137,26 @@ public class TemplateTableModel extends AbstractTableModel {
     }
 
 
+    public void downloadSelected(ListSelectionModel selectedRows) {
+        int min = selectedRows.getMinSelectionIndex();
+        int max = Math.min(selectedRows.getMaxSelectionIndex() + 1, getRowCount());
+
+        for (int i = min; i <= max; i++) {
+            if (selectedRows.isSelectedIndex(i)) {
+                download(i, false);
+            }
+        }
+
+        fireTableRowsUpdated(min, max);
+    }
+
     public void download(int row) {
+        download(row, true);
+    }
+
+    private void download(int row, boolean fireEvent) {
         Music m = data.getMusic(row);
-        YTDLP ytdlp = YTDLPDownloadTask.ytdlp(m.getDownloadURL());
+        YTDLP ytdlp = SimpleDownloadTask.ytdlp(m.getDownloadURL());
         ytdlp.setMetadata("template", template.getName());
 
         Map<String, String> t = new HashMap<>();
@@ -163,9 +179,21 @@ public class TemplateTableModel extends AbstractTableModel {
             ytdlp.setOutput(formatter.format(t));
         }
 
-        DownloadManager.offer(new YTDLPDownloadTask(ytdlp));
-    }
+        SimpleDownloadTask task = new SimpleDownloadTask(m, ytdlp);
+        task.addListener(EventThread.SWING_THREAD, (event, _) -> {
+            if (event != DownloadListener.Event.QUEUED && event != DownloadListener.Event.STARTED) {
+                m.setDownloading(false);
+                m.notifyChanges();
+            }
+        });
 
+        m.setDownloading(true);
+        DownloadManager.offer(task);
+
+        if (fireEvent) {
+            fireTableRowsUpdated(row, row);
+        }
+    }
 
 
     public Template getTemplate() {

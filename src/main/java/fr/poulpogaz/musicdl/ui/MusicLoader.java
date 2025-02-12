@@ -1,5 +1,6 @@
 package fr.poulpogaz.musicdl.ui;
 
+import fr.poulpogaz.json.utils.Pair;
 import fr.poulpogaz.musicdl.Utils;
 import fr.poulpogaz.musicdl.model.*;
 import fr.poulpogaz.musicdl.opus.*;
@@ -22,17 +23,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
-
-    private static final MessageDigest SHA_256;
-
-    static {
-        try {
-            SHA_256 = MessageDigest.getInstance("SHA3-256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
 
     private static final Logger LOGGER = LogManager.getLogger(MusicLoader.class);
 
@@ -85,99 +75,15 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
     }
 
     private void readMusic(Path path, Chunk output) {
-        LOGGER.debug("Loading {}", path);
-
-        MetadataPicture pic = new MetadataPicture();
-
-        Music music = new Music();
-        music.setPath(path);
-
-        String templateName = null;
-        try (OggInputStream ois = new OggInputStream(path)) {
-            OpusInputStream file = new OpusInputStream(ois);
-
-            music.setSize(Files.size(path));
-
-            OpusHead head = file.readOpusHead();
-            file.readVendor();
-
-            music.setChannels(head.getChannels());
-
-            int c = (int) Math.min(file.readCommentCount(), 8192);
-            for (; c > 0; c--) {
-                String key = file.readKey();
-
-                switch (key) {
-                    case "METADATA_BLOCK_PICTURE" -> {
-                        long position = ois.currentPagePosition();
-                        int offset = file.positionInPage();
-                        InputStream picIS = Base64.getDecoder().wrap(file.valueInputStream());
-                        pic.fromInputStream(picIS, false);
-
-                        String sha256 = computeSHA256(picIS, pic.getDataLength());
-                        SoftCoverArt cover = createSoftCoverArt(sha256, path, position, offset);
-                        music.addCoverArt(cover);
-                    }
-                    case "TEMPLATE" -> templateName = file.readValue();
-                    case "PURL" -> music.setDownloadURL(file.readValue());
-                    default -> music.addMetadata(key, file.readValue());
-                }
-            }
-
-            music.setLength(file.fileLength());
-
+        Pair<Music, String> music;
+        try {
+            music = Music.load(path);
         } catch (IOException e) {
             LOGGER.debug("Failed to read opus file: {}", path, e);
             return;
         }
 
-        output.addMusic(music, templateName);
-    }
-
-    private final byte[] buff = new byte[8192];
-
-    private String computeSHA256(InputStream is, int length) throws IOException {
-        int remaining = length;
-
-        while (remaining > 0) {
-            int toRead = Math.min(buff.length, remaining);
-            int r = is.read(buff, 0, toRead);
-            if (r < 0) {
-                throw new IOException("Not enough bytes");
-            }
-
-            SHA_256.update(buff, 0, r);
-            remaining -= r;
-        }
-
-        return Utils.bytesToHex(SHA_256.digest());
-    }
-
-    private SoftCoverArt createSoftCoverArt(String sha256, Path file, long pagePosition, long dataOffset) {
-        LOGGER.debug("Creating soft cover art for {} at {} with an offset of {}", file, pagePosition, dataOffset);
-
-        return new SoftCoverArt(sha256) {
-            @Override
-            public BufferedImage loadImage() throws IOException {
-                LOGGER.debug("Loading cover art from {} at {} with an offset of {}", file, pagePosition, dataOffset);
-                try (FileChannel channel = FileChannel.open(file, StandardOpenOption.READ)) {
-                    channel.position(pagePosition);
-
-                    OggInputStream ois = new OggInputStream(channel);
-                    PacketInputStream pis = new PacketInputStream(ois);
-                    pis.skipNBytes(dataOffset);
-
-                    InputStream is = Base64.getDecoder().wrap(pis);
-                    is.skipNBytes(4); // skip type
-                    is.skipNBytes(IOUtils.getIntB(is)); // skip mimeLength
-                    is.skipNBytes(IOUtils.getIntB(is)); // skip description
-                    is.skipNBytes(16); // skip width, height, color depth and color count
-                    int length = IOUtils.getIntB(is);
-
-                    return ImageIO.read(new LimitedInputStream(is, length));
-                }
-            }
-        };
+        output.addMusic(music.getLeft(), music.getRight());
     }
 
 

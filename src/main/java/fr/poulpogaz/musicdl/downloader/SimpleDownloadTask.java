@@ -1,6 +1,8 @@
 package fr.poulpogaz.musicdl.downloader;
 
+import fr.poulpogaz.json.utils.Pair;
 import fr.poulpogaz.musicdl.Units;
+import fr.poulpogaz.musicdl.model.Music;
 import fr.poulpogaz.musicdl.ui.layout.VerticalConstraint;
 import fr.poulpogaz.musicdl.ui.layout.VerticalLayout;
 import org.apache.logging.log4j.LogManager;
@@ -10,13 +12,14 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
-public class YTDLPDownloadTask extends DownloadTask {
+public class SimpleDownloadTask extends DownloadTask {
 
 
     public static YTDLP ytdlp(String url) {
@@ -46,7 +49,7 @@ public class YTDLPDownloadTask extends DownloadTask {
 
 
 
-    private static final Logger LOGGER = LogManager.getLogger(YTDLPDownloadTask.class);
+    private static final Logger LOGGER = LogManager.getLogger(SimpleDownloadTask.class);
     private static final ExecutorService READ_ERR_EXECUTOR;
 
     static {
@@ -55,13 +58,15 @@ public class YTDLPDownloadTask extends DownloadTask {
     }
 
 
+    private final Music music;
     private final YTDLP ytdlp;
     private final Progress progress = new TaskProgress();
     private StringBuilder errors;
 
     private Process process;
 
-    public YTDLPDownloadTask(YTDLP ytdlp) {
+    public SimpleDownloadTask(Music music, YTDLP ytdlp) {
+        this.music = music;
         this.ytdlp = Objects.requireNonNull(ytdlp).copy();
     }
 
@@ -84,6 +89,15 @@ public class YTDLPDownloadTask extends DownloadTask {
         if (errors != null) {
             throw new IOException(errors.toString());
         }
+
+        if (music != null) {
+            Pair<Music, String> newMusic = Music.load(music.getPath());
+
+            SwingUtilities.invokeLater(() -> {
+                newMusic.getLeft().copyTo(music);
+                music.notifyChanges();
+            });
+        }
     }
 
     private Void read(BufferedReader br, boolean std) throws IOException {
@@ -103,7 +117,9 @@ public class YTDLPDownloadTask extends DownloadTask {
         }
 
         if (std) {
-            // location = Path.of(line);
+            if (music != null) {
+                music.setPath(Path.of(line));
+            }
         } else if (!line.startsWith("WARNING")) {
             if (errors == null) {
                 errors = new StringBuilder();

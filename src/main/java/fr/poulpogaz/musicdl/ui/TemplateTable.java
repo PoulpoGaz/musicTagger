@@ -69,15 +69,7 @@ public class TemplateTable extends JPanel {
 
     public void downloadSelectedMusics() {
         ListSelectionModel selectedRows = table.getSelectionModel();
-
-        int min = selectedRows.getMinSelectionIndex();
-        int max = Math.min(selectedRows.getMaxSelectionIndex() + 1, table.getRowCount());
-
-        for (int i = min; i <= max; i++) {
-            if (selectedRows.isSelectedIndex(i)) {
-                tableModel.download(i);
-            }
-        }
+        tableModel.downloadSelected(selectedRows);
     }
 
     public void transferSelectionTo(Template template) {
@@ -96,7 +88,11 @@ public class TemplateTable extends JPanel {
 
         @Override
         protected int getStatusOfCell(JTable jTable, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            return DEFAULT;
+            if (jTable.isCellEditable(row, column)) {
+                return DEFAULT;
+            } else {
+                return UNEDITABLE;
+            }
         }
     }
 
