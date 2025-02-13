@@ -19,7 +19,7 @@ import java.util.*;
 
 public class Templates {
 
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = true;
     private static final String[] URLS = new String[] {
         "https://www.youtube.com/watch?v=yDVEuISEr1Q",
         "https://www.youtube.com/watch?v=Urcnqat6P0s",
@@ -237,6 +237,10 @@ public class Templates {
         return sum;
     }
 
+    public static Iterator<Music> allMusicsIterator() {
+        return new AllIterator();
+    }
+
     private static void fireEvent(int event, Template template) {
         for (TemplatesListener listener : listeners) {
             listener.templatesChanged(event, template);
@@ -250,5 +254,58 @@ public class Templates {
 
     public static void removeTemplatesListener(TemplatesListener listener) {
         listeners.remove(listener);
+    }
+
+    private static class AllIterator implements Iterator<Music> {
+
+        private Music next;
+
+        private final Iterator<Template> templateIt = Templates.getTemplates().iterator();
+        private Template currentTemplate;
+        private int musicIndex = 0;
+
+        public AllIterator() {
+            if (templateIt.hasNext()) {
+                currentTemplate = templateIt.next();
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (next == null) {
+                doNext();
+            }
+            return next != null;
+        }
+
+        private void doNext() {
+            if (currentTemplate == null) {
+                return;
+            }
+
+            while (currentTemplate != null) {
+                if (musicIndex >= 0 && musicIndex < currentTemplate.getData().getMusicCount()) {
+                    next = currentTemplate.getData().getMusic(musicIndex);
+                    musicIndex++;
+                }
+
+                if (templateIt.hasNext()) {
+                    currentTemplate = templateIt.next();
+                    musicIndex = 0;
+                } else {
+                    currentTemplate = null;
+                }
+            }
+        }
+
+        @Override
+        public Music next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            Music n = next;
+            next = null;
+            return n;
+        }
     }
 }

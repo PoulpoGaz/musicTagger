@@ -1,5 +1,6 @@
 package fr.poulpogaz.musicdl.ui;
 
+import com.formdev.flatlaf.ui.FlatFileChooserUI;
 import fr.poulpogaz.musicdl.downloader.DownloadListener;
 import fr.poulpogaz.musicdl.downloader.DownloadManager;
 import fr.poulpogaz.musicdl.model.Template;
@@ -7,6 +8,7 @@ import fr.poulpogaz.musicdl.model.TemplateDataListener;
 import fr.poulpogaz.musicdl.model.Templates;
 import fr.poulpogaz.musicdl.model.TemplatesListener;
 import fr.poulpogaz.musicdl.ui.dialogs.Dialogs;
+import fr.poulpogaz.musicdl.ui.dialogs.ExportDialog;
 import fr.poulpogaz.musicdl.ui.layout.*;
 
 import javax.swing.*;
@@ -153,6 +155,11 @@ public class MusicdlFrame extends JFrame {
             if (path != null) {
                 new MusicLoader(path).execute();
             }
+        });
+
+        JMenuItem exportJson = file.add("Export to JSON");
+        exportJson.addActionListener(_ -> {
+            ExportDialog.showDialog(this);
         });
         file.addSeparator();
 

@@ -13,4 +13,5 @@
   * DONE: reuse OggPage and MetadataPicture data
 * save to json
   * with sub menu to only save musics that aren't downloaded
+* load from json
 * save metadata of already downloaded musics

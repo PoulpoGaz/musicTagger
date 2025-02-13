@@ -84,6 +84,10 @@ public class TemplateTable extends JPanel {
         return tableModel.getTemplate();
     }
 
+    public ListSelectionModel getSelectedRows() {
+        return table.getSelectionModel();
+    }
+
     private static class CellRenderer extends CellRendererBase {
 
         @Override

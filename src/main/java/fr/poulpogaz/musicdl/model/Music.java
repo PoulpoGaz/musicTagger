@@ -1,5 +1,7 @@
 package fr.poulpogaz.musicdl.model;
 
+import fr.poulpogaz.json.IJsonWriter;
+import fr.poulpogaz.json.JsonException;
 import fr.poulpogaz.json.utils.Pair;
 import fr.poulpogaz.musicdl.BasicObjectPool;
 import fr.poulpogaz.musicdl.Utils;
@@ -12,6 +14,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.FileChannel;
@@ -168,6 +171,69 @@ public class Music {
         dest.length = length;
         dest.channels = channels;
     }
+
+
+    public void writeTo(IJsonWriter jw, boolean imageToBase64, Path coverArtDest)
+            throws JsonException, IOException, InterruptedException {
+        jw.beginObject();
+
+        if (template != null) {
+            jw.field("template", template.getName());
+        }
+
+        // write metadata
+        jw.key("metadata").beginObject();
+        for (String key : metadata.keySet()) {
+            List<String> values = metadata.get(key);
+
+            jw.key(key).beginArray();
+            for (String val : values) {
+                jw.value(val);
+            }
+            jw.endArray();
+        }
+        jw.endObject();
+
+        if (!covers.isEmpty()) {
+            if (imageToBase64) {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+                jw.key("base64covers").beginArray();
+                for (CoverArt cover : covers) {
+                    BufferedImage img = cover.waitImage();
+                    ImageIO.write(img, "png", baos);
+
+                    String base64 = Base64.getEncoder().encodeToString(baos.toByteArray());
+                    jw.value(base64);
+                }
+
+                jw.endArray();
+            }
+
+            if (coverArtDest != null) {
+                String fileName = coverArtDest.getFileName().toString();
+
+                if (fileName.endsWith(".png")) {
+                    fileName = fileName.substring(0, fileName.length() - 4);
+                }
+
+                for (int i = 0; i < covers.size(); i++) {
+                    CoverArt cover = covers.get(i);
+                    BufferedImage img = cover.waitImage();
+
+                    String name = fileName + (covers.size() == 1 ? "" : i) + ".png";
+                    ImageIO.write(img, "png", coverArtDest.resolveSibling(name).toFile());
+                }
+            }
+        }
+
+        jw.endObject();
+    }
+
+
+
+
+
 
     private String transform(String key) {
         return key.toUpperCase(Locale.ROOT);
