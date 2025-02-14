@@ -287,6 +287,7 @@ public class Templates {
                 if (musicIndex >= 0 && musicIndex < currentTemplate.getData().getMusicCount()) {
                     next = currentTemplate.getData().getMusic(musicIndex);
                     musicIndex++;
+                    break;
                 }
 
                 if (templateIt.hasNext()) {

@@ -13,6 +13,7 @@ import fr.poulpogaz.musicdl.ui.layout.HCOrientation;
 import fr.poulpogaz.musicdl.ui.layout.HorizontalConstraint;
 import fr.poulpogaz.musicdl.ui.layout.HorizontalLayout;
 import fr.poulpogaz.musicdl.ui.text.MTextField;
+import org.apache.commons.collections4.iterators.FilterIterator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -28,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class ExportDialog extends AbstractDialog {
 
@@ -45,6 +47,8 @@ public class ExportDialog extends AbstractDialog {
     private JCheckBox allSelectedFromTemplate;
 
     private JComboBox<Template> templateComboBox;
+
+    private JCheckBox skipDownloaded;
 
     private JCheckBox saveImage;
     private JCheckBox inJSON;
@@ -97,6 +101,8 @@ public class ExportDialog extends AbstractDialog {
         templateComboBox.setSelectedIndex(0);
         templateComboBox.setRenderer(new TemplateCellRenderer());
 
+        skipDownloaded = new JCheckBox("Skip downloaded musics");
+
         saveImage = new JCheckBox("Save cover arts");
         inJSON = new JCheckBox("In JSON (base 64)", true);
         inJSON.setEnabled(false);
@@ -143,72 +149,99 @@ public class ExportDialog extends AbstractDialog {
 
 
         GridBagConstraints c = new GridBagConstraints();
+
+        /* Musics to export */
+
         c.gridwidth = GridBagConstraints.REMAINDER;
         c.gridx = c.gridy = 0;
         c.fill = GridBagConstraints.BOTH;
         c.weightx = 1;
         top.add(titledSeparator("Musics to export"), c);
 
-
-        c.weightx = 0;
+        c.weightx = 1;
         c.fill = GridBagConstraints.NONE;
         c.anchor = GridBagConstraints.WEST;
-        c.gridwidth = 1;
-        c.gridy = 1;
+        c.gridwidth = 2;
+        c.gridy++;
         top.add(all, c);
-        c.gridy = 2;
+        c.gridy++;
         top.add(allSelected, c);
-        c.gridy = 3;
+
+        c.gridwidth = 1;
+        c.weightx = 0;
+        c.gridy++;
         top.add(allFromTemplate, c);
-        c.gridy = 4;
-        top.add(allSelectedFromTemplate, c);
 
         c.gridx = 1;
-        c.gridy = 3;
         c.gridheight = 2;
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 1;
         top.add(templateComboBox, c);
 
+        c.gridx = 0;
+        c.gridheight = 1;
+        c.fill = GridBagConstraints.NONE;
+        c.weightx = 0;
+        c.gridy++;
+        top.add(allSelectedFromTemplate, c);
+
+        c.gridwidth = 2;
+        c.weightx = 1;
+        c.gridx = 0;
+        c.gridy++;
+        top.add(skipDownloaded, c);
+
+
+        /* Options */
 
         c.gridx = 0;
-        c.gridy = 5;
         c.gridwidth = GridBagConstraints.REMAINDER;
-        c.gridheight = 1;
-        c.weightx = 0;
+        c.fill = GridBagConstraints.BOTH;
+        c.gridy++;
         top.add(titledSeparator("Options"), c);
 
-        c.gridwidth = 1;
-        c.gridy = 6;
+        c.gridwidth = 2;
+        c.fill = GridBagConstraints.NONE;
+        c.gridy++;
         top.add(saveImage, c);
-        c.gridy = 7;
+        c.gridy++;
         top.add(inJSON, c);
-        c.gridy = 8;
+
+        c.gridwidth = 1;
+        c.weightx = 0;
+        c.gridy++;
         top.add(inPNG, c);
-        c.gridy = 9;
-        top.add(new JLabel("Output:"), c);
 
         c.gridx = 1;
-        c.gridy = 8;
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 1;
         top.add(pngFormat, c);
 
-        c.gridy = 9;
+        c.gridx = 0;
+        c.fill = GridBagConstraints.NONE;
+        c.weightx = 1;
+        c.gridwidth = 2;
+        c.gridy++;
+        top.add(new JLabel("Output:"), c);
+
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 1;
+        c.gridy++;
         top.add(output, c);
+
+        /* Progress bar + vertical glue */
 
         c.insets = new Insets(10, 15, 10, 15);
         c.gridx = 0;
-        c.gridy = 10;
         c.gridwidth = 2;
-        c.weightx = 1;
+        c.gridy++;
         top.add(progress, c);
 
         c.insets = new Insets(0, 0, 0, 0);
-        c.fill = GridBagConstraints.NONE;
-        c.gridwidth = GridBagConstraints.REMAINDER;
+        c.fill = GridBagConstraints.BOTH;
+        c.gridwidth = 2;
         c.gridx = 0;
-        c.gridy = GridBagConstraints.RELATIVE;
+        c.gridy++;
         c.weighty = 1;
         top.add(Box.createVerticalGlue(), c);
 
@@ -283,6 +316,7 @@ public class ExportDialog extends AbstractDialog {
             allFromTemplate.setEnabled(false);
             allSelectedFromTemplate.setEnabled(false);
             templateComboBox.setEnabled(false);
+            skipDownloaded.setEnabled(false);
             saveImage.setEnabled(false);
             inJSON.setEnabled(false);
             pngFormat.setEnabled(false);
@@ -296,9 +330,10 @@ public class ExportDialog extends AbstractDialog {
     }
 
     private void cancel() {
+        if (worker != null) {
+            worker.cancel(false);
+        }
         dispose();
-        // TODO: cancel export
-        // TODO: select only downloaded musics (use apache FilterIterator?)
     }
 
     private static class TemplateComboBoxModel extends AbstractListModel<Template> implements ComboBoxModel<Template> {
@@ -377,8 +412,10 @@ public class ExportDialog extends AbstractDialog {
                 long lastTime = System.currentTimeMillis();
                 int processed = 0;
                 Iterator<Music> it = iterator();
-                while (it.hasNext()) {
+                while (!worker.isCancelled() && it.hasNext()) {
                     Music m = it.next();
+
+                    Thread.sleep(1000);
 
                     Path coverOutput = null;
                     if (saveImage.isSelected() && inPNG.isSelected()) {
@@ -402,20 +439,19 @@ public class ExportDialog extends AbstractDialog {
                 jw.close();
             }
 
-            publish(total);
-
             return null;
         }
 
         private int countMusics() {
             Template template = (Template) Objects.requireNonNull(templateComboBox.getSelectedItem());
 
-            if (all.isSelected()) {
+            if (!skipDownloaded.isSelected() && all.isSelected()) {
                 return Templates.totalMusicCount();
-            } else if (allFromTemplate.isSelected()) {
+            } else if (!skipDownloaded.isSelected() && allFromTemplate.isSelected()) {
                 return template.getData().getMusicCount();
             } else {
                 Iterator<Music> m = iterator();
+
                 int count = 0;
                 while (m.hasNext()) {
                     m.next();
@@ -427,20 +463,27 @@ public class ExportDialog extends AbstractDialog {
         }
 
         private Iterator<Music> iterator() {
+            Iterator<Music> it;
             if (all.isSelected()) {
-                return Templates.allMusicsIterator();
+                it = Templates.allMusicsIterator();
             } else if (allSelected.isSelected()) {
-                return new AllTemplateFilterIterator();
+                it = new AllTemplateFilterIterator();
             } else if (templateComboBox.getSelectedItem() instanceof Template template) {
                 if (allFromTemplate.isSelected()) {
-                    return template.getData().iterator();
+                    it = template.getData().iterator();
                 } else {
-                    return new TemplateFilterIterator(template,
+                    it = new TemplateFilterIterator(template,
                                                       MusicdlFrame.getInstance().getTemplatesPanel()
                                                                   .getTemplateTableFor(template).getSelectedRows());
                 }
             } else {
                 throw new IllegalStateException();
+            }
+
+            if (skipDownloaded.isSelected()) {
+                return new FilterIterator<>(it, m -> !m.isDownloaded());
+            } else {
+                return it;
             }
         }
 
@@ -465,11 +508,21 @@ public class ExportDialog extends AbstractDialog {
 
         @Override
         protected void done() {
-            setProgressBar(progress.getMaximum());
+            if (isCancelled()) {
+                LOGGER.debug("Export cancelled");
+            } else {
+                try {
+                    get();
+                } catch (InterruptedException | ExecutionException e) {
+                    LOGGER.debug("Failed to export", e);
+                }
 
-            done = true;
-            export.setEnabled(true);
-            export.setText("Done");
+                setProgressBar(progress.getMaximum());
+
+                done = true;
+                export.setEnabled(true);
+                export.setText("Done");
+            }
         }
 
         private void setProgressBar(int value) {

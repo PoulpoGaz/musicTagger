@@ -368,6 +368,10 @@ public class Music {
         return downloading;
     }
 
+    public boolean isDownloaded() {
+        return path != null;
+    }
+
     public void notifyChanges() {
         template.getData().notifyChanges(this);
     }

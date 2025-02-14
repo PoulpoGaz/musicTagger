@@ -11,7 +11,7 @@
   * DONE: disable menu items when right+click on template tab
 * DONE: reduce memory consumption by loading only thumbnails or loading images lazily
   * DONE: reuse OggPage and MetadataPicture data
-* save to json
-  * with sub menu to only save musics that aren't downloaded
+* DONE: save to json
+  * DONE: with sub menu to only save musics that aren't downloaded
 * load from json
 * save metadata of already downloaded musics
