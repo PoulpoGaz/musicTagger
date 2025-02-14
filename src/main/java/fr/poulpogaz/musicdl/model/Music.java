@@ -1,9 +1,9 @@
 package fr.poulpogaz.musicdl.model;
 
+import fr.poulpogaz.json.IJsonReader;
 import fr.poulpogaz.json.IJsonWriter;
 import fr.poulpogaz.json.JsonException;
 import fr.poulpogaz.json.utils.Pair;
-import fr.poulpogaz.musicdl.BasicObjectPool;
 import fr.poulpogaz.musicdl.Utils;
 import fr.poulpogaz.musicdl.opus.*;
 import org.apache.commons.collections4.ListValuedMap;
@@ -14,6 +14,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,24 +24,13 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
+
+import static fr.poulpogaz.musicdl.Utils.SHA_256;
 
 public class Music {
 
     private static final Logger LOGGER = LogManager.getLogger(Music.class);
-
-    private static final MessageDigest SHA_256;
-
-    static {
-        try {
-            SHA_256 = MessageDigest.getInstance("SHA3-256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     public static Pair<Music, String> load(Path path) throws IOException {
         LOGGER.debug("Loading {}", path);
@@ -137,6 +127,67 @@ public class Music {
 
 
 
+    public static Pair<Music, String> load(IJsonReader jr) throws IOException, JsonException {
+        Music m = new Music();
+        String template = null;
+
+        List<String> base64Covers = null;
+        while (!jr.isObjectEnd()) {
+            String key = jr.nextKey();
+
+            switch (key) {
+                case "template" -> template = jr.nextString();
+                case "url" -> m.setDownloadURL(jr.nextString());
+                case "metadata" -> {
+                    jr.beginObject();
+                    while (!jr.isObjectEnd()) {
+                        String metadataKey = jr.nextKey();
+                        jr.beginArray();
+                        while (!jr.isArrayEnd()) {
+                            m.addMetadata(metadataKey, jr.nextString());
+                        }
+                        jr.endArray();
+                    }
+                    jr.endObject();
+                }
+                case "base64covers" -> {
+                    base64Covers = new ArrayList<>();
+                    jr.beginArray();
+                    while (!jr.isArrayEnd()) {
+                        base64Covers.add(jr.nextString());
+                    }
+                    jr.endArray();
+                }
+                case "covers" -> {
+                    if (base64Covers != null) {
+                        base64Covers.clear();
+                        base64Covers = null;
+                    }
+
+                    jr.beginArray();
+                    m.addCoverArt(SoftCoverArt.createFromFile(Path.of(jr.nextString())));
+                    jr.endArray();
+                }
+                default -> {
+                    LOGGER.warn("Unsupported key: {}", key);
+                    jr.skipValue();
+                }
+            }
+        }
+
+        if (base64Covers != null) {
+            for (String base64 : base64Covers) {
+                byte[] bytes = base64.getBytes();
+                InputStream is = Base64.getDecoder().wrap(new ByteArrayInputStream(bytes));
+
+                m.addCoverArt(new StrongCoverArt(ImageIO.read(is)));
+            }
+        }
+
+        return new Pair<>(m, template);
+    }
+
+
 
 
 
@@ -179,7 +230,11 @@ public class Music {
 
         if (template != null) {
             jw.field("template", template.getName());
+        } else {
+            jw.nullField("template");
         }
+
+        jw.field("url", downloadURL);
 
         // write metadata
         jw.key("metadata").beginObject();
@@ -217,13 +272,17 @@ public class Music {
                     fileName = fileName.substring(0, fileName.length() - 4);
                 }
 
+                jw.key("covers").beginArray();
                 for (int i = 0; i < covers.size(); i++) {
                     CoverArt cover = covers.get(i);
                     BufferedImage img = cover.waitImage();
 
                     String name = fileName + (covers.size() == 1 ? "" : i) + ".png";
-                    ImageIO.write(img, "png", coverArtDest.resolveSibling(name).toFile());
+                    Path dest = coverArtDest.resolveSibling(name);
+                    ImageIO.write(img, "png", dest.toFile());
+                    jw.value(dest.toString());
                 }
+                jw.endArray();
             }
         }
 

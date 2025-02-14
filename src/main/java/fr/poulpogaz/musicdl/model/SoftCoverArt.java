@@ -1,20 +1,28 @@
 package fr.poulpogaz.musicdl.model;
 
 import fr.poulpogaz.musicdl.ExecutorWithException;
+import fr.poulpogaz.musicdl.Utils;
 import org.apache.commons.collections4.ListValuedMap;
 import org.apache.commons.collections4.map.ReferenceMap;
 import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+
+import static fr.poulpogaz.musicdl.Utils.SHA_256;
 
 public abstract class SoftCoverArt extends CoverArt {
 
@@ -23,10 +31,31 @@ public abstract class SoftCoverArt extends CoverArt {
     private static final Map<String, BufferedImage> cache = Collections.synchronizedMap(new ReferenceMap<>());
     private static final ThreadPoolExecutor executor = (ThreadPoolExecutor) ExecutorWithException.newFixedThreadPool(1);
 
-    static {
-        executor.setKeepAliveTime(500, TimeUnit.MILLISECONDS);
-        executor.allowCoreThreadTimeOut(true);
+    public static void shutdown() {
+        executor.shutdown();
     }
+
+    public static SoftCoverArt createFromFile(Path path) throws IOException {
+        byte[] buff = new byte[8192];
+        try (InputStream is = Files.newInputStream(path)) {
+            int read;
+            while ((read = is.read(buff)) != -1) {
+                SHA_256.update(buff, 0, read);
+            }
+        }
+
+        String sha256 = Utils.bytesToHex(SHA_256.digest());
+
+        File file = path.toFile();
+        return new SoftCoverArt(sha256) {
+            @Override
+            public BufferedImage loadImage() throws Exception {
+                LOGGER.debug("Loading cover art from {}", file);
+                return ImageIO.read(file);
+            }
+        };
+    }
+
 
 
     private final String hash;

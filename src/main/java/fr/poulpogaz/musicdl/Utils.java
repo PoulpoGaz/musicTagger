@@ -1,11 +1,23 @@
 package fr.poulpogaz.musicdl;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
 
 public class Utils {
 
     private static final DecimalFormat format = new DecimalFormat("#.##");
     private static final char[] HEX_CHARS = "0123456789ABCDEF".toCharArray();
+
+    public static final MessageDigest SHA_256;
+
+    static {
+        try {
+            SHA_256 = MessageDigest.getInstance("SHA3-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public static String escapeCharacter(String str, char quote, char escape) {
         return addQuote(str, quote, escape, false);

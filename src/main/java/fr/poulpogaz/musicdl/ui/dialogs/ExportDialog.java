@@ -415,8 +415,6 @@ public class ExportDialog extends AbstractDialog {
                 while (!worker.isCancelled() && it.hasNext()) {
                     Music m = it.next();
 
-                    Thread.sleep(1000);
-
                     Path coverOutput = null;
                     if (saveImage.isSelected() && inPNG.isSelected()) {
                         coverOutput = Path.of(coverOut.replace("{id}", Integer.toString(processed)));

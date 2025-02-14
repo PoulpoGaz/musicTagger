@@ -1,22 +1,20 @@
 package fr.poulpogaz.musicdl.ui;
 
-import com.formdev.flatlaf.ui.FlatFileChooserUI;
 import fr.poulpogaz.musicdl.downloader.DownloadListener;
 import fr.poulpogaz.musicdl.downloader.DownloadManager;
-import fr.poulpogaz.musicdl.model.Template;
-import fr.poulpogaz.musicdl.model.TemplateDataListener;
-import fr.poulpogaz.musicdl.model.Templates;
-import fr.poulpogaz.musicdl.model.TemplatesListener;
+import fr.poulpogaz.musicdl.model.*;
 import fr.poulpogaz.musicdl.ui.dialogs.Dialogs;
 import fr.poulpogaz.musicdl.ui.dialogs.ExportDialog;
 import fr.poulpogaz.musicdl.ui.layout.*;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.nio.file.Path;
+import java.io.File;
 
 public class MusicdlFrame extends JFrame {
 
@@ -40,7 +38,7 @@ public class MusicdlFrame extends JFrame {
 
 
     private JPanel bottomBar;
-    private JLabel loadingMusicsLabel;
+    private JLabel loadingFilesLabel;
     private JLabel loadedMusicsLabel;
     private JLabel newMusicsLabel;
     private JLabel downloadCountLabel;
@@ -119,7 +117,7 @@ public class MusicdlFrame extends JFrame {
 
 
     private JPanel createBottomBar() {
-        loadingMusicsLabel = new JLabel("0 musics loading");
+        loadingFilesLabel = new JLabel("0 files loading");
         loadedMusicsLabel = new JLabel(Templates.totalMusicCount() + " musics");
 
         newMusicsLabel = new JLabel("New");
@@ -136,13 +134,13 @@ public class MusicdlFrame extends JFrame {
         bottomBar.add(downloadCountLabel, c);
         bottomBar.add(newMusicsLabel, c);
         bottomBar.add(loadedMusicsLabel, c);
-        bottomBar.add(loadingMusicsLabel, c);
+        bottomBar.add(loadingFilesLabel, c);
 
         return bottomBar;
     }
 
-    public void setLoadingMusicCount(long count) {
-        loadingMusicsLabel.setText(count + " musics loading");
+    public void setLoadingFileCount(long count) {
+        loadingFilesLabel.setText(count + " files loading");
     }
 
 
@@ -150,17 +148,10 @@ public class MusicdlFrame extends JFrame {
     private JMenuBar createJMenuBar() {
         JMenu file = new JMenu("File");
         JMenuItem load = file.add("Load musics");
-        load.addActionListener(_ -> {
-            Path path = Dialogs.showFileChooser(this, JFileChooser.DIRECTORIES_ONLY);
-            if (path != null) {
-                new MusicLoader(path).execute();
-            }
-        });
+        load.addActionListener(this::loadMusics);
 
         JMenuItem exportJson = file.add("Export to JSON");
-        exportJson.addActionListener(_ -> {
-            ExportDialog.showDialog(this);
-        });
+        exportJson.addActionListener(_ -> ExportDialog.showDialog(this));
         file.addSeparator();
 
         JMenuItem quit = file.add("Quit");
@@ -192,6 +183,22 @@ public class MusicdlFrame extends JFrame {
         bar.add(view);
 
         return bar;
+    }
+
+    private void loadMusics(ActionEvent e) {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setMultiSelectionEnabled(true);
+        chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+        chooser.setFileFilter(new FileNameExtensionFilter("Opus (.opus)", "opus"));
+        chooser.addChoosableFileFilter(new FileNameExtensionFilter("JSON (.json)", "json"));
+        chooser.setAcceptAllFileFilterUsed(true);
+        chooser.setCurrentDirectory(Dialogs.WORKING_DIRECTORY);
+
+        int ret = chooser.showOpenDialog(this);
+        if (ret == JFileChooser.APPROVE_OPTION) {
+            File[] files = chooser.getSelectedFiles();
+            MusicLoader.load(files);
+        }
     }
 
 
@@ -266,6 +273,8 @@ public class MusicdlFrame extends JFrame {
         }
 
         if (close) {
+            SoftCoverArt.shutdown();
+            MusicLoader.shutdown();
             DownloadManager.shutdown();
             DownloadManager.cancelAll();
             dispose();
