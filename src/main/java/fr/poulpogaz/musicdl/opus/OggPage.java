@@ -89,7 +89,6 @@ public class OggPage {
         buffer.get(data, 0, packetSize);
     }
 
-
     public void copyHeaderFrom(OggPage other) {
         version = other.version;
         headerType = other.headerType;
@@ -102,14 +101,6 @@ public class OggPage {
         System.arraycopy(other.oggSegments, 0, oggSegments, 0, oggSegmentCount);
         headerSize = other.headerSize;
         packetSize = other.packetSize;
-    }
-
-    private void growOggSegmentsIfNeeded(int oggSegmentCount) {
-        this.oggSegmentCount = oggSegmentCount;
-
-        if (oggSegments == null || oggSegments.length < oggSegmentCount) {
-            oggSegments = new int[oggSegmentCount];
-        }
     }
 
     private int[] growArrayIfNeeded(int[] array, int minCapacity) {

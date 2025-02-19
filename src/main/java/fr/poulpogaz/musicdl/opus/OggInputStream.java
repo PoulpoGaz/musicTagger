@@ -2,6 +2,7 @@ package fr.poulpogaz.musicdl.opus;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -13,12 +14,12 @@ public class OggInputStream implements Closeable {
 
     // 131972 bytes
     // allow reading of at least 2 page consecutively.
-    private static final int BUFFER_SIZE = Integer.highestOneBit(2 * OggPage.MAX_SIZE) << 1;
+    private static final int BUFFER_SIZE = Integer.highestOneBit(200 * OggPage.MAX_SIZE) << 1;
 
     private final FileChannel channel;
-    private final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE)
-                                                .limit(0)
-                                                .order(ByteOrder.LITTLE_ENDIAN);
+    final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE)
+                                        .limit(0)
+                                        .order(ByteOrder.LITTLE_ENDIAN);
 
     private OggPage nextPage = null;
     private long lastPageSize = 0;
@@ -214,7 +215,7 @@ public class OggInputStream implements Closeable {
 
     public static void main(String[] args) throws IOException {
         long time = System.currentTimeMillis();
-        try (OggInputStream ois = new OggInputStream(Path.of("Fate · Ending [FakeIt · Hiroyuki Sawano].opus"))) {
+        try (OggInputStream ois = new OggInputStream(Path.of("copy.opus"))) { //Fate · Ending [FakeIt · Hiroyuki Sawano].opus"))) {
             OggPage page = null;
             while ((page = ois.nextPage(page)) != null) {
                 System.out.println(page);

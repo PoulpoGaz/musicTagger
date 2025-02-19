@@ -2,8 +2,13 @@ package fr.poulpogaz.musicdl.opus;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 public class IOUtils {
 
@@ -51,6 +56,20 @@ public class IOUtils {
         return (b1 & 0xFF) | (b2 & 0xFF) << 8 | (b3 & 0xFF) << 16 | (b4 & 0xFF) << 24;
     }
 
+    public static void writeInt(OutputStream os, int value) throws IOException {
+        os.write(value & 0xFF);
+        os.write((value >> 8) & 0xFF);
+        os.write((value >> 16) & 0xFF);
+        os.write((value >> 24) & 0xFF);
+    }
+
+    public static void writeInt(byte[] array, int offset, int value) {
+        array[offset] = (byte) (value & 0xFF);
+        array[offset + 1] = (byte) ((value >> 8) & 0xFF);
+        array[offset + 2] = (byte) ((value >> 16) & 0xFF);
+        array[offset + 3] = (byte) ((value >> 24) & 0xFF);
+    }
+
     public static int getIntB(InputStream is) throws IOException {
         int b1 = is.read();
         int b2 = is.read();
@@ -80,6 +99,77 @@ public class IOUtils {
             }
 
             return new String(bytes, StandardCharsets.UTF_8);
+        }
+    }
+
+    /**
+     * Moves every byte after src to dest and reduce the file size by src - dest
+     */
+    public static void shrink(FileChannel fc, long src, long dest) throws IOException {
+        if (dest > src) {
+            return;
+        }
+
+        long size = fc.size();
+        long count = size - src;
+        ByteBuffer buff = ByteBuffer.allocate((int) Math.min(count, 8192));
+
+        long transferred = 0;
+        long srcPos = src;
+        fc.position(dest);
+        while (transferred < count) {
+            buff.limit((int) Math.min(count - transferred, 8192));
+            int read = fc.read(buff, srcPos);
+            if (read == 0) {
+                continue;
+            }
+            buff.flip();
+
+            while (buff.hasRemaining()) {
+                fc.write(buff);
+            }
+            transferred += read;
+            srcPos += read;
+            buff.clear();
+        }
+
+        fc.truncate(fc.size() - (src - dest));
+    }
+
+    /**
+     * Moves every byte after src to dest and reduce the file size by src - dest
+     */
+    public static void grow(FileChannel fc, long src, long dest) throws IOException {
+        if (dest < src) {
+            return;
+        }
+
+        long size = fc.size();
+        long count = size - src;
+        long offset = dest - src;
+        long newSize = size + offset;
+        ByteBuffer buff = ByteBuffer.allocate((int) Math.min(count, 8192));
+
+        long transferred = 0;
+        long srcPos = size;
+        long destPos = newSize;
+
+        while (transferred < count) {
+            buff.limit((int) Math.min(count - transferred, 8192));
+            srcPos -= buff.limit();
+            destPos -= buff.limit();
+
+            int read = fc.read(buff, srcPos);
+            if (read == 0) {
+                continue;
+            }
+            buff.flip();
+
+            while (buff.hasRemaining()) {
+                fc.write(buff, destPos);
+            }
+            transferred += read;
+            buff.clear();
         }
     }
 }
