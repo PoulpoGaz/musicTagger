@@ -18,7 +18,6 @@ public class OpusMetadataWriter {
     private final Path path;
 
     private final CommentBytes commentBytes = new CommentBytes();
-    private final Writer commentW = new OutputStreamWriter(commentBytes, StandardCharsets.UTF_8);
 
     private int commentCountPosition;
     private int commentCount = 0;
@@ -34,11 +33,12 @@ public class OpusMetadataWriter {
     public void setVendor(String vendor) {
         // TODO: check
         try {
-            // use OutputStream to write int
-            IOUtils.writeInt(commentBytes, vendor.length());
-            // then Writer to write string
-            commentW.write(vendor);
-            commentW.flush(); // flush to send the bytes to the OutputStream
+            // write vendor
+            byte[] bytes = vendor.getBytes(StandardCharsets.UTF_8);
+            IOUtils.writeInt(commentBytes, bytes.length);
+            commentBytes.write(bytes);
+
+            // save comment count position for later
             commentCountPosition = commentBytes.getCount();
             commentBytes.skip(4);
         } catch (IOException _) {}
@@ -47,50 +47,45 @@ public class OpusMetadataWriter {
     public void addComment(String key, String value) {
         try {
             commentCount++;
-            IOUtils.writeInt(commentBytes, key.length() + 1 + value.length());
-            commentW.append(key)
-                    .append("=")
-                    .append(value);
-            commentW.flush();
+            byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+            byte[] valueBytes = value.getBytes(StandardCharsets.UTF_8);
+
+            IOUtils.writeInt(commentBytes, keyBytes.length + 1 + valueBytes.length);
+            commentBytes.write(keyBytes);
+            commentBytes.write('=');
+            commentBytes.write(valueBytes);
         } catch (IOException _) {}
     }
 
     public void write() throws IOException {
         commentBytes.writeIntAt(commentCountPosition, commentCount);
-        commentW.flush();
-
-        int pageCount = commentBytes.pageCount();
-        int commentEncodedLength = commentBytes.pageEncodedLength();
 
         try (FileChannel fc = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
             OggInputStream ois = new OggInputStream(fc);
-            OggPage page = ois.nextPage();
-            new OpusHead(page); // check opus head, necessary ?
-            int headSeqNumber = page.getPageSequenceNumber();
-            int bitstreamSerialNumber = page.getBitstreamSerialNumber();
-            int commentPos = page.getPageSize();
+            OpusInputStream opus = new OpusInputStream(ois);
+
+            OpusHead head = opus.readOpusHead();
+            OggPage headPage = head.getPage();
+            int headSeqNumber = headPage.getPageSequenceNumber();
+            int bitstreamSerialNumber = headPage.getBitstreamSerialNumber();
+            int commentPos = headPage.getPageSize();
 
             System.out.println(commentPos);
 
             // compute size of current opus tag length
-            boolean opusTagFound = false;
-            long currentCommentEncodedLength = 0;
-            while ((page = ois.nextPage(page)) != null) {
-                if (page.isFreshPacket()) {
-                    if (opusTagFound) {
-                        break;
-                    }
+            opus.skipVendor();
+            opus.skipComments();
+            opus.skipOpusTagPadding();
 
-                    opusTagFound = true;
-                }
+            long currentCommentEncodedLength = ois.currentPagePosition() - headPage.getPageSize();
 
-                currentCommentEncodedLength += page.getPageSize();
-            }
+            int pageCount = commentBytes.pageCount();
+            int commentEncodedLength = commentBytes.pageEncodedLength();
 
-            System.out.println(currentCommentEncodedLength + " vs (new) " + commentEncodedLength);
+            System.out.println("Comment length: " + currentCommentEncodedLength + " vs (new) " + commentEncodedLength);
             // resize file if necessary
             // it also numbers pages after opus tag
-            renumberAndResize(fc, ois, currentCommentEncodedLength, commentEncodedLength, page, headSeqNumber + pageCount + 1);
+            renumberAndResize(fc, ois, currentCommentEncodedLength, commentEncodedLength, ois.nextPage(), headSeqNumber + pageCount + 1);
 
             // insert opus tag
             insertComment(fc, ois.buffer, commentPos, bitstreamSerialNumber, headSeqNumber + 1);
@@ -209,6 +204,10 @@ public class OpusMetadataWriter {
 
             seqNum++;
         }
+    }
+
+    private int getPadding(int currentPadding) {
+        return 0;
     }
 
     private static class CommentBytes extends ByteArrayOutputStream {

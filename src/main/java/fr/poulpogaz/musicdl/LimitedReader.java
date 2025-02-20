@@ -1,6 +1,5 @@
-package fr.poulpogaz.musicdl.opus;
+package fr.poulpogaz.musicdl;
 
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
@@ -32,10 +31,5 @@ public class LimitedReader extends InputStreamReader {
 
     public long remainingBytes() {
         return in.remainingBytes();
-    }
-
-    @Override
-    public void close() throws IOException {
-        in.close();
     }
 }

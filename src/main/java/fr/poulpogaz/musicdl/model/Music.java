@@ -4,6 +4,7 @@ import fr.poulpogaz.json.IJsonReader;
 import fr.poulpogaz.json.IJsonWriter;
 import fr.poulpogaz.json.JsonException;
 import fr.poulpogaz.json.utils.Pair;
+import fr.poulpogaz.musicdl.LimitedInputStream;
 import fr.poulpogaz.musicdl.Utils;
 import fr.poulpogaz.musicdl.opus.*;
 import org.apache.commons.collections4.ListValuedMap;
@@ -22,8 +23,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import static fr.poulpogaz.musicdl.Utils.SHA_256;

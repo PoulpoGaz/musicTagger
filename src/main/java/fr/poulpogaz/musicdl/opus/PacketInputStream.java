@@ -1,5 +1,6 @@
 package fr.poulpogaz.musicdl.opus;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -8,6 +9,8 @@ public class PacketInputStream extends InputStream {
     private final OggInputStream ois;
     private OggPage currentPage;
     private int position; // position inside currentPage
+
+    private boolean readFirstPacket = false;
 
     public PacketInputStream(OggInputStream ois) {
         this.ois = ois;
@@ -52,15 +55,27 @@ public class PacketInputStream extends InputStream {
 
     @Override
     public void skipNBytes(long n) throws IOException {
-        while (n > 0) {
+        long skipped = skip(n);
+
+        if (skipped != n) {
+            throw new EOFException();
+        }
+    }
+
+    @Override
+    public long skip(long n) throws IOException {
+        long toSkip = n;
+        while (toSkip > 0) {
             if (readNextPageIfNeeded()) {
-                int read = (int) Math.min(n, currentPage.getPacketSize() - position);
-                n -= read;
+                int read = (int) Math.min(toSkip, currentPage.getPacketSize() - position);
+                toSkip -= read;
                 position += read;
             } else {
-                throw new IOException("Unable to skip exactly");
+                break;
             }
         }
+
+        return n - toSkip;
     }
 
     /**
@@ -68,8 +83,19 @@ public class PacketInputStream extends InputStream {
      */
     private boolean readNextPageIfNeeded() throws IOException {
         if (currentPage == null || position == currentPage.getPacketSize()) {
-            currentPage = ois.nextPage(currentPage);
-            position = 0;
+            currentPage = ois.peekNextPage(currentPage);
+
+            // valid page if:
+            // - fresh packet AND no packet has been read before
+            // - not a fresh packet
+            if (currentPage != null &&
+                    (currentPage.isFreshPacket() && !readFirstPacket || !currentPage.isFreshPacket())) {
+                currentPage = ois.nextPage(currentPage);
+                position = 0;
+                readFirstPacket = true;
+            } else {
+                currentPage = null;
+            }
         }
 
         return currentPage != null;

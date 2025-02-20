@@ -1,7 +1,11 @@
 package fr.poulpogaz.musicdl.opus;
 
+import fr.poulpogaz.musicdl.LimitedInputStream;
+import fr.poulpogaz.musicdl.LimitedReader;
+
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -17,7 +21,7 @@ public class OpusInputStream implements Closeable {
     private State state = State.READ_OPUS_HEAD;
 
     private PacketInputStream pis;
-    private LimitedInputStream lis;
+    private CommentInputStream cis;
 
     private int vendorLength;
     private long commentCount;
@@ -36,7 +40,7 @@ public class OpusInputStream implements Closeable {
             return head;
         }
 
-        checkState(State.READ_OPUS_HEAD, true);
+        checkState(State.READ_OPUS_HEAD);
 
         OggPage page = oggis.nextPage();
         if (page == null || !page.isFirstPage()) {
@@ -56,8 +60,10 @@ public class OpusInputStream implements Closeable {
         }
     }
 
-    public int readVendorStringLength() throws IOException {
-        checkState(State.READ_VENDOR_LENGTH, true);
+
+
+    public int readVendorLength() throws IOException {
+        checkState(State.READ_VENDOR_LENGTH);
         readOpusTags();
         vendorLength = IOUtils.getInt(pis);
         state = State.READ_VENDOR;
@@ -65,15 +71,15 @@ public class OpusInputStream implements Closeable {
     }
 
     public String readVendor() throws IOException {
-        checkState(State.READ_VENDOR, true);
+        checkState(State.READ_VENDOR);
         String vendor = IOUtils.readString(pis, vendorLength);
         readVendorNextState();
         return vendor;
     }
 
     public LimitedInputStream vendorInputStream() throws IOException {
-        checkState(State.READ_VENDOR, true);
-        return getOrCreateLimitedInputStream(vendorLength, this::readVendorNextState);
+        checkState(State.READ_VENDOR);
+        return getOrCreateCommentInputStream(vendorLength, this::readVendorNextState);
     }
 
     public LimitedReader vendorReader() throws IOException {
@@ -84,33 +90,56 @@ public class OpusInputStream implements Closeable {
         state = State.READ_COMMENT_COUNT;
     }
 
+    public void skipVendor() throws IOException {
+        checkState(State.READ_VENDOR);
+        pis.skipNBytes(vendorLength);
+        state = State.READ_COMMENT_COUNT;
+    }
+
 
 
     public long readCommentCount() throws IOException {
-        checkState(State.READ_COMMENT_COUNT, true);
+        checkState(State.READ_COMMENT_COUNT);
 
         commentCount = Integer.toUnsignedLong(IOUtils.getInt(pis));
         if (commentCount != 0) {
             state = State.READ_COMMENT_LENGTH;
         } else {
-            state = State.READ_OGG_PAGE;
+            state = State.READ_OPUS_TAG_PADDING;
         }
 
         return commentCount;
     }
 
+    public void skipComments() throws IOException {
+        if (state == State.READ_COMMENT_COUNT) {
+            readCommentCount();
+        }
+        if (state == State.READ_COMMENT || state == State.READ_COMMENT_LENGTH || state == State.READ_COMMENT_VALUE) {
+            while (commentCount > 0) {
+                skipComment();
+            }
+
+            state = State.READ_OPUS_TAG_PADDING;
+        } else {
+            throw new IOException();
+        }
+    }
+
+
+
+
 
     public long readCommentLength() throws IOException {
-        checkState(State.READ_COMMENT_LENGTH, true);
+        checkState(State.READ_COMMENT_LENGTH);
 
         nextCommentLength = Integer.toUnsignedLong(IOUtils.getInt(pis));
         state = State.READ_COMMENT;
         return nextCommentLength;
     }
 
-
     public String readComment() throws IOException {
-        checkState(State.READ_COMMENT, true);
+        checkState(State.READ_COMMENT);
 
         String comment = IOUtils.readString(pis, nextCommentLength);
         readCommentNextState();
@@ -118,38 +147,52 @@ public class OpusInputStream implements Closeable {
     }
 
     public LimitedInputStream commentInputStream() throws IOException {
-        checkState(State.READ_COMMENT, true);
-        return getOrCreateLimitedInputStream(nextCommentLength, this::readCommentNextState);
+        checkState(State.READ_COMMENT);
+        return getOrCreateCommentInputStream(nextCommentLength, this::readCommentNextState);
     }
 
     public LimitedReader commentReader() throws IOException {
         return new LimitedReader(commentInputStream(), StandardCharsets.UTF_8);
     }
 
-
+    public void skipComment() throws IOException {
+        checkState(State.READ_COMMENT);
+        if (cis == null) {
+            commentInputStream();
+        } else if (cis.remainingBytes() == 0) {
+            cis.close();
+            commentInputStream();
+        }
+        cis.close();
+    }
 
 
     public String readKey() throws IOException {
-        checkState(State.READ_COMMENT, true);
+        checkState(State.READ_COMMENT);
 
-        lis = getOrCreateLimitedInputStream(nextCommentLength, null);
-        String key = lis.readKey();
+        cis = getOrCreateCommentInputStream(nextCommentLength, null);
+        String key = cis.readKey();
         state = State.READ_COMMENT_VALUE;
         return key;
     }
 
-    public String readValue() throws IOException {
-        checkState(State.READ_COMMENT_VALUE, false);
+    public InputStream keyInputStream() throws IOException {
+        checkState(State.READ_COMMENT);
+        return null;
+    }
 
-        String key = IOUtils.readString(lis, lis.remainingBytes());
+    public String readValue() throws IOException {
+        checkState(State.READ_COMMENT_VALUE);
+
+        String key = IOUtils.readString(cis, cis.remainingBytes());
         readCommentNextState();
         return key;
     }
 
     public LimitedInputStream valueInputStream() throws IOException {
-        checkState(State.READ_COMMENT_VALUE, false);
-        lis.setCloseAction(this::readCommentNextState);
-        return lis;
+        checkState(State.READ_COMMENT_VALUE);
+        cis.setCloseAction(this::readCommentNextState);
+        return cis;
     }
 
     public LimitedReader valueReader() throws IOException {
@@ -159,25 +202,34 @@ public class OpusInputStream implements Closeable {
     private void readCommentNextState() {
         commentCount--;
         if (commentCount == 0) {
-            state = State.READ_OGG_PAGE;
+            state = State.READ_OPUS_TAG_PADDING;
         } else {
             state = State.READ_COMMENT_LENGTH;
         }
     }
 
 
-    private LimitedInputStream getOrCreateLimitedInputStream(long length, Runnable closeAction) throws IOException {
-        if (lis == null) {
-            lis = new LimitedInputStream(pis, length);
-        } else {
-            if (lis.remainingBytes() > 0) {
-                lis.close();
-            }
-            lis.setRemaining(length);
-        }
-        lis.setCloseAction(closeAction);
+    public InputStream opusTagPadding() throws IOException {
+        checkState(State.READ_OPUS_TAG_PADDING);
+        return pis;
+    }
 
-        return lis;
+    public void skipOpusTagPadding() throws IOException {
+        checkState(State.READ_OPUS_TAG_PADDING);
+        pis.skip(Long.MAX_VALUE);
+    }
+
+
+    private CommentInputStream getOrCreateCommentInputStream(long length, Runnable closeAction) throws IOException {
+        if (cis == null) {
+            cis = new CommentInputStream(pis, length);
+        } else {
+            cis.close();
+            cis.setRemaining(length);
+        }
+        cis.setCloseAction(closeAction);
+
+        return cis;
     }
 
 
@@ -192,33 +244,41 @@ public class OpusInputStream implements Closeable {
 
 
     public OggPage readPage() throws IOException {
-        checkState(State.READ_OGG_PAGE, true);
+        checkState(State.READ_OGG_PAGE);
         return oggis.nextPage();
     }
 
 
     public double fileLength() throws IOException {
-        checkState(State.READ_OGG_PAGE, true);
+        checkState(State.READ_OGG_PAGE);
         OggPage lastPage = oggis.readLastPage(head.getPage().getBitstreamSerialNumber());
 
         return head.computeStreamLength(lastPage);
     }
 
 
-    private void checkState(State expectedState, boolean close) throws IOException {
-        if (close && lis != null) {
-            lis.close();
-        }
-
+    private void checkState(State expectedState) throws IOException {
         switch (expectedState) {
             case READ_VENDOR -> {
                 if (state == State.READ_VENDOR_LENGTH) {
-                    readVendorStringLength();
+                    readVendorLength();
                 }
             }
             case READ_COMMENT -> {
                 if (state == State.READ_COMMENT_LENGTH) {
                     readCommentLength();
+                } else if (state == State.READ_COMMENT || state == State.READ_COMMENT_VALUE) {
+                    if (cis != null) {
+                        cis.close();
+                    }
+                    state = State.READ_COMMENT;
+                }
+            }
+            case READ_OGG_PAGE -> {
+                if (state == State.READ_OPUS_TAG_PADDING) {
+                    pis.skip(Long.MAX_VALUE);
+                    state = State.READ_OGG_PAGE;
+                    return;
                 }
             }
         }
@@ -244,6 +304,7 @@ public class OpusInputStream implements Closeable {
         READ_COMMENT_LENGTH,
         READ_COMMENT,
         READ_COMMENT_VALUE,
+        READ_OPUS_TAG_PADDING,
         READ_OGG_PAGE
     }
 }

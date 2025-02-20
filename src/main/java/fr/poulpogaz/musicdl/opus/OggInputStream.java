@@ -12,9 +12,8 @@ import java.util.Objects;
 
 public class OggInputStream implements Closeable {
 
-    // 131972 bytes
-    // allow reading of at least 2 page consecutively.
-    private static final int BUFFER_SIZE = Integer.highestOneBit(200 * OggPage.MAX_SIZE) << 1;
+    // allow storing at least one page
+    private static final int BUFFER_SIZE = Integer.highestOneBit(OggPage.MAX_SIZE) << 1;
 
     private final FileChannel channel;
     final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE)
