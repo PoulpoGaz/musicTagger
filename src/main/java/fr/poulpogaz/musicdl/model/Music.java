@@ -50,8 +50,9 @@ public class Music {
 
             music.setChannels(head.getChannels());
 
-            int c = (int) Math.min(file.readCommentCount(), 8192);
-            for (; c > 0; c--) {
+            long n = file.readCommentCount();
+            int lim = (int) Math.min(n, 8192);
+            for (int i = 0; i < lim; i++) {
                 String key = file.readKey();
 
                 switch (key) {
@@ -62,6 +63,7 @@ public class Music {
                         pic.fromInputStream(picIS, false);
 
                         String sha256 = computeSHA256(picIS, pic.getDataLength());
+                        picIS.close();
                         SoftCoverArt cover = createSoftCoverArt(sha256, path, position, offset);
                         music.addCoverArt(cover);
                     }
@@ -69,6 +71,10 @@ public class Music {
                     case "PURL" -> music.setDownloadURL(file.readValue());
                     default -> music.addMetadata(key, file.readValue());
                 }
+            }
+
+            if (n != lim) {
+                file.skipComments();
             }
 
             music.setLength(file.fileLength());

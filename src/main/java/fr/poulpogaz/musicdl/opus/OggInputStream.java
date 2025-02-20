@@ -167,6 +167,7 @@ public class OggInputStream implements Closeable {
 
         // read last page
         buffer.position(index);
+        nextPage = null; // discard current page
         OggPage page = nextPage();
 
         if (page.bitstreamSerialNumber == bitstreamSerialNumber && page.isLastPage()) {

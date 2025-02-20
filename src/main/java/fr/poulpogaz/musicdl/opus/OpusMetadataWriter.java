@@ -1,12 +1,18 @@
 package fr.poulpogaz.musicdl.opus;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.*;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 
 public class OpusMetadataWriter {
+
+    private static final Logger LOGGER = LogManager.getLogger(OpusMetadataWriter.class);
 
     // content of each metadata page will take up to PAGE_DATA_SIZE bytes
     // except the content of the last page which can take up to PAGE_DATA_SIZE + WIGGLE_ROOM bytes
@@ -60,6 +66,7 @@ public class OpusMetadataWriter {
     public void write() throws IOException {
         commentBytes.writeIntAt(commentCountPosition, commentCount);
 
+        LOGGER.debug("Overwriting comments in {}", path);
         try (FileChannel fc = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
             OggInputStream ois = new OggInputStream(fc);
             OpusInputStream opus = new OpusInputStream(ois);
@@ -70,25 +77,77 @@ public class OpusMetadataWriter {
             int bitstreamSerialNumber = headPage.getBitstreamSerialNumber();
             int commentPos = headPage.getPageSize();
 
-            System.out.println(commentPos);
+            LOGGER.debug("Comment found at {}, head sequence number {}, serial number {}",
+                         commentPos, headSeqNumber, bitstreamSerialNumber);
 
-            // compute size of current opus tag length
+            // compute size of current comment size
+            // opus tag; vendor length; vendor; comment count
+            long commentSize = 8 + 4 + opus.readVendorLength() + 4;
             opus.skipVendor();
-            opus.skipComments();
-            opus.skipOpusTagPadding();
+
+            long n = opus.readCommentCount();
+            for (int i = 0; i < n; i++) {
+                // comment length ; comment
+                commentSize += 4 + opus.readCommentLength();
+                opus.skipComment();
+            }
+
+            LOGGER.debug("Comment size: {}, new comment size: {}", commentSize, commentBytes.getCount());
+
+            long padding = hasPadding(opus);
+            if (padding >= 0) {
+                addPadding(commentSize, padding);
+            } else {
+                LOGGER.debug("Preserving padding");
+            }
 
             long currentCommentEncodedLength = ois.currentPagePosition() - headPage.getPageSize();
-
             int pageCount = commentBytes.pageCount();
             int commentEncodedLength = commentBytes.pageEncodedLength();
 
-            System.out.println("Comment length: " + currentCommentEncodedLength + " vs (new) " + commentEncodedLength);
+            LOGGER.debug("Comment size {} - new {}. Encoded {} - new {}",
+                         commentSize, commentBytes.getCount(), currentCommentEncodedLength, commentEncodedLength);
+
             // resize file if necessary
             // it also numbers pages after opus tag
             renumberAndResize(fc, ois, currentCommentEncodedLength, commentEncodedLength, ois.nextPage(), headSeqNumber + pageCount + 1);
 
             // insert opus tag
             insertComment(fc, ois.buffer, commentPos, bitstreamSerialNumber, headSeqNumber + 1);
+        }
+    }
+
+    private long hasPadding(OpusInputStream opus) throws IOException {
+        InputStream is = opus.opusTagPadding();
+        int r = is.read();
+
+        if (r < 0) {
+            return 0; // no padding
+        } else if ((r & 0x1) == 0) {
+            return 1 + opus.skipOpusTagPadding(); // preserve flag is set to zero
+        } else {
+            is.transferTo(commentBytes);
+            return -1;
+        }
+    }
+
+    private void addPadding(long currentCommentSize, long currentPaddingSize) {
+        int newCommentSize = commentBytes.getCount();
+        long currentOpusTagSize = currentCommentSize + currentPaddingSize;
+
+        int low = 1024;
+        int high = 10 * low;
+
+        long newPadding = currentOpusTagSize - newCommentSize;
+        if (newPadding < low || newPadding > high) {
+            newPadding = (low + high) / 2;
+            LOGGER.debug("Adding {} bytes of padding", newPadding);
+        } else {
+            LOGGER.debug("Using {} bytes of already present padding", newPadding);
+        }
+
+        for (int i = 0; i < (int) newPadding; i++) {
+            commentBytes.write(0);
         }
     }
 
@@ -166,15 +225,11 @@ public class OpusMetadataWriter {
             long audioDataPos = ois.currentPagePosition();
             long newAudioDataPos = audioDataPos + newOpusTagLength - currentOpusTagLength;
 
-            System.out.println(audioDataPos + " vs (new) " + newAudioDataPos);
+            LOGGER.debug("Moving audio data from {} to {}", audioDataPos, newAudioDataPos);
 
             if (newOpusTagLength < currentOpusTagLength) {
-                // shrink
-                System.out.println("shrink");
                 IOUtils.shrink(fc, audioDataPos, newAudioDataPos);
             } else {
-                // grow
-                System.out.println("grow");
                 IOUtils.grow(fc, audioDataPos, newAudioDataPos);
             }
 
@@ -204,10 +259,6 @@ public class OpusMetadataWriter {
 
             seqNum++;
         }
-    }
-
-    private int getPadding(int currentPadding) {
-        return 0;
     }
 
     private static class CommentBytes extends ByteArrayOutputStream {
@@ -272,7 +323,6 @@ public class OpusMetadataWriter {
     }
 
     public static void main(String[] args) {
-        // TODO: padding
         try {
             Path target = Path.of("copy.opus");
             Files.copy(Path.of("Fate · Ending [FakeIt · Hiroyuki Sawano].opus"), target,
@@ -282,7 +332,6 @@ public class OpusMetadataWriter {
             omw.addComment("Encoder", "Lavf59.27.100");
             omw.addComment("hello", "world");
             omw.addComment("hello2", "world2");
-            omw.addComment("hello3", "world3".repeat(1000000));
             omw.write();
         } catch (IOException e) {
             throw new RuntimeException(e);

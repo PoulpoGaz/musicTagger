@@ -214,9 +214,9 @@ public class OpusInputStream implements Closeable {
         return pis;
     }
 
-    public void skipOpusTagPadding() throws IOException {
+    public long skipOpusTagPadding() throws IOException {
         checkState(State.READ_OPUS_TAG_PADDING);
-        pis.skip(Long.MAX_VALUE);
+        return pis.skip(Long.MAX_VALUE);
     }
 
 
@@ -250,7 +250,6 @@ public class OpusInputStream implements Closeable {
 
 
     public double fileLength() throws IOException {
-        checkState(State.READ_OGG_PAGE);
         OggPage lastPage = oggis.readLastPage(head.getPage().getBitstreamSerialNumber());
 
         return head.computeStreamLength(lastPage);
