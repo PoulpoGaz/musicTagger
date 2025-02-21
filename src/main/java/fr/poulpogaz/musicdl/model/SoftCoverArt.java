@@ -36,15 +36,10 @@ public abstract class SoftCoverArt extends CoverArt {
     }
 
     public static SoftCoverArt createFromFile(Path path) throws IOException {
-        byte[] buff = new byte[8192];
+        String sha256;
         try (InputStream is = Files.newInputStream(path)) {
-            int read;
-            while ((read = is.read(buff)) != -1) {
-                SHA_256.update(buff, 0, read);
-            }
+            sha256 = Utils.sha256(is);
         }
-
-        String sha256 = Utils.bytesToHex(SHA_256.digest());
 
         File file = path.toFile();
         return new SoftCoverArt(sha256) {

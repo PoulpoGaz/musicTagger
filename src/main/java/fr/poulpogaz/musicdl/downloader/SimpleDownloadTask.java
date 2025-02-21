@@ -3,6 +3,7 @@ package fr.poulpogaz.musicdl.downloader;
 import fr.poulpogaz.json.utils.Pair;
 import fr.poulpogaz.musicdl.Units;
 import fr.poulpogaz.musicdl.model.Music;
+import fr.poulpogaz.musicdl.opus.OpusFile;
 import fr.poulpogaz.musicdl.ui.layout.VerticalConstraint;
 import fr.poulpogaz.musicdl.ui.layout.VerticalLayout;
 import org.apache.logging.log4j.LogManager;
@@ -91,10 +92,10 @@ public class SimpleDownloadTask extends DownloadTask {
         }
 
         if (music != null) {
-            Pair<Music, String> newMusic = Music.load(music.getPath());
+            OpusFile file = new OpusFile(music.getPath());
 
             SwingUtilities.invokeLater(() -> {
-                newMusic.getLeft().copyTo(music);
+                music.set(file);
                 music.notifyChanges();
             });
         }

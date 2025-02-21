@@ -4,8 +4,6 @@ import fr.poulpogaz.json.IJsonReader;
 import fr.poulpogaz.json.IJsonWriter;
 import fr.poulpogaz.json.JsonException;
 import fr.poulpogaz.json.utils.Pair;
-import fr.poulpogaz.musicdl.LimitedInputStream;
-import fr.poulpogaz.musicdl.Utils;
 import fr.poulpogaz.musicdl.opus.*;
 import org.apache.commons.collections4.ListValuedMap;
 import org.apache.commons.collections4.MapIterator;
@@ -19,118 +17,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.*;
-
-import static fr.poulpogaz.musicdl.Utils.SHA_256;
 
 public class Music {
 
     private static final Logger LOGGER = LogManager.getLogger(Music.class);
-
-    public static Pair<Music, String> load(Path path) throws IOException {
-        LOGGER.debug("Loading {}", path);
-
-        MetadataPicture pic = new MetadataPicture();
-
-        Music music = new Music();
-        music.setPath(path);
-
-        String templateName = null;
-        try (OggInputStream ois = new OggInputStream(path)) {
-            OpusInputStream file = new OpusInputStream(ois);
-
-            music.setSize(Files.size(path));
-
-            OpusHead head = file.readOpusHead();
-            file.readVendor();
-
-            music.setChannels(head.getChannels());
-
-            long n = file.readCommentCount();
-            int lim = (int) Math.min(n, 8192);
-            for (int i = 0; i < lim; i++) {
-                String key = file.readKey();
-
-                switch (key) {
-                    case "METADATA_BLOCK_PICTURE" -> {
-                        long position = ois.currentPagePosition();
-                        int offset = file.positionInPage();
-                        InputStream picIS = Base64.getDecoder().wrap(file.valueInputStream());
-                        pic.fromInputStream(picIS, false);
-
-                        String sha256 = computeSHA256(picIS, pic.getDataLength());
-                        picIS.close();
-                        SoftCoverArt cover = createSoftCoverArt(sha256, path, position, offset);
-                        music.addCoverArt(cover);
-                    }
-                    case "TEMPLATE" -> templateName = file.readValue();
-                    case "PURL" -> music.setDownloadURL(file.readValue());
-                    default -> music.addMetadata(key, file.readValue());
-                }
-            }
-
-            if (n != lim) {
-                file.skipComments();
-            }
-
-            music.setLength(file.fileLength());
-        }
-
-        return new Pair<>(music, templateName);
-    }
-
-    private static String computeSHA256(InputStream is, int length) throws IOException {
-        byte[] buff = new byte[8192];
-
-        int remaining = length;
-
-        while (remaining > 0) {
-            int toRead = Math.min(buff.length, remaining);
-            int r = is.read(buff, 0, toRead);
-            if (r < 0) {
-                throw new IOException("Not enough bytes");
-            }
-
-            SHA_256.update(buff, 0, r);
-            remaining -= r;
-        }
-
-        return Utils.bytesToHex(SHA_256.digest());
-    }
-
-    private static SoftCoverArt createSoftCoverArt(String sha256, Path file, long pagePosition, long dataOffset) {
-        LOGGER.debug("Creating soft cover art for {} at {} with an offset of {}", file, pagePosition, dataOffset);
-
-        return new SoftCoverArt(sha256) {
-            @Override
-            public BufferedImage loadImage() throws IOException {
-                LOGGER.debug("Loading cover art from {} at {} with an offset of {}", file, pagePosition, dataOffset);
-                try (FileChannel channel = FileChannel.open(file, StandardOpenOption.READ)) {
-                    channel.position(pagePosition);
-
-                    OggInputStream ois = new OggInputStream(channel);
-                    PacketInputStream pis = new PacketInputStream(ois);
-                    pis.skipNBytes(dataOffset);
-
-                    InputStream is = Base64.getDecoder().wrap(pis);
-                    is.skipNBytes(4); // skip type
-                    is.skipNBytes(IOUtils.getIntB(is)); // skip mimeLength
-                    is.skipNBytes(IOUtils.getIntB(is)); // skip description
-                    is.skipNBytes(16); // skip width, height, color depth and color count
-                    int length = IOUtils.getIntB(is);
-
-                    return ImageIO.read(new LimitedInputStream(is, length));
-                }
-            }
-        };
-    }
-
-
-
 
     public static Pair<Music, String> load(IJsonReader jr) throws IOException, JsonException {
         Music m = new Music();
@@ -195,6 +87,7 @@ public class Music {
 
 
 
+    private OpusFile file;
 
     private final ListValuedMap<String, String> metadata = new ArrayListValuedHashMap<>();
     private final List<CoverArt> covers = new ArrayList<>();
@@ -205,27 +98,25 @@ public class Music {
     private String downloadURL;
     private boolean downloading;
 
-    private long size;
-    private double length;
-    private Channels channels;
-
     public Music() {
 
     }
 
-    public void copyTo(Music dest) {
-        dest.metadata.clear();
-        dest.metadata.putAll(metadata);
+    public Music(OpusFile file) {
+        this.file = file;
 
-        dest.covers.clear();
-        dest.covers.addAll(covers);
+        setDownloadURL(file.getFirst("PURL"));
+        covers.addAll(file.getCoverArts());
+        metadata.putAll(file.getMetadata());
+    }
 
-        dest.path = path;
-        dest.downloadURL = downloadURL;
-        dest.downloading = downloading;
-        dest.size = size;
-        dest.length = length;
-        dest.channels = channels;
+    public void set(OpusFile file) {
+        this.file = file;
+        metadata.clear();
+        metadata.putAll(file.getMetadata());
+
+        covers.clear();
+        covers.addAll(file.getCoverArts());
     }
 
 
@@ -387,28 +278,16 @@ public class Music {
         this.path = path;
     }
 
-    public void setSize(long size) {
-        this.size = size;
-    }
-
     public long getSize() {
-        return size;
+        return file.getSize();
     }
 
     public double getLength() {
-        return length;
-    }
-
-    public void setLength(double length) {
-        this.length = length;
+        return file.getLength();
     }
 
     public Channels getChannels() {
-        return channels;
-    }
-
-    public void setChannels(Channels channels) {
-        this.channels = channels;
+        return file.getChannels();
     }
 
 

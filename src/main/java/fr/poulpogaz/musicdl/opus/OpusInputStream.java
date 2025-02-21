@@ -166,7 +166,12 @@ public class OpusInputStream implements Closeable {
         cis.close();
     }
 
-
+    /**
+     * <a href="https://www.xiph.org/vorbis/doc/v-comment.html">v-comment</a>
+     * A case-insensitive field name that may consist of ASCII 0x20 through
+     * 0x7D, 0x3D ('=') excluded. ASCII 0x41 through 0x5A inclusive (A-Z) is
+     * to be considered equivalent to ASCII 0x61 through 0x7A inclusive (a-z).
+     */
     public String readKey() throws IOException {
         checkState(State.READ_COMMENT);
 
@@ -233,6 +238,10 @@ public class OpusInputStream implements Closeable {
     }
 
 
+    public long currentPagePosition() {
+        return oggis.currentPagePosition();
+    }
+
     public int positionInPage() {
         if (state == State.READ_OPUS_HEAD || state == State.READ_OGG_PAGE) {
             throw new IllegalStateException();
@@ -240,7 +249,6 @@ public class OpusInputStream implements Closeable {
 
         return pis.getPositionInPage();
     }
-
 
 
     public OggPage readPage() throws IOException {

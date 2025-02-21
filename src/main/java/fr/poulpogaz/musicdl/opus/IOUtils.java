@@ -6,9 +6,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 
 public class IOUtils {
 
@@ -100,6 +97,12 @@ public class IOUtils {
 
             return new String(bytes, StandardCharsets.UTF_8);
         }
+    }
+
+    public static void writeStringWithLength(OutputStream os, String str) throws IOException {
+        byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+        writeInt(os, bytes.length);
+        os.write(bytes);
     }
 
     /**

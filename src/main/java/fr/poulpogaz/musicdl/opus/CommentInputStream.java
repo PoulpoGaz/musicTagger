@@ -28,7 +28,7 @@ class CommentInputStream extends LimitedInputStream {
                 throw new IOException("Character not found");
             } else if (b == '=') {
                 break;
-            } else  if (b >= 'a' && b <= 'z') {
+            } else if (b >= 'a' && b <= 'z') {
                 baos.write(b - 'a' + 'A');
             } else if (b >= 0x20 && b <= 0x7D) {
                 baos.write(b);

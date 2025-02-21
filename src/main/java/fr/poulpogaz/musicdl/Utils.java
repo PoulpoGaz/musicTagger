@@ -1,5 +1,7 @@
 package fr.poulpogaz.musicdl;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
@@ -94,6 +96,28 @@ public class Utils {
 
     public static boolean equals(double a, double b, double epsilon) {
         return Math.abs(a - b) <= epsilon;
+    }
+
+
+    public static String sha256(InputStream is) throws IOException {
+        return sha256(is, Long.MAX_VALUE);
+    }
+
+    public static String sha256(InputStream is, long limit) throws IOException {
+        int c = (int) Math.min(limit, 8192);
+        byte[] buff = new byte[c];
+
+        long remaining = limit;
+        while (remaining > 0) {
+            int max = (int) Math.min(remaining, buff.length);
+            int r = is.read(buff, 0, max);
+
+            SHA_256.update(buff, 0, r);
+
+            remaining -= r;
+        }
+
+        return bytesToHex(SHA_256.digest());
     }
 
     public static String bytesToHex(byte[] bytes) {

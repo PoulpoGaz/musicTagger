@@ -4,6 +4,7 @@ import fr.poulpogaz.json.IJsonReader;
 import fr.poulpogaz.json.JsonException;
 import fr.poulpogaz.json.JsonReader;
 import fr.poulpogaz.json.utils.Pair;
+import fr.poulpogaz.musicdl.opus.OpusFile;
 import fr.poulpogaz.musicdl.ui.MusicdlFrame;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -159,7 +160,15 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
     private void processMusic(Path path) {
         Pair<Music, String> music = null;
         try {
-            music = Music.load(path);
+            OpusFile file = new OpusFile(path);
+            List<String> templates = file.removeAll("TEMPLATE");
+            String template;
+            if (templates.isEmpty()) {
+                template = null;
+            } else {
+                template = templates.getFirst();
+            }
+            music = new Pair<>(new Music(file), template);
         } catch (IOException e) {
             LOGGER.debug("Failed to read opus file: {}", path, e);
         } finally {

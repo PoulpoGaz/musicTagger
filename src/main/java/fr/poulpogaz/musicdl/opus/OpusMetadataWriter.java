@@ -3,12 +3,16 @@ package fr.poulpogaz.musicdl.opus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.awt.image.IndexColorModel;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.util.Base64;
 
 public class OpusMetadataWriter {
 
@@ -51,16 +55,59 @@ public class OpusMetadataWriter {
     }
 
     public void addComment(String key, String value) {
+        // TODO: check key
+        if (key.equals("METADATA_BLOCK_PICTURE")) {
+            throw new IllegalStateException("use addCoverArt");
+        }
         try {
             commentCount++;
             byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
             byte[] valueBytes = value.getBytes(StandardCharsets.UTF_8);
 
             IOUtils.writeInt(commentBytes, keyBytes.length + 1 + valueBytes.length);
-            commentBytes.write(keyBytes);
+            commentBytes.writeBytes(keyBytes);
             commentBytes.write('=');
-            commentBytes.write(valueBytes);
+            commentBytes.writeBytes(valueBytes);
         } catch (IOException _) {}
+    }
+
+    public void addCoverArt(BufferedImage image, String description, CoverType type) throws IOException {
+        commentCount++;
+
+        byte[] keyBytes = "METADATA_BLOCK_PICTURE".getBytes(StandardCharsets.UTF_8);
+
+        // comment key
+        int start = commentBytes.getCount();
+        commentBytes.skip(4);
+        commentBytes.writeBytes(keyBytes);
+        commentBytes.write('=');
+
+        // value
+        OutputStream os = Base64.getEncoder().wrap(commentBytes);
+
+        // write metadata picture header
+        os.write((byte) type.ordinal());
+        IOUtils.writeStringWithLength(os, "image/png");
+        if (description != null) {
+            IOUtils.writeStringWithLength(os, description);
+        } else {
+            IOUtils.writeInt(os, 0);
+        }
+        IOUtils.writeInt(os, image.getWidth());
+        IOUtils.writeInt(os, image.getHeight());
+        IOUtils.writeInt(os, image.getColorModel().getPixelSize());
+        if (image.getColorModel() instanceof IndexColorModel model) {
+            IOUtils.writeInt(os, model.getMapSize());
+        } else {
+            IOUtils.writeInt(os, 0);
+        }
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", baos);
+        IOUtils.writeInt(os, baos.size());
+        os.write(baos.toByteArray());
+
+        commentBytes.writeIntAt(start, commentBytes.getCount() - start);
     }
 
     public void write() throws IOException {
