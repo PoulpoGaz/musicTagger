@@ -65,11 +65,11 @@ public class Templates {
         template.setName(UNASSIGNED_MUSIC_TEMPLATE_NAME);
 
         Key title = new Key("Title");
-        title.setMetadataKey("title");
+        title.setMetadataField("title");
         template.addKey(title);
 
         Key artist = new Key("Artist");
-        artist.setMetadataKey("artist");
+        artist.setMetadataField("artist");
         template.addKey(artist);
 
 
@@ -83,7 +83,7 @@ public class Templates {
                 m.putTag(1, "Artist " + i);
 
                 if (i % 2 == 0) {
-                    m.addMetadata(template.getKeyMetadata(0), "Title bis " + i);
+                    m.addMetadata(template.getKeyMetadataField(0), "Title bis " + i);
                 }
             }
         }
@@ -122,7 +122,7 @@ public class Templates {
 
                 Key key = new Key();
                 key.setName(keyO.getAsString("name"));
-                key.setMetadataKey(keyO.getOptionalString("metadataKey").orElse(null));
+                key.setMetadataField(keyO.getOptionalString("metadataKey").orElse(null));
                 template.addKey(key);
             }
 
@@ -172,8 +172,8 @@ public class Templates {
         for (Key key : template.getKeys()) {
             jw.beginObject();
             jw.field("name", key.getName());
-            if (key.isMetadataKeySet()) {
-                jw.field("metadataKey", key.getMetadataKey());
+            if (key.isMetadataFieldSet()) {
+                jw.field("metadataKey", key.getMetadataField());
             }
             jw.endObject();
         }

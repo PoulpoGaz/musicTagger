@@ -4,15 +4,15 @@ import fr.poulpogaz.musicdl.model.Music;
 import fr.poulpogaz.musicdl.ui.MTable;
 import fr.poulpogaz.musicdl.ui.MTableModel;
 import fr.poulpogaz.musicdl.ui.TablePopupMenuSupport;
-import fr.poulpogaz.musicdl.ui.layout.*;
+import fr.poulpogaz.musicdl.ui.layout.HCOrientation;
+import fr.poulpogaz.musicdl.ui.layout.HorizontalConstraint;
+import fr.poulpogaz.musicdl.ui.layout.HorizontalLayout;
 
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
-import javax.swing.plaf.basic.BasicTableUI;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

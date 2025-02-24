@@ -3,7 +3,6 @@ package fr.poulpogaz.musicdl.model;
 import fr.poulpogaz.musicdl.properties.ObjectProperty;
 import fr.poulpogaz.musicdl.properties.Property;
 
-import java.text.Format;
 import java.util.*;
 
 public class Template implements Iterable<Key> {
@@ -164,8 +163,8 @@ public class Template implements Iterable<Key> {
         return keys.get(index).getName();
     }
 
-    public String getKeyMetadata(int index) {
-        return keys.get(index).getMetadataKey();
+    public String getKeyMetadataField(int index) {
+        return keys.get(index).getMetadataField();
     }
 
     public List<Key> getKeys() {

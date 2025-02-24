@@ -235,7 +235,7 @@ public class TemplateModel {
                 key.setName(row.getName());
             }
 
-            key.setMetadataKey(row.getMetadataKey());
+            key.setMetadataField(row.getMetadataKey());
         }
 
         for (; i < keyTable.notRemovedRowCount(); i++) {
@@ -340,7 +340,7 @@ public class TemplateModel {
 
             this.originalIndex = originalIndex;
             this.name = original.getName();
-            this.metadataKey = original.getMetadataKey();
+            this.metadataKey = original.getMetadataField();
         }
 
         public String getName() {
@@ -367,7 +367,7 @@ public class TemplateModel {
 
         public Key asKey() {
             Key key = new Key(name);
-            key.setMetadataKey(metadataKey);
+            key.setMetadataField(metadataKey);
 
             return key;
         }
@@ -378,7 +378,7 @@ public class TemplateModel {
             }
 
             original.setName(name);
-            original.setMetadataKey(metadataKey);
+            original.setMetadataField(metadataKey);
         }
 
         public Key getOriginal() {
@@ -418,7 +418,7 @@ public class TemplateModel {
             if (column == 1) {
                 setName(original.getName());
             } else if (column == 2) {
-                setMetadataKey(original.getMetadataKey());
+                setMetadataKey(original.getMetadataField());
             }
         }
 
@@ -434,7 +434,7 @@ public class TemplateModel {
             } if (column == 1) {
                 return !Objects.equals(name, original.getName());
             } else if (column == 2) {
-                return !Objects.equals(metadataKey, original.getMetadataKey());
+                return !Objects.equals(metadataKey, original.getMetadataField());
             } else {
                 return false;
             }

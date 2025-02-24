@@ -74,7 +74,7 @@ public class TemplateTableModel extends AbstractTableModel {
             Music m = data.getMusic(rowIndex);
 
             return !m.isDownloading()
-                    && (columnIndex == 0 || !m.hasMultipleValues(template.getKeyMetadata(columnIndex - 1)));
+                    && (columnIndex == 0 || !m.hasMultipleValues(template.getKeyMetadataField(columnIndex - 1)));
         }
 
         return false;
@@ -182,7 +182,7 @@ public class TemplateTableModel extends AbstractTableModel {
             String tag = m.getTag(i);
 
             if (tag != null) {
-                ytdlp.setMetadata(key.getMetadataKey(), tag);
+                ytdlp.setMetadata(key.getMetadataField(), tag);
                 t.put(key.getName(), tag);
             }
         }
@@ -229,7 +229,7 @@ public class TemplateTableModel extends AbstractTableModel {
         if (column == 0) {
             return null;
         } else {
-            return template.getKeyMetadata(column - 1);
+            return template.getKeyMetadataField(column - 1);
         }
     }
 

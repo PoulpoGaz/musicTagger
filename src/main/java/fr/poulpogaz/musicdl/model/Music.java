@@ -8,7 +8,6 @@ import fr.poulpogaz.musicdl.ArrayListValuedLinkedMap;
 import fr.poulpogaz.musicdl.opus.*;
 import org.apache.commons.collections4.ListValuedMap;
 import org.apache.commons.collections4.MapIterator;
-import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -273,7 +272,7 @@ public class Music {
         if (template == null) {
             return null;
         } else {
-            List<String> str = metadata.get(template.getKeyMetadata(key));
+            List<String> str = metadata.get(template.getKeyMetadataField(key));
 
             return str.isEmpty() ? null : String.join("; ", str);
         }
@@ -284,7 +283,7 @@ public class Music {
             if (value == null) {
                 removeTag(key);
             } else {
-                String metadataKey = template.getKeyMetadata(key);
+                String metadataKey = template.getKeyMetadataField(key);
 
                 List<String> values = metadata.get(metadataKey);
                 values.clear();
@@ -295,13 +294,13 @@ public class Music {
 
     public void removeTag(int key) {
         if (template != null) {
-            String metadataKey = template.getKeyMetadata(key);
+            String metadataKey = template.getKeyMetadataField(key);
             metadata.remove(metadataKey);
         }
     }
 
     public boolean hasMultipleValues(int key) {
-        return hasMultipleValues(template.getKeyMetadata(key));
+        return hasMultipleValues(template.getKeyMetadataField(key));
     }
 
 

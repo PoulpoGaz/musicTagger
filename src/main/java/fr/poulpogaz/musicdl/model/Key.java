@@ -5,7 +5,7 @@ import fr.poulpogaz.musicdl.opus.OpusFile;
 public class Key {
 
     private String name;
-    private String metadataKey;
+    private String metadataField;
 
     Template template;
 
@@ -35,22 +35,22 @@ public class Key {
         return name != null && !name.isEmpty() && (template == null || !template.containsKey(name));
     }
 
-    public boolean isMetadataKeySet() {
-        return metadataKey != null;
+    public boolean isMetadataFieldSet() {
+        return metadataField != null;
     }
 
-    public String getMetadataKey() {
-        if (metadataKey == null) {
+    public String getMetadataField() {
+        if (metadataField == null) {
             return OpusFile.sanitize(name);
         } else {
-            return metadataKey;
+            return metadataField;
         }
     }
 
-    public void setMetadataKey(String metadataKey) {
-        String key = OpusFile.sanitize(metadataKey);
+    public void setMetadataField(String metadataField) {
+        String key = OpusFile.sanitize(metadataField);
         if (key != null) {
-            this.metadataKey = key;
+            this.metadataField = key;
         }
     }
 
