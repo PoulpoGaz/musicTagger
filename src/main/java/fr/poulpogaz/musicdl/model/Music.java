@@ -4,6 +4,7 @@ import fr.poulpogaz.json.IJsonReader;
 import fr.poulpogaz.json.IJsonWriter;
 import fr.poulpogaz.json.JsonException;
 import fr.poulpogaz.json.utils.Pair;
+import fr.poulpogaz.musicdl.ArrayListValuedLinkedMap;
 import fr.poulpogaz.musicdl.opus.*;
 import org.apache.commons.collections4.ListValuedMap;
 import org.apache.commons.collections4.MapIterator;
@@ -89,12 +90,11 @@ public class Music {
 
     private OpusFile file;
 
-    private final ListValuedMap<String, String> metadata = new ArrayListValuedHashMap<>();
+    private final ListValuedMap<String, String> metadata = new ArrayListValuedLinkedMap<>();
     private final List<CoverArt> covers = new ArrayList<>();
     Template template;
     int index = -1;
 
-    private Path path; // location on disk
     private String downloadURL;
     private boolean downloading;
 
@@ -130,7 +130,11 @@ public class Music {
             jw.nullField("template");
         }
 
-        jw.field("url", downloadURL);
+        if (downloadURL != null) {
+            jw.field("url", downloadURL);
+        } else {
+            jw.nullField("url");
+        }
 
         // write metadata
         jw.key("metadata").beginObject();
@@ -188,13 +192,8 @@ public class Music {
 
 
 
-
-
-    private String transform(String key) {
-        return key.toUpperCase(Locale.ROOT);
-    }
-
     private void checkKey(String key) {
+        Objects.requireNonNull(key);
         if (key.equals("METADATA_BLOCK_PICTURE")) {
             throw new IllegalArgumentException("To add a picture, please use #addCoverArt");
         } else if (key.equals("TEMPLATE")) {
@@ -203,34 +202,66 @@ public class Music {
     }
 
     public void addMetadata(String key, String value) {
-        key = transform(key);
+        key = OpusFile.sanitize(key);
         checkKey(key);
         metadata.put(key, value);
     }
 
     public void removeMetadata(String key, String value) {
-        metadata.removeMapping(transform(key), value);
+        metadata.removeMapping(OpusFile.sanitize(key), value);
     }
 
     public void removeMetadata(String key) {
-        metadata.remove(key);
+        metadata.remove(OpusFile.sanitize(key));
     }
 
     public List<String> getMetadata(String key) {
-        return metadata.get(transform(key));
+        key = OpusFile.sanitize(key);
+        if (key == null) {
+            return null;
+        }
+        return metadata.get(key);
     }
 
     public MapIterator<String, String> metadataIterator() {
         return metadata.mapIterator();
     }
 
+    public boolean hasMultipleValues(String key) {
+        key = OpusFile.sanitize(key);
+
+        if (key == null) {
+            return false;
+        } else if (key.equals("METADATA_COVER_ART")) {
+            return covers.size() > 1;
+        } else {
+            return metadata.get(key).size() > 1;
+        }
+    }
+
+    public boolean contains(String key) {
+        key = OpusFile.sanitize(key);
+
+        if (key == null) {
+            return false;
+        } else if (key.equals("METADATA_COVER_ART")) {
+            return !covers.isEmpty();
+        } else {
+            return !metadata.get(key).isEmpty();
+        }
+    }
+
 
     public void addCoverArt(CoverArt cover) {
-        covers.add(cover);
+        if (cover != null) {
+            covers.add(cover);
+        }
     }
 
     public void removeCoverArt(CoverArt cover) {
-        covers.remove(cover);
+        if (cover != null) {
+            covers.remove(cover);
+        }
     }
 
     public List<CoverArt> getCovers() {
@@ -242,7 +273,7 @@ public class Music {
         if (template == null) {
             return null;
         } else {
-            List<String> str = getMetadata(template.getKeyMetadata(key));
+            List<String> str = metadata.get(template.getKeyMetadata(key));
 
             return str.isEmpty() ? null : String.join("; ", str);
         }
@@ -253,8 +284,8 @@ public class Music {
             if (value == null) {
                 removeTag(key);
             } else {
-                String metadataKey = transform(template.getKeyMetadata(key));
-                checkKey(metadataKey);
+                String metadataKey = template.getKeyMetadata(key);
+
                 List<String> values = metadata.get(metadataKey);
                 values.clear();
                 values.add(value);
@@ -264,18 +295,18 @@ public class Music {
 
     public void removeTag(int key) {
         if (template != null) {
-            String metadataKey = transform(template.getKeyMetadata(key));
-            removeMetadata(metadataKey);
+            String metadataKey = template.getKeyMetadata(key);
+            metadata.remove(metadataKey);
         }
+    }
+
+    public boolean hasMultipleValues(int key) {
+        return hasMultipleValues(template.getKeyMetadata(key));
     }
 
 
     public Path getPath() {
-        return path;
-    }
-
-    public void setPath(Path path) {
-        this.path = path;
+        return file.getFile();
     }
 
     public long getSize() {
@@ -312,10 +343,12 @@ public class Music {
     }
 
     public boolean isDownloaded() {
-        return path != null;
+        return file != null;
     }
 
     public void notifyChanges() {
-        template.getData().notifyChanges(this);
+        if (template != null) {
+            template.getData().notifyChanges(this);
+        }
     }
 }

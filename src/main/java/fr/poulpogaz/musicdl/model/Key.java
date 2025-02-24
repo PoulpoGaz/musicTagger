@@ -1,5 +1,7 @@
 package fr.poulpogaz.musicdl.model;
 
+import fr.poulpogaz.musicdl.opus.OpusFile;
+
 public class Key {
 
     private String name;
@@ -39,14 +41,21 @@ public class Key {
 
     public String getMetadataKey() {
         if (metadataKey == null) {
-            return name;
+            return OpusFile.sanitize(name);
         } else {
             return metadataKey;
         }
     }
 
     public void setMetadataKey(String metadataKey) {
-        this.metadataKey = metadataKey;
+        String key = OpusFile.sanitize(metadataKey);
+        if (key != null) {
+            this.metadataKey = key;
+        }
+    }
+
+    public boolean isMetadataKeyValid(String metadataKey) {
+        return OpusFile.isValidKey(metadataKey);
     }
 
 

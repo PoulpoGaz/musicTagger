@@ -69,9 +69,26 @@ public class TemplateTableModel extends AbstractTableModel {
 
     @Override
     public boolean isCellEditable(int rowIndex, int columnIndex) {
-        return rowIndex >= 0 && rowIndex < getRowCount() &&
-                columnIndex >= 0 && columnIndex < getColumnCount() &&
-                !data.getMusic(rowIndex).isDownloading();
+        if (rowIndex >= 0 && rowIndex < getRowCount() &&
+                columnIndex >= 0 && columnIndex < getColumnCount()) {
+            Music m = data.getMusic(rowIndex);
+
+            return !m.isDownloading()
+                    && (columnIndex == 0 || !m.hasMultipleValues(template.getKeyMetadata(columnIndex - 1)));
+        }
+
+        return false;
+    }
+
+    public boolean canOpenTagEditor(int rowIndex, int columnIndex) {
+        if (rowIndex >= 0 && rowIndex < getRowCount() &&
+                columnIndex >= 0 && columnIndex < getColumnCount()) {
+            Music m = data.getMusic(rowIndex);
+
+            return columnIndex != 0 && !m.isDownloading();
+        }
+
+        return false;
     }
 
     public void addRow() {
@@ -198,6 +215,22 @@ public class TemplateTableModel extends AbstractTableModel {
 
     public Template getTemplate() {
         return template;
+    }
+
+    public Music getMusic(int row) {
+        if (row >= 0 && row < data.getMusicCount()) {
+            return data.getMusic(row);
+        } else {
+            return null;
+        }
+    }
+
+    public String getMetadataKey(int column) {
+        if (column == 0) {
+            return null;
+        } else {
+            return template.getKeyMetadata(column - 1);
+        }
     }
 
     public String[][] getContent() {

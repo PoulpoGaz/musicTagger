@@ -20,6 +20,6 @@ public enum OS {
             }
         }
 
-        return os ;
+        return os;
     }
 }

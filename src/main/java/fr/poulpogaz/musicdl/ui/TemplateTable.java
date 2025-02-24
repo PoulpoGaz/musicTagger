@@ -1,14 +1,18 @@
 package fr.poulpogaz.musicdl.ui;
 
+import fr.poulpogaz.musicdl.model.Music;
 import fr.poulpogaz.musicdl.model.Template;
 import fr.poulpogaz.musicdl.model.Templates;
 import fr.poulpogaz.musicdl.ui.dialogs.MetadataDialog;
+import fr.poulpogaz.musicdl.ui.dialogs.SingleMetadataEditorDialog;
 
 import javax.swing.*;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class TemplateTable extends JPanel {
 
@@ -44,8 +48,35 @@ public class TemplateTable extends JPanel {
         jTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         jTable.setFillsViewportHeight(true);
         jTable.setModel(tableModel);
+        jTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                Point point = e.getPoint();
+                int row = table.rowAtPoint(point);
+                int col = table.columnAtPoint(point);
+                if (e.getClickCount() == 2 && row != -1 && col != -1) {
+                    int modelRow = table.convertRowIndexToModel(row);
+                    int modelCol = table.convertColumnIndexToModel(col);
+
+                    Music m = tableModel.getMusic(modelRow);
+
+                    if (m.hasMultipleValues(col - 1)) {
+                        openSingleMetadataEditor(modelRow, modelCol);
+                    }
+                }
+            }
+        });
 
         return jTable;
+    }
+
+    private void openSingleMetadataEditor(int row, int column) {
+        if (tableModel.canOpenTagEditor(row, column)) {
+            Music m = tableModel.getMusic(row);
+            String key = tableModel.getMetadataKey(column);
+
+            SingleMetadataEditorDialog.showDialog(MusicdlFrame.getInstance(), m, key);
+        }
     }
 
     public void addMusicBelowSelection() {
@@ -92,7 +123,11 @@ public class TemplateTable extends JPanel {
 
         @Override
         protected int getStatusOfCell(JTable jTable, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            if (jTable.isCellEditable(row, column)) {
+            TemplateTableModel model = (TemplateTableModel) jTable.getModel();
+            int mRow = jTable.convertRowIndexToModel(row);
+            int mCol = jTable.convertColumnIndexToModel(column);
+
+            if (model.isCellEditable(row, column) || model.canOpenTagEditor(mRow, mCol)) {
                 return DEFAULT;
             } else {
                 return UNEDITABLE;
@@ -108,6 +143,7 @@ public class TemplateTable extends JPanel {
         protected JMenuItem removeMenuItem;
         protected JMenu changeTemplate;
         protected JMenuItem showMetadata;
+        protected JMenuItem editTag;
         protected JMenuItem unset;
         protected JMenuItem download;
 
@@ -123,6 +159,7 @@ public class TemplateTable extends JPanel {
             add(changeTemplate);
             showMetadata = add("Show metadata");
             addSeparator();
+            editTag = add("Edit tag");
             unset = add("Unset");
             download = add("Download music");
 
@@ -136,6 +173,7 @@ public class TemplateTable extends JPanel {
                                               tableModel.getTemplate().getData().getMusic(row));
                 }
             });
+            editTag.addActionListener(_ -> openSingleMetadataEditor(table.getSelectedRow(), table.getSelectedColumn()));
             unset.addActionListener(_ -> unsetSelectedCell());
             download.addActionListener(_ -> downloadSelectedMusics());
         }

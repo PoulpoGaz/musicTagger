@@ -22,8 +22,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static fr.poulpogaz.musicdl.Utils.SHA_256;
-
 public abstract class SoftCoverArt extends CoverArt {
 
     private static final Logger LOGGER = LogManager.getLogger(SoftCoverArt.class);

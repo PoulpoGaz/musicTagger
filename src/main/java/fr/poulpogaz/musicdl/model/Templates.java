@@ -81,6 +81,10 @@ public class Templates {
                 m.setDownloadURL(URLS[i]);
                 m.putTag(0, "Title " + i);
                 m.putTag(1, "Artist " + i);
+
+                if (i % 2 == 0) {
+                    m.addMetadata(template.getKeyMetadata(0), "Title bis " + i);
+                }
             }
         }
 

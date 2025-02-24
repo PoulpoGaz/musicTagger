@@ -20,7 +20,7 @@ public abstract class RevertTableModel<R extends RevertTableModel.Row> extends A
     public void removeRow(int row) {
         R r = rows.remove(row);
 
-        if (!r.isNew()) {
+        if (!r.isNew() && isRestoreEnabled()) {
             r.removed = true;
             r.index = -1;
             removedRows.add(r);
@@ -30,14 +30,16 @@ public abstract class RevertTableModel<R extends RevertTableModel.Row> extends A
     }
 
     public void restoreRow(int row) {
-        int relativeRow = row - rows.size();
+        if (isRestoreEnabled()) {
+            int relativeRow = row - rows.size();
 
-        if (relativeRow >= 0 && relativeRow < removedRows.size()) {
-            R r = removedRows.remove(relativeRow);
-            r.index = rows.size();
-            rows.add(r);
-            r.removed = false;
-            fireTableDataChanged();
+            if (relativeRow >= 0 && relativeRow < removedRows.size()) {
+                R r = removedRows.remove(relativeRow);
+                r.index = rows.size();
+                rows.add(r);
+                r.removed = false;
+                fireTableDataChanged();
+            }
         }
     }
 
@@ -92,6 +94,10 @@ public abstract class RevertTableModel<R extends RevertTableModel.Row> extends A
         } else {
             return removedRows.get(row - rows.size());
         }
+    }
+
+    public boolean isRestoreEnabled() {
+        return true;
     }
 
     @Override

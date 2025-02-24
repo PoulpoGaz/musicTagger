@@ -1,5 +1,6 @@
 package fr.poulpogaz.musicdl.opus;
 
+import fr.poulpogaz.musicdl.ArrayListValuedLinkedMap;
 import fr.poulpogaz.musicdl.LimitedInputStream;
 import fr.poulpogaz.musicdl.Utils;
 import fr.poulpogaz.musicdl.model.CoverArt;
@@ -74,7 +75,7 @@ public class OpusFile {
     private Channels channels;
     private double length;
 
-    private final ListValuedMap<String, String> metadata = new ArrayListValuedHashMap<>();
+    private final ListValuedMap<String, String> metadata = new ArrayListValuedLinkedMap<>();
     private final List<CoverArt> covers = new ArrayList<>();
 
     public OpusFile() {

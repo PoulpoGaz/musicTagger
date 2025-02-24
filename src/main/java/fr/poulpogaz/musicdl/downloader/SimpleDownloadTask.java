@@ -66,6 +66,8 @@ public class SimpleDownloadTask extends DownloadTask {
 
     private Process process;
 
+    private Path downloadPath;
+
     public SimpleDownloadTask(Music music, YTDLP ytdlp) {
         this.music = music;
         this.ytdlp = Objects.requireNonNull(ytdlp).copy();
@@ -92,7 +94,7 @@ public class SimpleDownloadTask extends DownloadTask {
         }
 
         if (music != null) {
-            OpusFile file = new OpusFile(music.getPath());
+            OpusFile file = new OpusFile(downloadPath);
 
             SwingUtilities.invokeLater(() -> {
                 music.set(file);
@@ -119,7 +121,7 @@ public class SimpleDownloadTask extends DownloadTask {
 
         if (std) {
             if (music != null) {
-                music.setPath(Path.of(line));
+                downloadPath = Path.of(line);
             }
         } else if (!line.startsWith("WARNING")) {
             if (errors == null) {
