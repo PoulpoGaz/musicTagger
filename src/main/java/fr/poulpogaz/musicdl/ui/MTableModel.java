@@ -1,5 +1,6 @@
 package fr.poulpogaz.musicdl.ui;
 
+import javax.swing.*;
 import javax.swing.table.TableModel;
 
 public interface MTableModel extends TableModel {
@@ -21,4 +22,8 @@ public interface MTableModel extends TableModel {
     default boolean moveDown(int row) {
         return swapRows(row, row + 1);
     }
+
+    boolean revert(int row, int column);
+
+    boolean revert(ListSelectionModel selectedRows, ListSelectionModel selectedColumns);
 }

@@ -2,7 +2,7 @@ package fr.poulpogaz.musicdl.ui.dialogs;
 
 import com.formdev.flatlaf.extras.components.FlatButton;
 import com.formdev.flatlaf.icons.FlatOptionPaneQuestionIcon;
-import fr.poulpogaz.musicdl.ui.Icons;
+import fr.poulpogaz.musicdl.ui.MTable;
 import fr.poulpogaz.musicdl.ui.SimpleDocumentListener;
 import fr.poulpogaz.musicdl.ui.TablePopupMenuSupport;
 import fr.poulpogaz.musicdl.ui.text.ErrorTextField;
@@ -29,17 +29,11 @@ public abstract class TemplateDialogBase extends AbstractDialog {
     protected ErrorTextField formatField;
 
     // key edition
-    protected JTable keyTable;
-    protected JButton newKeyButton;
-    protected JButton removeKeyButton;
-    protected JButton moveDownKeyButton;
-    protected JButton moveUpKeyButton;
+    protected MTable keyTable;
     protected JToolBar keyToolbar;
 
     // generators
-    protected JTable generatorTable;
-    protected JButton newGeneratorButton;
-    protected JButton removeGeneratorButton;
+    protected MTable generatorTable;
     protected JToolBar generatorToolBar;
 
     // errors
@@ -111,33 +105,38 @@ public abstract class TemplateDialogBase extends AbstractDialog {
         nameLabel = new JLabel("Name: ");
         formatLabel = new JLabel("Format (optional): ");
 
-        keyTable = createTable(templateModel.getKeyTableModel());
-        JPopupMenu menu = createKeyTablePopupMenu();
-        keyTable.addMouseListener(new TablePopupMenuSupport(keyTable, menu));
-        newKeyButton = createNewKeyButton();
-        removeKeyButton = createRemoveKeyButton();
-        moveDownKeyButton = createMoveDownButton();
-        moveUpKeyButton = createMoveUpButton();
 
-        keyToolbar = new JToolBar();
+
+        keyTable = createTable(templateModel.getKeyTableModel());
+        keyTable.newRowAction("key");
+        keyTable.removeRowAction("key");
+        keyTable.moveUpAction("key");
+        keyTable.moveDownAction("key");
+        keyTable.setNullAction();
+        keyTable.revertAction();
+
+        keyToolbar = createKeyToolbar();
         keyToolbar.setFloatable(false);
-        keyToolbar.add(newKeyButton);
-        keyToolbar.add(removeKeyButton);
-        keyToolbar.add(moveUpKeyButton);
-        keyToolbar.add(moveDownKeyButton);
         keyToolbar.setOrientation(SwingConstants.VERTICAL);
+        JPopupMenu menu = createKeyPopupMenu();
+        keyTable.addMouseListener(new TablePopupMenuSupport(keyTable, menu));
+
+
 
         generatorTable = createTable(templateModel.getMetadataGeneratorTableModel());
+        generatorTable.newRowAction("generator");
+        generatorTable.removeRowAction("generator");
+        generatorTable.moveUpAction("generator");
+        generatorTable.moveDownAction("generator");
+        generatorTable.setNullAction();
+        generatorTable.revertAction();
+
+        generatorToolBar = createGeneratorToolbar();
+        generatorToolBar.setFloatable(false);
+        generatorToolBar.setOrientation(SwingConstants.VERTICAL);
         menu = createGeneratorTablePopupMenu();
         generatorTable.addMouseListener(new TablePopupMenuSupport(generatorTable, menu));
-        newGeneratorButton = createNewGeneratorButton();
-        removeGeneratorButton = createRemoveGeneratorButton();
 
-        generatorToolBar = new JToolBar();
-        generatorToolBar.setFloatable(false);
-        generatorToolBar.add(newGeneratorButton);
-        generatorToolBar.add(removeGeneratorButton);
-        generatorToolBar.setOrientation(SwingConstants.VERTICAL);
 
         doneButton = new JButton();
         doneButton.addActionListener(_ -> done());
@@ -234,11 +233,11 @@ public abstract class TemplateDialogBase extends AbstractDialog {
         return b;
     }
 
-    protected JTable createTable(RevertTableModel<?> model) {
-        JTable keyTable = new JTable();
+    protected MTable createTable(RestoreTableModel<?> model) {
+        MTable keyTable = new MTable(model);
         keyTable.setDefaultRenderer(Object.class, new RevertTableCellRenderer());
         keyTable.setModel(model);
-        keyTable.setColumnSelectionAllowed(false);
+        keyTable.setColumnSelectionAllowed(true);
         keyTable.setRowSelectionAllowed(true);
         keyTable.setShowVerticalLines(true);
         keyTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -249,58 +248,47 @@ public abstract class TemplateDialogBase extends AbstractDialog {
         return keyTable;
     }
 
-    protected JButton createNewKeyButton() {
-        JButton addKeyButton = new JButton(Icons.get("add.svg"));
-        addKeyButton.addActionListener(_ -> templateModel.newKey());
-        addKeyButton.setToolTipText("Add key");
 
-        return addKeyButton;
+    protected JToolBar createKeyToolbar() {
+        JToolBar bar = new JToolBar();
+        bar.add(keyTable.getNewRowAction());
+        bar.add(keyTable.getRemoveRowAction());
+        bar.add(keyTable.getMoveUpAction());
+        bar.add(keyTable.getMoveDownAction());
+        return bar;
     }
 
-    protected JButton createRemoveKeyButton() {
-        JButton removeKeyButton = new JButton(Icons.get("delete.svg"));
-        removeKeyButton.addActionListener(_ -> {
-            int i = keyTable.getSelectedRow();
-
-            if (i != -1) {
-                templateModel.removeKey(i);
-                int newSelection = Math.min(i, keyTable.getRowCount() - 1);
-                if (newSelection >= 0) { // when removing the last row
-                    keyTable.setRowSelectionInterval(newSelection, newSelection);
-                }
-            }
-        });
-        removeKeyButton.setToolTipText("Remove selected key");
-
-        return removeKeyButton;
+    protected JPopupMenu createKeyPopupMenu() {
+        JPopupMenu menu = new JPopupMenu();
+        menu.add(keyTable.getNewRowAction());
+        menu.add(keyTable.getRemoveRowAction());
+        menu.add(keyTable.getMoveUpAction());
+        menu.add(keyTable.getMoveDownAction());
+        menu.addSeparator();
+        menu.add(keyTable.getSetNullAction());
+        return menu;
     }
 
-    protected JButton createMoveDownButton() {
-        JButton moveDownKeyButton = new JButton(Icons.get("move_down.svg"));
-        moveDownKeyButton.addActionListener(_ -> {
-            int row = keyTable.getSelectedRow();
-            if (row != -1 && row + 1 < keyTable.getRowCount() &&
-                    templateModel.moveKeyDown(row)) {
-                keyTable.setRowSelectionInterval(row + 1, row + 1);
-            }
-        });
-        moveDownKeyButton.setToolTipText("Move down selected key");
 
-        return moveDownKeyButton;
+    protected JToolBar createGeneratorToolbar() {
+        JToolBar bar = new JToolBar();
+        bar.add(generatorTable.getNewRowAction());
+        bar.add(generatorTable.getRemoveRowAction());
+        return bar;
     }
 
-    protected JButton createMoveUpButton() {
-        JButton moveUpKeyButton = new JButton(Icons.get("move_up.svg"));
-        moveUpKeyButton.addActionListener(_ -> {
-            int row = keyTable.getSelectedRow();
-            if (row > 0 && templateModel.moveKeyUp(row)) {
-                keyTable.setRowSelectionInterval(row - 1, row - 1);
-            }
-        });
-        moveUpKeyButton.setToolTipText("Move down selected key");
-
-        return moveUpKeyButton;
+    protected JPopupMenu createGeneratorPopupMenu() {
+        JPopupMenu menu = new JPopupMenu();
+        menu.add(generatorTable.getNewRowAction());
+        menu.add(generatorTable.getRemoveRowAction());
+        menu.addSeparator();
+        menu.add(keyTable.getSetNullAction());
+        return menu;
     }
+
+
+
+
 
     protected JPopupMenu createKeyTablePopupMenu() {
         return createPopupMenuForTable(keyTable, templateModel.getKeyTableModel(), TemplateModel.KeyRow::new,
@@ -312,9 +300,9 @@ public abstract class TemplateDialogBase extends AbstractDialog {
                                        TemplateModel.MetadataGeneratorRow::new, "metadata generator", false, false);
     }
 
-    protected <R extends RevertTableModel.Row>
+    protected <R extends RestoreTableModel.Row>
     JPopupMenu createPopupMenuForTable(JTable table,
-                                       RevertTableModel<R> model,
+                                       RestoreTableModel<R> model,
                                        Supplier<R> supplier,
                                        String rowType,
                                        boolean addMoveUpDown,
@@ -398,33 +386,6 @@ public abstract class TemplateDialogBase extends AbstractDialog {
 
         return menu;
     }
-
-    protected JButton createNewGeneratorButton() {
-        JButton addGeneratorButton = new JButton(Icons.get("add.svg"));
-        addGeneratorButton.addActionListener(_ -> templateModel.getMetadataGeneratorTableModel().newRow());
-        addGeneratorButton.setToolTipText("Add metadata generator");
-
-        return addGeneratorButton;
-    }
-
-    protected JButton createRemoveGeneratorButton() {
-        JButton removeKeyButton = new JButton(Icons.get("delete.svg"));
-        removeKeyButton.addActionListener(_ -> {
-            int i = generatorTable.getSelectedRow();
-
-            if (i != -1) {
-                templateModel.getMetadataGeneratorTableModel().removeRow(i);
-                int newSelection = Math.min(i, generatorTable.getRowCount() - 1);
-                if (newSelection >= 0) { // when removing the last row
-                    generatorTable.setRowSelectionInterval(newSelection, newSelection);
-                }
-            }
-        });
-        removeKeyButton.setToolTipText("Remove selected metadata generator");
-
-        return removeKeyButton;
-    }
-
 
 
     protected void done() {

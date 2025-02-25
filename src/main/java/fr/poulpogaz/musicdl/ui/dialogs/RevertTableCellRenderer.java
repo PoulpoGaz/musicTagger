@@ -8,8 +8,8 @@ public class RevertTableCellRenderer extends CellRendererBase {
 
     @Override
     protected int getStatusOfCell(JTable jTable, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-        RevertTableModel<?> model = (RevertTableModel<?>) jTable.getModel();
-        RevertTableModel.Row rowO = model.getRow(row);
+        RestoreTableModel<?> model = (RestoreTableModel<?>) jTable.getModel();
+        RestoreTableModel.Row rowO = model.getRow(row);
 
         if (rowO.isNew()) {
             return NEW;

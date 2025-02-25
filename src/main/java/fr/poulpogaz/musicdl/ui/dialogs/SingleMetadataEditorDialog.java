@@ -1,6 +1,7 @@
 package fr.poulpogaz.musicdl.ui.dialogs;
 
 import fr.poulpogaz.musicdl.model.Music;
+import fr.poulpogaz.musicdl.ui.ActionUtils;
 import fr.poulpogaz.musicdl.ui.MTable;
 import fr.poulpogaz.musicdl.ui.MTableModel;
 import fr.poulpogaz.musicdl.ui.TablePopupMenuSupport;
@@ -63,19 +64,19 @@ public class SingleMetadataEditorDialog extends AbstractDialog {
         table.setDragEnabled(false);
         table.setShowHorizontalLines(true);
 
+        List<Action> actions = List.of(
+                table.newRowAction("value"),
+                table.removeRowAction("value"),
+                table.moveUpAction("value"),
+                table.moveDownAction("value")
+        );
 
-        toolbar = new JToolBar(JToolBar.VERTICAL);
-        toolbar.add(table.newRowAction("New value", "New value"));
-        toolbar.add(table.removeRowAction("Remove value", "Remove value"));
-        toolbar.add(table.moveUpAction("Move up", "Move up"));
-        toolbar.add(table.moveDownAction("Move down", "Move down"));
+
+        toolbar = ActionUtils.toolBarFromActions(actions);
+        toolbar.setOrientation(JToolBar.VERTICAL);
         toolbar.setFloatable(false);
 
-        JPopupMenu popup = new JPopupMenu();
-        popup.add(table.getNewRowAction());
-        popup.add(table.getRemoveRowAction());
-        popup.add(table.getMoveUpAction());
-        popup.add(table.getMoveDownAction());
+        JPopupMenu popup = ActionUtils.popupMenuFromActions(actions);
         table.addMouseListener(new TablePopupMenuSupport(table, popup));
 
 
@@ -182,6 +183,16 @@ public class SingleMetadataEditorDialog extends AbstractDialog {
             }
 
             return true;
+        }
+
+        @Override
+        public boolean revert(int row, int column) {
+            return false;
+        }
+
+        @Override
+        public boolean revert(ListSelectionModel selectedRows, ListSelectionModel selectedColumns) {
+            return false;
         }
 
         @Override

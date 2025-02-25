@@ -78,7 +78,7 @@ public class TemplateModel {
 
 
     public void newKey() {
-        keyTable.newRow(new KeyRow());
+        keyTable.newRow();
     }
 
     public void removeKey(int row) {
@@ -90,11 +90,11 @@ public class TemplateModel {
     }
 
     public void revertKeyValue(int row, int column) {
-        keyTable.revertValue(row, column);
+        keyTable.revert(row, column);
     }
 
     public boolean swapKeys(int rowI, int rowJ) {
-        return keyTable.swap(rowI, rowJ);
+        return keyTable.swapRows(rowI, rowJ);
     }
 
     public boolean moveKeyUp(int row) {
@@ -278,9 +278,14 @@ public class TemplateModel {
     }
 
 
-    public static class KeyTableModel extends RevertTableModel<KeyRow> {
+    public static class KeyTableModel extends RestoreTableModel<KeyRow> {
 
         private boolean oldPositionVisible;
+
+        @Override
+        protected KeyRow createRow() {
+            return new KeyRow();
+        }
 
         @Override
         public int getColumnCount() {
@@ -319,7 +324,7 @@ public class TemplateModel {
         }
     }
 
-    public static class KeyRow extends RevertTableModel.Row {
+    public static class KeyRow extends RestoreTableModel.Row {
 
         private final Key original;
         private final int originalIndex;
@@ -406,6 +411,10 @@ public class TemplateModel {
 
         @Override
         public void setValue(Object value, int column) {
+            if (value == null) {
+                value = "";
+            }
+
             if (column == 1) {
                 setName(value.toString());
             } else if (column == 2) {
@@ -446,10 +455,10 @@ public class TemplateModel {
     }
 
 
-    public static class MetadataGeneratorTableModel extends RevertTableModel<MetadataGeneratorRow> {
+    public static class MetadataGeneratorTableModel extends RestoreTableModel<MetadataGeneratorRow> {
 
-        public void newRow() {
-            newRow(new MetadataGeneratorRow());
+        public MetadataGeneratorRow createRow() {
+            return new MetadataGeneratorRow();
         }
 
         @Override
@@ -472,7 +481,7 @@ public class TemplateModel {
         }
     }
 
-    public static class MetadataGeneratorRow extends RevertTableModel.Row {
+    public static class MetadataGeneratorRow extends RestoreTableModel.Row {
 
         private final Template.MetadataGenerator original;
 

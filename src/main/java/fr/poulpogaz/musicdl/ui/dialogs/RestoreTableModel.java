@@ -1,49 +1,57 @@
 package fr.poulpogaz.musicdl.ui.dialogs;
 
+import fr.poulpogaz.musicdl.ui.MTableModel;
+
+import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class RevertTableModel<R extends RevertTableModel.Row> extends AbstractTableModel {
+public abstract class RestoreTableModel<R extends RestoreTableModel.Row> extends AbstractTableModel implements MTableModel {
 
     protected final List<R> rows = new ArrayList<>();
     protected final List<R> removedRows = new ArrayList<>();
 
+    protected abstract R createRow();
+
     public void newRow(R row) {
+        newRow(row, rows.size());
+    }
+
+    public void newRow(R row, int index) {
         row.table = this;
-        row.index = rows.size();
+        row.index = Math.min(index, rows.size());
         rows.add(row);
         fireTableRowsInserted(row.index, row.index);
     }
 
-    public void removeRow(int row) {
-        R r = rows.remove(row);
+    @Override
+    public boolean newRow(int index) {
+        newRow(createRow(), index);
 
-        if (!r.isNew() && isRestoreEnabled()) {
-            r.removed = true;
-            r.index = -1;
-            removedRows.add(r);
-        }
-        resetIndex(row);
-        fireTableDataChanged();
+        return true;
     }
 
-    public void restoreRow(int row) {
-        if (isRestoreEnabled()) {
-            int relativeRow = row - rows.size();
+    public boolean removeRow(int row) {
+        if (row >= 0 && row < rows.size()) {
+            R r = rows.remove(row);
 
-            if (relativeRow >= 0 && relativeRow < removedRows.size()) {
-                R r = removedRows.remove(relativeRow);
-                r.index = rows.size();
-                rows.add(r);
-                r.removed = false;
-                fireTableDataChanged();
+            if (!r.isNew()) {
+                r.removed = true;
+                r.index = -1;
+                removedRows.add(r);
             }
+            resetIndex(row);
+            fireTableDataChanged();
+            return true;
         }
+
+        return false;
     }
 
-    public boolean swap(int rowI, int rowJ) {
+    @Override
+    public boolean swapRows(int rowI, int rowJ) {
         if (rowI < 0 || rowI >= rows.size() || rowJ < 0 || rowJ >= rows.size() || rowI == rowJ) {
             return false; // Swapping is only allowed between keys that aren't deleted
         }
@@ -64,19 +72,31 @@ public abstract class RevertTableModel<R extends RevertTableModel.Row> extends A
         return true;
     }
 
-    public boolean moveUp(int row) {
-        return swap(row - 1, row);
-    }
-
-    public boolean moveDown(int row) {
-        return swap(row, row + 1);
-    }
-
-    public void revertValue(int row, int column) {
+    @Override
+    public boolean revert(int row, int column) {
         R r = getRow(row);
 
         if (r != null && !r.isNew() && r.canRevert(column)) {
             r.revert(column);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean revert(ListSelectionModel selectedRows, ListSelectionModel selectedColumns) {
+        return false;
+    }
+
+    public void restoreRow(int row) {
+        int relativeRow = row - rows.size();
+
+        if (relativeRow >= 0 && relativeRow < removedRows.size()) {
+            R r = removedRows.remove(relativeRow);
+            r.index = rows.size();
+            rows.add(r);
+            r.removed = false;
+            fireTableDataChanged();
         }
     }
 
@@ -94,10 +114,6 @@ public abstract class RevertTableModel<R extends RevertTableModel.Row> extends A
         } else {
             return removedRows.get(row - rows.size());
         }
-    }
-
-    public boolean isRestoreEnabled() {
-        return true;
     }
 
     @Override
@@ -151,7 +167,7 @@ public abstract class RevertTableModel<R extends RevertTableModel.Row> extends A
 
     public abstract static class Row {
 
-        protected RevertTableModel<?> table;
+        protected RestoreTableModel<?> table;
         int index;
         boolean removed;
 
