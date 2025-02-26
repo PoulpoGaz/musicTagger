@@ -1,6 +1,6 @@
 package fr.poulpogaz.musicdl.ui.dialogs;
 
-import fr.poulpogaz.musicdl.ui.MTableModel;
+import fr.poulpogaz.musicdl.ui.table.MTableModel;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;

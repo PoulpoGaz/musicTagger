@@ -2,12 +2,15 @@ package fr.poulpogaz.musicdl.ui.dialogs;
 
 import fr.poulpogaz.musicdl.model.Music;
 import fr.poulpogaz.musicdl.ui.ActionUtils;
-import fr.poulpogaz.musicdl.ui.MTable;
-import fr.poulpogaz.musicdl.ui.MTableModel;
+import fr.poulpogaz.musicdl.ui.table.MTable;
+import fr.poulpogaz.musicdl.ui.table.MTableModel;
 import fr.poulpogaz.musicdl.ui.TablePopupMenuSupport;
 import fr.poulpogaz.musicdl.ui.layout.HCOrientation;
 import fr.poulpogaz.musicdl.ui.layout.HorizontalConstraint;
 import fr.poulpogaz.musicdl.ui.layout.HorizontalLayout;
+import fr.poulpogaz.musicdl.ui.table.MoveAction;
+import fr.poulpogaz.musicdl.ui.table.NewRowAction;
+import fr.poulpogaz.musicdl.ui.table.RemoveRowAction;
 
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
@@ -65,10 +68,10 @@ public class SingleMetadataEditorDialog extends AbstractDialog {
         table.setShowHorizontalLines(true);
 
         List<Action> actions = List.of(
-                table.newRowAction("value"),
-                table.removeRowAction("value"),
-                table.moveUpAction("value"),
-                table.moveDownAction("value")
+                NewRowAction.create(table, "value"),
+                RemoveRowAction.create(table, "value"),
+                MoveAction.moveUp(table, "value"),
+                MoveAction.moveDown(table, "value")
         );
 
 

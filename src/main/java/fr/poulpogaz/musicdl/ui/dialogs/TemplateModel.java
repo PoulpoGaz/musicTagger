@@ -393,7 +393,7 @@ public class TemplateModel {
         @Override
         public Object getValue(int column) {
             return switch (column) {
-                case 0 -> isRemoved() ? "Removed" : index;
+                case 0 -> isRemoved() ? "Removed" : (index + 1);
                 case 1 -> name;
                 case 2 -> metadataKey;
                 default -> {

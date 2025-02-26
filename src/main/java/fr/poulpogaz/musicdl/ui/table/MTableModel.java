@@ -1,4 +1,4 @@
-package fr.poulpogaz.musicdl.ui;
+package fr.poulpogaz.musicdl.ui.table;
 
 import javax.swing.*;
 import javax.swing.table.TableModel;

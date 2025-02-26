@@ -1,7 +1,8 @@
 package fr.poulpogaz.musicdl.ui.dialogs;
 
 import fr.poulpogaz.musicdl.model.Template;
-import fr.poulpogaz.musicdl.ui.MTable;
+import fr.poulpogaz.musicdl.ui.table.MTable;
+import fr.poulpogaz.musicdl.ui.table.RevertAction;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -16,8 +17,12 @@ public class EditTemplateDialog extends TemplateDialogBase {
     }
 
     private final Template template;
-    private Action keyTableRestore;
-    private Action generatorTableRestore;
+
+    private Action keyRevertAction;
+    private Action keyRestoreAction;
+
+    private Action generatorRevertAction;
+    private Action generatorRestoreAction;
 
     public EditTemplateDialog(JFrame owner, Template template) {
         super(owner, "Editing template: " + template.getName(), true);
@@ -27,40 +32,37 @@ public class EditTemplateDialog extends TemplateDialogBase {
     }
 
     @Override
+    protected void createKeyTableActions() {
+        super.createKeyTableActions();
+        keyRevertAction = RevertAction.create(keyTable);
+        keyRestoreAction = createRestoreAction(keyTable,
+                                               templateModel.getKeyTableModel(),
+                                               "key");
+    }
+
+    @Override
     protected JPopupMenu createKeyPopupMenu() {
         JPopupMenu menu = super.createKeyPopupMenu();
-        menu.add(keyTable.getRevertAction());
-        menu.add(getKeyTableRestore());
+        menu.add(keyRevertAction);
+        menu.add(keyRestoreAction);
         return menu;
+    }
+
+    @Override
+    protected void createGeneratorTableActions() {
+        super.createGeneratorTableActions();
+        generatorRevertAction = RevertAction.create(generatorTable);
+        generatorRestoreAction = createRestoreAction(generatorTable,
+                                                     templateModel.getMetadataGeneratorTableModel(),
+                                                     "generator");
     }
 
     @Override
     protected JPopupMenu createGeneratorPopupMenu() {
         JPopupMenu menu = super.createGeneratorPopupMenu();
-        menu.add(generatorTable.getRevertAction());
-        menu.add(getGeneratorTableRestore());
+        menu.add(generatorRevertAction);
+        menu.add(generatorRestoreAction);
         return menu;
-    }
-
-
-    private Action getKeyTableRestore() {
-        if (keyTableRestore == null) {
-            keyTableRestore = createRestoreAction(keyTable,
-                                                  templateModel.getKeyTableModel(),
-                                                  "key");
-        }
-
-        return keyTableRestore;
-    }
-
-    private Action getGeneratorTableRestore() {
-        if (generatorTableRestore == null) {
-            generatorTableRestore = createRestoreAction(generatorTable,
-                                                        templateModel.getMetadataGeneratorTableModel(),
-                                                        "generator");
-        }
-
-        return generatorTableRestore;
     }
 
     private Action createRestoreAction(MTable table, RestoreTableModel<?> model, String name) {

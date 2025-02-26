@@ -2,17 +2,18 @@ package fr.poulpogaz.musicdl.ui.dialogs;
 
 import com.formdev.flatlaf.extras.components.FlatButton;
 import com.formdev.flatlaf.icons.FlatOptionPaneQuestionIcon;
-import fr.poulpogaz.musicdl.ui.MTable;
+import fr.poulpogaz.musicdl.ui.table.MTable;
 import fr.poulpogaz.musicdl.ui.SimpleDocumentListener;
 import fr.poulpogaz.musicdl.ui.TablePopupMenuSupport;
+import fr.poulpogaz.musicdl.ui.table.MoveAction;
+import fr.poulpogaz.musicdl.ui.table.NewRowAction;
+import fr.poulpogaz.musicdl.ui.table.RemoveRowAction;
+import fr.poulpogaz.musicdl.ui.table.SetAction;
 import fr.poulpogaz.musicdl.ui.text.ErrorTextField;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
-import javax.swing.event.PopupMenuEvent;
-import javax.swing.event.PopupMenuListener;
 import java.awt.*;
-import java.util.function.Supplier;
 
 public abstract class TemplateDialogBase extends AbstractDialog {
 
@@ -30,10 +31,18 @@ public abstract class TemplateDialogBase extends AbstractDialog {
 
     // key edition
     protected MTable keyTable;
+    protected Action keyTableNewAction;
+    protected Action keyTableRemoveAction;
+    protected Action keyTableMoveUpAction;
+    protected Action keyTableMoveDownAction;
+    protected Action keyTableSetNullAction;
     protected JToolBar keyToolbar;
 
     // generators
     protected MTable generatorTable;
+    protected Action generatorNewAction;
+    protected Action generatorRemoveAction;
+    protected Action generatorSetNullAction;
     protected JToolBar generatorToolBar;
 
     // errors
@@ -108,12 +117,7 @@ public abstract class TemplateDialogBase extends AbstractDialog {
 
 
         keyTable = createTable(templateModel.getKeyTableModel());
-        keyTable.newRowAction("key");
-        keyTable.removeRowAction("key");
-        keyTable.moveUpAction("key");
-        keyTable.moveDownAction("key");
-        keyTable.setNullAction();
-        keyTable.revertAction();
+        createKeyTableActions();
 
         keyToolbar = createKeyToolbar();
         keyToolbar.setFloatable(false);
@@ -124,17 +128,12 @@ public abstract class TemplateDialogBase extends AbstractDialog {
 
 
         generatorTable = createTable(templateModel.getMetadataGeneratorTableModel());
-        generatorTable.newRowAction("generator");
-        generatorTable.removeRowAction("generator");
-        generatorTable.moveUpAction("generator");
-        generatorTable.moveDownAction("generator");
-        generatorTable.setNullAction();
-        generatorTable.revertAction();
+        createGeneratorTableActions();
 
         generatorToolBar = createGeneratorToolbar();
         generatorToolBar.setFloatable(false);
         generatorToolBar.setOrientation(SwingConstants.VERTICAL);
-        menu = createGeneratorTablePopupMenu();
+        menu = createGeneratorPopupMenu();
         generatorTable.addMouseListener(new TablePopupMenuSupport(generatorTable, menu));
 
 
@@ -234,156 +233,68 @@ public abstract class TemplateDialogBase extends AbstractDialog {
     }
 
     protected MTable createTable(RestoreTableModel<?> model) {
-        MTable keyTable = new MTable(model);
-        keyTable.setDefaultRenderer(Object.class, new RevertTableCellRenderer());
-        keyTable.setModel(model);
-        keyTable.setColumnSelectionAllowed(true);
-        keyTable.setRowSelectionAllowed(true);
-        keyTable.setShowVerticalLines(true);
-        keyTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        keyTable.setFillsViewportHeight(true);
-        keyTable.setDragEnabled(false);
-        keyTable.getTableHeader().setReorderingAllowed(false);
+        MTable table = new MTable(model);
+        table.setDefaultRenderer(Object.class, new RevertTableCellRenderer());
+        table.setModel(model);
+        table.setColumnSelectionAllowed(true);
+        table.setRowSelectionAllowed(true);
+        table.setShowVerticalLines(true);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setFillsViewportHeight(true);
+        table.setDragEnabled(false);
+        table.getTableHeader().setReorderingAllowed(false);
 
-        return keyTable;
+        return table;
     }
 
+    protected void createKeyTableActions() {
+        keyTableNewAction = NewRowAction.create(keyTable, "key");
+        keyTableRemoveAction = RemoveRowAction.create(keyTable, "value");
+        keyTableMoveUpAction = MoveAction.moveUp(keyTable, "value");
+        keyTableMoveDownAction = MoveAction.moveDown(keyTable, "value");
+        keyTableSetNullAction = SetAction.setNull(keyTable);
+    }
 
     protected JToolBar createKeyToolbar() {
         JToolBar bar = new JToolBar();
-        bar.add(keyTable.getNewRowAction());
-        bar.add(keyTable.getRemoveRowAction());
-        bar.add(keyTable.getMoveUpAction());
-        bar.add(keyTable.getMoveDownAction());
+        bar.add(keyTableNewAction);
+        bar.add(keyTableRemoveAction);
+        bar.add(keyTableMoveUpAction);
+        bar.add(keyTableMoveDownAction);
         return bar;
     }
 
     protected JPopupMenu createKeyPopupMenu() {
         JPopupMenu menu = new JPopupMenu();
-        menu.add(keyTable.getNewRowAction());
-        menu.add(keyTable.getRemoveRowAction());
-        menu.add(keyTable.getMoveUpAction());
-        menu.add(keyTable.getMoveDownAction());
+        menu.add(keyTableNewAction);
+        menu.add(keyTableRemoveAction);
+        menu.add(keyTableMoveUpAction);
+        menu.add(keyTableMoveDownAction);
         menu.addSeparator();
-        menu.add(keyTable.getSetNullAction());
+        menu.add(keyTableSetNullAction);
         return menu;
     }
 
 
+    protected void createGeneratorTableActions() {
+        generatorNewAction = NewRowAction.create(generatorTable, "metadata generator");
+        generatorRemoveAction = RemoveRowAction.create(generatorTable, "metadata generator");
+        generatorSetNullAction = SetAction.setNull(generatorTable);
+    }
+
     protected JToolBar createGeneratorToolbar() {
         JToolBar bar = new JToolBar();
-        bar.add(generatorTable.getNewRowAction());
-        bar.add(generatorTable.getRemoveRowAction());
+        bar.add(generatorNewAction);
+        bar.add(generatorRemoveAction);
         return bar;
     }
 
     protected JPopupMenu createGeneratorPopupMenu() {
         JPopupMenu menu = new JPopupMenu();
-        menu.add(generatorTable.getNewRowAction());
-        menu.add(generatorTable.getRemoveRowAction());
+        menu.add(generatorNewAction);
+        menu.add(generatorRemoveAction);
         menu.addSeparator();
-        menu.add(keyTable.getSetNullAction());
-        return menu;
-    }
-
-
-
-
-
-    protected JPopupMenu createKeyTablePopupMenu() {
-        return createPopupMenuForTable(keyTable, templateModel.getKeyTableModel(), TemplateModel.KeyRow::new,
-                                       "key", true, false);
-    }
-
-    protected JPopupMenu createGeneratorTablePopupMenu() {
-        return createPopupMenuForTable(generatorTable, templateModel.getMetadataGeneratorTableModel(),
-                                       TemplateModel.MetadataGeneratorRow::new, "metadata generator", false, false);
-    }
-
-    protected <R extends RestoreTableModel.Row>
-    JPopupMenu createPopupMenuForTable(JTable table,
-                                       RestoreTableModel<R> model,
-                                       Supplier<R> supplier,
-                                       String rowType,
-                                       boolean addMoveUpDown,
-                                       boolean addRevert) {
-        JPopupMenu menu = new JPopupMenu();
-
-        JMenuItem add = menu.add("Add new " + rowType);
-        add.addActionListener(_ -> model.newRow(supplier.get()));
-        JMenuItem remove = menu.add("Remove " + rowType);
-        remove.addActionListener(_ -> model.removeRow(table.getSelectedRow()));
-
-        JMenuItem moveUp;
-        JMenuItem moveDown;
-        if (addMoveUpDown) {
-            moveUp = menu.add("Move up " + rowType);
-            moveUp.addActionListener(_ -> model.moveUp(table.getSelectedRow()));
-            moveDown = menu.add("Move down " + rowType);
-            moveDown.addActionListener(_ -> model.moveDown(table.getSelectedRow()));
-        } else {
-            moveUp = null;
-            moveDown = null;
-        }
-
-        menu.addSeparator();
-        JMenuItem setNull = menu.add("Set NULL");
-        setNull.addActionListener(
-                _ -> model.setValueAt(null, table.getSelectedRow(), table.getSelectedColumn()));
-
-        JMenuItem revert;
-        JMenuItem restore;
-        if (addRevert) {
-            revert = menu.add("Revert");
-            revert.addActionListener(
-                    _ -> templateModel.revertKeyValue(keyTable.getSelectedRow(), keyTable.getSelectedColumn()));
-            restore = menu.add("Restore " + rowType);
-            restore.addActionListener(_ -> templateModel.restoreKey(keyTable.getSelectedRow()));
-        } else {
-            revert = null;
-            restore = null;
-        }
-
-        menu.addPopupMenuListener(new PopupMenuListener() {
-            @Override
-            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
-                int rowIndex = table.getSelectedRow();
-                int colIndex = table.getSelectedColumn();
-
-                if (rowIndex >= 0 && colIndex >= 0) {
-                    R row = model.getRow(rowIndex);
-
-                    remove.setEnabled(!row.isRemoved());
-                    if (addMoveUpDown) {
-                        moveUp.setEnabled(!row.isRemoved());
-                        moveDown.setEnabled(!row.isRemoved());
-                    }
-                    setNull.setEnabled(model.isCellEditable(rowIndex, colIndex));
-                    if (addRevert) {
-                        revert.setEnabled(row.canRevert(colIndex));
-                        restore.setEnabled(row.isRemoved());
-                    }
-                } else {
-                    remove.setEnabled(false);
-                    if (addMoveUpDown) {
-                        moveUp.setEnabled(false);
-                        moveDown.setEnabled(false);
-                    }
-                    setNull.setEnabled(false);
-                    if (addRevert) {
-                        revert.setEnabled(false);
-                        restore.setEnabled(false);
-                    }
-                }
-            }
-
-            @Override
-            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {}
-
-            @Override
-            public void popupMenuCanceled(PopupMenuEvent e) {}
-        });
-
+        menu.add(generatorSetNullAction);
         return menu;
     }
 
