@@ -1,14 +1,15 @@
 package fr.poulpogaz.musicdl.ui.dialogs;
 
+import fr.poulpogaz.musicdl.ui.table.AbstractRevertTableModel;
 import fr.poulpogaz.musicdl.ui.table.MTableModel;
 
 import javax.swing.*;
-import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class RestoreTableModel<R extends RestoreTableModel.Row> extends AbstractTableModel implements MTableModel {
+public abstract class RestoreTableModel<R extends RestoreTableModel.Row>
+        extends AbstractRevertTableModel implements MTableModel {
 
     protected final List<R> rows = new ArrayList<>();
     protected final List<R> removedRows = new ArrayList<>();
@@ -84,7 +85,12 @@ public abstract class RestoreTableModel<R extends RestoreTableModel.Row> extends
     }
 
     @Override
-    public boolean revert(ListSelectionModel selectedRows, ListSelectionModel selectedColumns) {
+    protected boolean doRevert(int row, int column) {
+        R r = getRow(row);
+
+        if (r != null && !r.isNew() && r.canRevert(column)) {
+            return r.revert(column);
+        }
         return false;
     }
 
@@ -175,7 +181,7 @@ public abstract class RestoreTableModel<R extends RestoreTableModel.Row> extends
 
         public abstract void setValue(Object value, int column);
 
-        public abstract void revert(int column);
+        public abstract boolean revert(int column);
 
         public boolean canRevert(int column) {
             return !isNew() && hasChanged(column);

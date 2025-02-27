@@ -189,16 +189,6 @@ public class SingleMetadataEditorDialog extends AbstractDialog {
         }
 
         @Override
-        public boolean revert(int row, int column) {
-            return false;
-        }
-
-        @Override
-        public boolean revert(ListSelectionModel selectedRows, ListSelectionModel selectedColumns) {
-            return false;
-        }
-
-        @Override
         public int getRowCount() {
             return values.size();
         }

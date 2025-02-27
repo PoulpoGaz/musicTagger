@@ -353,10 +353,17 @@ public class TemplateModel {
         }
 
         public void setName(String name) {
-            if (!isRemoved() && !Objects.equals(name, this.name)) {
-                this.name = name;
+            if (setName0(name)) {
                 table.fireTableCellUpdated(index, 1);
             }
+        }
+
+        private boolean setName0(String name) {
+            if (!isRemoved() && !Objects.equals(name, this.name)) {
+                this.name = name;
+                return true;
+            }
+            return false;
         }
 
         public String getMetadataKey() {
@@ -364,10 +371,17 @@ public class TemplateModel {
         }
 
         public void setMetadataKey(String metadataKey) {
-            if (!isRemoved() && !Objects.equals(metadataKey, this.metadataKey)) {
-                this.metadataKey = metadataKey;
+            if (setMetadataKey0(metadataKey)) {
                 table.fireTableCellUpdated(index, 2);
             }
+        }
+
+        private boolean setMetadataKey0(String metadataKey) {
+            if (!isRemoved() && !Objects.equals(metadataKey, this.metadataKey)) {
+                this.metadataKey = metadataKey;
+                return true;
+            }
+            return false;
         }
 
         public Key asKey() {
@@ -423,11 +437,13 @@ public class TemplateModel {
         }
 
         @Override
-        public void revert(int column) {
+        public boolean revert(int column) {
             if (column == 1) {
-                setName(original.getName());
+                return setName0(original.getName());
             } else if (column == 2) {
-                setMetadataKey(original.getMetadataField());
+                return setMetadataKey0(original.getMetadataField()) ;
+            } else {
+                return false;
             }
         }
 
@@ -506,10 +522,17 @@ public class TemplateModel {
         }
 
         public void setKey(String key) {
-            if (!isRemoved() && !Objects.equals(key, this.key)) {
-                this.key = key;
+            if (setKey0(key)) {
                 table.fireTableCellUpdated(index, 0);
             }
+        }
+
+        public boolean setKey0(String key) {
+            if (!isRemoved() && !Objects.equals(key, this.key)) {
+                this.key = key;
+                return true;
+            }
+            return false;
         }
 
         public String getValue() {
@@ -517,10 +540,17 @@ public class TemplateModel {
         }
 
         public void setValue(String value) {
-            if (!isRemoved() && !Objects.equals(value, this.value)) {
-                this.value = value;
+            if (setValue0(value)) {
                 table.fireTableCellUpdated(index, 1);
             }
+        }
+
+        private boolean setValue0(String value) {
+            if (!isRemoved() && !Objects.equals(value, this.value)) {
+                this.value = value;
+                return true;
+            }
+            return false;
         }
 
         @Override
@@ -542,12 +572,13 @@ public class TemplateModel {
         }
 
         @Override
-        public void revert(int column) {
+        public boolean revert(int column) {
             if (column == 0) {
-                setKey(original.getKey());
+                return setKey0(original.getKey());
             } else if (column == 1) {
-                setValue(original.getValue());
+                return setValue0(original.getValue());
             }
+            return false;
         }
 
         public boolean isNew() {

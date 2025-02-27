@@ -33,10 +33,12 @@ public class RevertAction extends AbstractAction {
         }
 
         MTableModel model = table.getModel();
-        if (isSingleItemSelected(selectedRows) && isSingleItemSelected(selectedColumns)) {
-            model.revert(selectedRows.getMinSelectionIndex(), selectedColumns.getMinSelectionIndex());
-        } else {
-            model.revert(selectedRows, selectedColumns);
+        if (model instanceof RevertTableModel revertModel) {
+            if (isSingleItemSelected(selectedRows) && isSingleItemSelected(selectedColumns)) {
+                revertModel.revert(selectedRows.getMinSelectionIndex(), selectedColumns.getMinSelectionIndex());
+            } else {
+                revertModel.revert(selectedRows, selectedColumns);
+            }
         }
     }
 
