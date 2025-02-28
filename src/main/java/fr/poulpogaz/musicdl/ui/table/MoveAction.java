@@ -5,7 +5,7 @@ import fr.poulpogaz.musicdl.ui.Icons;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 
-public class MoveAction extends AbstractAction {
+public class MoveAction extends AbstractMAction {
 
     public static MoveAction moveUp(MTable table, String rowName) {
         MoveAction action = new MoveAction(table, -1);
@@ -28,7 +28,6 @@ public class MoveAction extends AbstractAction {
     }
 
 
-    private final MTable table;
     private final int offset;
 
     public MoveAction(MTable table, int offset) {
@@ -36,24 +35,24 @@ public class MoveAction extends AbstractAction {
             throw new IllegalArgumentException("zero offset");
         }
 
-        this.table = table;
         this.offset = offset;
-        table.addAction(this);
-        setEnabled(isEnabled());
+        setTable(table);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        int row = table.getSelectedRow();
-        int dest = row + offset;
-        if (table.getModel().swapRows(row, dest)) {
-            table.setRowSelectionInterval(dest, dest);
+        if (table != null) {
+            int row = table.getSelectedRow();
+            int dest = row + offset;
+            if (table.getModel().swapRows(row, dest)) {
+                table.setRowSelectionInterval(dest, dest);
+            }
         }
     }
 
     @Override
     public boolean isEnabled() {
-        if (table.getSelectedColumn() != -1) {
+        if (table != null && table.getSelectedColumn() != -1) {
             int dest = table.getSelectedRow() + offset;
             return dest >= 0 && dest < table.getRowCount();
         }

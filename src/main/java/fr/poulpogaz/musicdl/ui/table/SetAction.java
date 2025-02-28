@@ -3,7 +3,7 @@ package fr.poulpogaz.musicdl.ui.table;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 
-public class SetAction extends AbstractAction {
+public class SetAction extends AbstractMAction {
 
     public static SetAction setNull(MTable table) {
         SetAction action = new SetAction(table, null);
@@ -14,19 +14,19 @@ public class SetAction extends AbstractAction {
         return action;
     }
 
-
-    private final MTable table;
     private final Object value;
 
     public SetAction(MTable table, Object value) {
-        this.table = table;
+        super(table);
         this.value = value;
-        table.addAction(this);
-        setEnabled(isEnabled());
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        if (table == null) {
+            return;
+        }
+
         int row = table.getSelectedRow();
         int col = table.getSelectedColumn();
 
@@ -37,6 +37,7 @@ public class SetAction extends AbstractAction {
 
     @Override
     public boolean isEnabled() {
-        return table.getSelectedRow() != -1 && table.getSelectedColumn() != -1;
+        return table != null &&
+                table.getSelectedRow() != -1 && table.getSelectedColumn() != -1;
     }
 }

@@ -1,4 +1,4 @@
-package fr.poulpogaz.musicdl.ui;
+package fr.poulpogaz.musicdl.ui.table;
 
 import javax.swing.*;
 import java.util.List;
@@ -29,5 +29,10 @@ public class ActionUtils {
         }
 
         return menu;
+    }
+
+
+    public static boolean isSingleItemSelected(ListSelectionModel model) {
+        return !model.isSelectionEmpty() && model.getMaxSelectionIndex() == model.getMinSelectionIndex();
     }
 }

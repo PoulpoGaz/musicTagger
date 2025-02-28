@@ -76,40 +76,9 @@ public class TemplateModel {
     }
 
 
-
-    public void newKey() {
-        keyTable.newRow();
-    }
-
-    public void removeKey(int row) {
-        keyTable.removeRow(row);
-    }
-
-    public void restoreKey(int row) {
-        keyTable.restoreRow(row);
-    }
-
-    public void revertKeyValue(int row, int column) {
-        keyTable.revert(row, column);
-    }
-
-    public boolean swapKeys(int rowI, int rowJ) {
-        return keyTable.swapRows(rowI, rowJ);
-    }
-
-    public boolean moveKeyUp(int row) {
-        return swapKeys(row - 1, row);
-    }
-
-    public boolean moveKeyDown(int row) {
-        return swapKeys(row, row + 1);
-    }
-
     public KeyTableModel getKeyTableModel() {
         return keyTable;
     }
-
-
 
     public MetadataGeneratorTableModel getMetadataGeneratorTableModel() {
         return metadataGeneratorTable;

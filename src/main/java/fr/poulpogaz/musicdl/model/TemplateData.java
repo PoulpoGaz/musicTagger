@@ -126,10 +126,11 @@ public class TemplateData implements Iterable<Music> {
                   start, end);
     }
 
-    public void removeMatching(BiPredicate<Integer, Music> cond, int start, int end) {
+    public int removeMatching(BiPredicate<Integer, Music> cond, int start, int end) {
         start = Math.max(start, 0);
         end = Math.min(end, musics.size());
 
+        int oldSize = musics.size();
         int minI = Integer.MAX_VALUE;
         int maxI = Integer.MIN_VALUE;
         int internalI = start;
@@ -152,13 +153,16 @@ public class TemplateData implements Iterable<Music> {
 
         if (minI != Integer.MAX_VALUE) {
             fireEvent(TemplateDataListener.DELETE, minI, maxI);
+            return musics.size() - oldSize;
         }
+        return 0;
     }
 
-    public void modifyMatching(BiPredicate<Integer, Music> cond, Consumer<Music> modifier, int start, int end) {
+    public int modifyMatching(BiPredicate<Integer, Music> cond, Consumer<Music> modifier, int start, int end) {
         start = Math.max(start, 0);
         end = Math.min(end, musics.size());
 
+        int modified = 0;
         int minI = Integer.MAX_VALUE;
         int maxI = Integer.MIN_VALUE;
         for (int i = start; i < end; i++) {
@@ -166,6 +170,7 @@ public class TemplateData implements Iterable<Music> {
 
             if (cond.test(i, m)) {
                 modifier.accept(m);
+                modified++;
                 minI = Math.min(i, minI);
                 maxI = Math.max(i, maxI);
             }
@@ -173,7 +178,9 @@ public class TemplateData implements Iterable<Music> {
 
         if (minI != Integer.MAX_VALUE) {
             fireEvent(TemplateDataListener.UPDATE, minI, maxI);
+            return modified;
         }
+        return 0;
     }
 
     private void checkIndex() {

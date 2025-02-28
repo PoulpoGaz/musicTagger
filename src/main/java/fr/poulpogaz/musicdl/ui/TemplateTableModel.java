@@ -2,6 +2,8 @@ package fr.poulpogaz.musicdl.ui;
 
 import fr.poulpogaz.musicdl.downloader.*;
 import fr.poulpogaz.musicdl.model.*;
+import fr.poulpogaz.musicdl.ui.table.AbstractRevertTableModel;
+import fr.poulpogaz.musicdl.ui.table.MTableModel;
 
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
@@ -9,7 +11,7 @@ import javax.swing.table.AbstractTableModel;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TemplateTableModel extends AbstractTableModel {
+public class TemplateTableModel extends AbstractRevertTableModel implements MTableModel {
 
     private final Template template;
     private final TemplateData data;
@@ -91,67 +93,14 @@ public class TemplateTableModel extends AbstractTableModel {
         return false;
     }
 
-    public void addRow() {
-        addRow(data.getMusicCount());
-    }
 
-    public void addRow(int index) {
-        addMusic(index, new Music());
-    }
 
-    public void addMusic(Music music) {
-        addMusic(data.getMusicCount(), music);
-    }
 
-    public void addMusic(int index, Music music) {
-        if (music.getTemplate() != null && music.getTemplate() != template) {
-            return;
-        }
-        data.addMusic(index, music);
-    }
 
-    public void deleteRow(int rowIndex) {
-        data.removeMusic(rowIndex);
-    }
 
-    public void deleteSelectedRows(ListSelectionModel model) {
-        int min = model.getMinSelectionIndex();
-        int max = Math.min(model.getMaxSelectionIndex() + 1, getRowCount());
 
-        data.removeMatching((index, _) -> model.isSelectedIndex(index),
-                            min, max);;
-    }
 
-    public void transferSelectionTo(ListSelectionModel model, Template template) {
-        int min = model.getMinSelectionIndex();
-        int max = Math.min(model.getMaxSelectionIndex() + 1, getRowCount());
 
-        this.template.getData()
-                     .transferMatchingTo(template.getData(),
-                                         (i, _) -> model.isSelectedIndex(i),
-                                         min, max);
-    }
-
-    public void setNullValues(ListSelectionModel selectedRows, ListSelectionModel selectedColumns) {
-        int minRow = selectedRows.getMinSelectionIndex();
-        int minCol = selectedColumns.getMinSelectionIndex();
-
-        int maxRow = selectedRows.getMaxSelectionIndex();
-        int maxCol = selectedColumns.getMaxSelectionIndex();
-
-        data.modifyMatching((index, _) -> selectedRows.isSelectedIndex(index),
-                            music -> {
-                                for (int col = minCol; col <= maxCol; col++) {
-                                    if (selectedColumns.isSelectedIndex(col)) {
-                                        if (col == 0) {
-                                            music.setDownloadURL(null);
-                                        } else {
-                                            music.removeTag(col - 1);
-                                        }
-                                    }
-                                }
-                            }, minRow, maxRow + 1);
-    }
 
 
     public void downloadSelected(ListSelectionModel selectedRows) {
@@ -246,5 +195,87 @@ public class TemplateTableModel extends AbstractTableModel {
         }
 
         return content;
+    }
+
+
+
+
+    @Override
+    public boolean newRow(int index) {
+        return addMusic(index, new Music());
+    }
+
+    public boolean addMusic(Music music) {
+        return addMusic(data.getMusicCount(), music);
+    }
+
+    public boolean addMusic(int index, Music music) {
+        if (music != null && index >= 0 && index <= data.getMusicCount()) {
+            data.addMusic(index, music);
+            return true;
+        }
+        return false;
+    }
+
+
+
+    @Override
+    public boolean removeRow(int index) {
+        if (index >= 0 && index < data.getMusicCount()) {
+            data.removeMusic(index);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean removeRows(ListSelectionModel selectedRows) {
+        int min = selectedRows.getMinSelectionIndex();
+        int max = Math.min(selectedRows.getMaxSelectionIndex() + 1, getRowCount());
+
+        int removed = data.removeMatching((index, _) -> selectedRows.isSelectedIndex(index),
+                                          min, max);
+        return removed != 0;
+    }
+
+    @Override
+    public boolean swapRows(int rowI, int rowJ) {
+        return false;
+    }
+
+    public void transferSelectionTo(ListSelectionModel model, Template template) {
+        int min = model.getMinSelectionIndex();
+        int max = Math.min(model.getMaxSelectionIndex() + 1, getRowCount());
+
+        this.template.getData()
+                     .transferMatchingTo(template.getData(),
+                                         (i, _) -> model.isSelectedIndex(i),
+                                         min, max);
+    }
+
+    public void setNullValues(ListSelectionModel selectedRows, ListSelectionModel selectedColumns) {
+        int minRow = selectedRows.getMinSelectionIndex();
+        int minCol = selectedColumns.getMinSelectionIndex();
+
+        int maxRow = selectedRows.getMaxSelectionIndex();
+        int maxCol = selectedColumns.getMaxSelectionIndex();
+
+        data.modifyMatching((index, _) -> selectedRows.isSelectedIndex(index),
+                            music -> {
+                                for (int col = minCol; col <= maxCol; col++) {
+                                    if (selectedColumns.isSelectedIndex(col)) {
+                                        if (col == 0) {
+                                            music.setDownloadURL(null);
+                                        } else {
+                                            music.removeTag(col - 1);
+                                        }
+                                    }
+                                }
+                            }, minRow, maxRow + 1);
+    }
+
+    @Override
+    protected boolean doRevert(int row, int column) {
+        return false;
     }
 }

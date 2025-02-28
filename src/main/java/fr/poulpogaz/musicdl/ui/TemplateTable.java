@@ -5,6 +5,10 @@ import fr.poulpogaz.musicdl.model.Template;
 import fr.poulpogaz.musicdl.model.Templates;
 import fr.poulpogaz.musicdl.ui.dialogs.MetadataDialog;
 import fr.poulpogaz.musicdl.ui.dialogs.SingleMetadataEditorDialog;
+import fr.poulpogaz.musicdl.ui.table.AbstractMAction;
+import fr.poulpogaz.musicdl.ui.table.MTable;
+import fr.poulpogaz.musicdl.ui.table.NewRowAction;
+import fr.poulpogaz.musicdl.ui.table.RemoveRowAction;
 
 import javax.swing.*;
 import javax.swing.event.PopupMenuEvent;
@@ -18,8 +22,20 @@ public class TemplateTable extends JPanel {
 
     private final TemplateTableModel tableModel;
 
-    private JScrollPane tableScrollPane;
-    private JTable table;
+    private MTable table;
+
+    private Action newMusicAction;
+    private Action removeMusicsAction;
+    private Action transferAction; // TODO
+
+    private Action editTagAction;
+    private Action setNullAction;
+
+    private Action downloadAction;
+    private Action showMetadataAction;
+
+
+    private JToolBar toolBar;
     private TemplateTablePopupMenu tablePopupMenu;
 
     public TemplateTable(Template template) {
@@ -29,34 +45,34 @@ public class TemplateTable extends JPanel {
 
     protected void initComponents() {
         table = createTable();
-        tableScrollPane = new JScrollPane();
+        createActions();
+
+        toolBar = createToolBar();
 
         tablePopupMenu = new TemplateTablePopupMenu();
         table.addMouseListener(new TablePopupMenuSupport(table, tablePopupMenu));
 
         setLayout(new BorderLayout());
-        tableScrollPane.setViewportView(table);
-        add(tableScrollPane, BorderLayout.CENTER);
+        add(new JScrollPane(table), BorderLayout.CENTER);
     }
 
-    protected JTable createTable() {
-        JTable jTable = new JTable();
-        jTable.setDefaultRenderer(Object.class, new CellRenderer());
-        jTable.setColumnSelectionAllowed(true);
-        jTable.setRowSelectionAllowed(true);
-        jTable.setShowVerticalLines(true);
-        jTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-        jTable.setFillsViewportHeight(true);
-        jTable.setModel(tableModel);
-        jTable.addMouseListener(new MouseAdapter() {
+    protected MTable createTable() {
+        MTable table = new MTable(tableModel);
+        table.setDefaultRenderer(Object.class, new CellRenderer());
+        table.setColumnSelectionAllowed(true);
+        table.setRowSelectionAllowed(true);
+        table.setShowVerticalLines(true);
+        table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        table.setFillsViewportHeight(true);
+        table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 Point point = e.getPoint();
-                int row = table.rowAtPoint(point);
-                int col = table.columnAtPoint(point);
+                int row = TemplateTable.this.table.rowAtPoint(point);
+                int col = TemplateTable.this.table.columnAtPoint(point);
                 if (e.getClickCount() == 2 && row != -1 && col != -1) {
-                    int modelRow = table.convertRowIndexToModel(row);
-                    int modelCol = table.convertColumnIndexToModel(col);
+                    int modelRow = TemplateTable.this.table.convertRowIndexToModel(row);
+                    int modelCol = TemplateTable.this.table.convertColumnIndexToModel(col);
 
                     Music m = tableModel.getMusic(modelRow);
 
@@ -67,7 +83,95 @@ public class TemplateTable extends JPanel {
             }
         });
 
-        return jTable;
+        return table;
+    }
+
+    protected void createActions() {
+        newMusicAction = NewRowAction.create(table, "music");
+        removeMusicsAction = RemoveRowAction.create(table, "music");
+
+        editTagAction = createEditTagAction();
+        setNullAction = createSetNullAction();
+
+        downloadAction = createDownloadAction();
+        showMetadataAction = createShowMetadataAction();
+    }
+
+    protected Action createEditTagAction() {
+        return new AbstractMAction("Edit tag", table) {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                openSingleMetadataEditor(table.getSelectedRow(), table.getSelectedColumn());
+            }
+
+            @Override
+            public boolean isEnabled() {
+                return tableModel.canOpenTagEditor(table.getSelectedRow(), table.getSelectedColumn());
+            }
+        };
+    }
+
+    protected Action createSetNullAction() {
+        return new AbstractMAction("Unset", table) {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ListSelectionModel selectedRows = table.getSelectionModel();
+                ListSelectionModel selectedColumns = table.getColumnModel().getSelectionModel();
+                tableModel.setNullValues(selectedRows, selectedColumns);
+            }
+
+            @Override
+            public boolean isEnabled() {
+                return !table.getSelectionModel().isSelectionEmpty()
+                        && !table.getColumnModel().getSelectionModel().isSelectionEmpty();
+            }
+        };
+    }
+
+    protected Action createDownloadAction() {
+        return new AbstractMAction("Download", table) {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ListSelectionModel selectedRows = table.getSelectionModel();
+                tableModel.downloadSelected(selectedRows);
+            }
+
+            @Override
+            public boolean isEnabled() {
+                return table.getSelectedRow() >= 0;
+            }
+        };
+    }
+
+    protected Action createShowMetadataAction() {
+        return new AbstractMAction("Show all metadata", table) {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int row = table.getSelectedRow();
+
+                if (row >= 0) {
+                    Music m = tableModel.getTemplate().getData().getMusic(row);
+
+                    if (m.isDownloaded()) {
+                        MetadataDialog.showDialog(MusicdlFrame.getInstance(), m);
+                    }
+                }
+            }
+
+            @Override
+            public boolean isEnabled() {
+                return table.getSelectedRow() >= 0 &&
+                        tableModel.getTemplate().getData().getMusic(table.getSelectedRow())
+                                  .isDownloaded();
+            }
+        };
+    }
+
+    protected JToolBar createToolBar() {
+        JToolBar bar = new JToolBar(SwingConstants.VERTICAL);
+        bar.add(newMusicAction);
+        bar.add(removeMusicsAction);
+        return bar;
     }
 
     private void openSingleMetadataEditor(int row, int column) {
@@ -77,30 +181,6 @@ public class TemplateTable extends JPanel {
 
             SingleMetadataEditorDialog.showDialog(MusicdlFrame.getInstance(), m, key);
         }
-    }
-
-    public void addMusicBelowSelection() {
-        int row = table.getSelectionModel().getMaxSelectionIndex();
-        if (row == -1) {
-            tableModel.addRow(table.getRowCount());
-        } else {
-            tableModel.addRow(Math.min(row + 1, table.getRowCount()));
-        }
-    }
-
-    public void deleteSelectedMusics() {
-        tableModel.deleteSelectedRows(table.getSelectionModel());
-    }
-
-    public void unsetSelectedCell() {
-        ListSelectionModel selectedRows = table.getSelectionModel();
-        ListSelectionModel selectedColumns = table.getColumnModel().getSelectionModel();
-        tableModel.setNullValues(selectedRows, selectedColumns);
-    }
-
-    public void downloadSelectedMusics() {
-        ListSelectionModel selectedRows = table.getSelectionModel();
-        tableModel.downloadSelected(selectedRows);
     }
 
     public void transferSelectionTo(Template template) {
@@ -117,6 +197,10 @@ public class TemplateTable extends JPanel {
 
     public ListSelectionModel getSelectedRows() {
         return table.getSelectionModel();
+    }
+
+    public JToolBar getToolBar() {
+        return toolBar;
     }
 
     private static class CellRenderer extends CellRendererBase {
@@ -139,43 +223,25 @@ public class TemplateTable extends JPanel {
 
     private class TemplateTablePopupMenu extends JPopupMenu implements PopupMenuListener {
 
-        protected JMenuItem addMenuItem;
-        protected JMenuItem removeMenuItem;
         protected JMenu changeTemplate;
-        protected JMenuItem showMetadata;
-        protected JMenuItem editTag;
-        protected JMenuItem unset;
-        protected JMenuItem download;
 
         public TemplateTablePopupMenu() {
             initPopup();
-            addPopupMenuListener(this);
+            // addPopupMenuListener(this);
         }
 
         protected void initPopup() {
-            addMenuItem = add("Add music");
-            removeMenuItem = add("Remove music");
-            changeTemplate = new JMenu("Change template");
-            add(changeTemplate);
-            showMetadata = add("Show metadata");
+            add(newMusicAction);
+            add(removeMusicsAction);
+            // TODO: change template
             addSeparator();
-            editTag = add("Edit tag");
-            unset = add("Unset");
-            download = add("Download music");
 
-            addMenuItem.addActionListener(_ -> addMusicBelowSelection());
-            removeMenuItem.addActionListener(_ -> deleteSelectedMusics());
-            showMetadata.addActionListener(_ -> {
-                int row = table.getSelectionModel().getMinSelectionIndex();
+            add(editTagAction);
+            add(setNullAction);
+            addSeparator();
 
-                if (row >= 0) {
-                    MetadataDialog.showDialog(MusicdlFrame.getInstance(),
-                                              tableModel.getTemplate().getData().getMusic(row));
-                }
-            });
-            editTag.addActionListener(_ -> openSingleMetadataEditor(table.getSelectedRow(), table.getSelectedColumn()));
-            unset.addActionListener(_ -> unsetSelectedCell());
-            download.addActionListener(_ -> downloadSelectedMusics());
+            add(downloadAction);
+            add(showMetadataAction);
         }
 
         @Override

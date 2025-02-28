@@ -5,7 +5,7 @@ import fr.poulpogaz.musicdl.ui.Icons;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 
-public class NewRowAction extends AbstractAction {
+public class NewRowAction extends AbstractMAction {
 
     public static NewRowAction create(MTable table, String rowName) {
         NewRowAction action = new NewRowAction(table);
@@ -18,30 +18,28 @@ public class NewRowAction extends AbstractAction {
     }
 
 
-    private final MTable table;
-
     public NewRowAction(MTable table) {
-        this.table = table;
-        table.addAction(this);
-        setEnabled(isEnabled());
+        super(table);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        int row = table.getSelectionModel().getMaxSelectionIndex();
-        if (row == -1) {
-            row = table.getRowCount();
-        } else {
-            row = Math.min(row + 1, table.getRowCount());
-        }
+        if (table != null) {
+            int row = table.getSelectionModel().getMaxSelectionIndex();
+            if (row == -1) {
+                row = table.getRowCount();
+            } else {
+                row = Math.min(row + 1, table.getRowCount());
+            }
 
-        if (table.getModel().newRow(row)) {
-            table.getSelectionModel().setSelectionInterval(row, row);
+            if (table.getModel().newRow(row)) {
+                table.getSelectionModel().setSelectionInterval(row, row);
+            }
         }
     }
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return table != null;
     }
 }

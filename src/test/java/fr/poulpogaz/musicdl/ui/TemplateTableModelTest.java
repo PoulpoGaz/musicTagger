@@ -26,17 +26,17 @@ public class TemplateTableModelTest {
         Assertions.assertEquals(6, model.getColumnCount());
         Assertions.assertEquals(0, model.getRowCount());
 
-        model.addRow();
+        model.newRow();
         Assertions.assertEquals(1, model.getRowCount());
         set(model, 0, "a", "b", "c", "d", "e", "f");
 
-        model.addRow(0);
+        model.newRow(0);
         Assertions.assertEquals(2, model.getRowCount());
         assertContentEquals(model,
                             null, null, null, null, null, null,
                             "a", "b", "c", "d", "e", "f");
 
-        model.deleteRow(1);
+        model.removeRow(1);
         Assertions.assertEquals(1, model.getRowCount());
         assertContentEquals(model,
                             null, null, null, null, null, null);
@@ -48,11 +48,11 @@ public class TemplateTableModelTest {
         Template template = createTemplate("t", 4);
         TemplateTableModel model = new TemplateTableModel(template);
 
-        model.addRow();
-        model.addRow();
-        model.addRow();
-        model.addRow();
-        model.addRow();
+        model.newRow();
+        model.newRow();
+        model.newRow();
+        model.newRow();
+        model.newRow();
         set(model, 0, "a");
         set(model, 1, null, "b");
         set(model, 2, null, null, "c");
@@ -79,11 +79,11 @@ public class TemplateTableModelTest {
         Template template = createTemplate("t", 4);
         TemplateTableModel model = new TemplateTableModel(template);
 
-        model.addRow();
-        model.addRow();
-        model.addRow();
-        model.addRow();
-        model.addRow();
+        model.newRow();
+        model.newRow();
+        model.newRow();
+        model.newRow();
+        model.newRow();
         set(model, 0, "a");
         set(model, 1, null, "b");
         set(model, 2, null, null, "c");
@@ -111,11 +111,11 @@ public class TemplateTableModelTest {
         Template template = createTemplate("t", 4);
         TemplateTableModel model = new TemplateTableModel(template);
 
-        model.addRow();
-        model.addRow();
-        model.addRow();
-        model.addRow();
-        model.addRow();
+        model.newRow();
+        model.newRow();
+        model.newRow();
+        model.newRow();
+        model.newRow();
         set(model, 0, "a");
         set(model, 1, null, "b");
         set(model, 2, null, null, "c");

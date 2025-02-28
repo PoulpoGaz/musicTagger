@@ -1,7 +1,7 @@
 package fr.poulpogaz.musicdl.ui.dialogs;
 
 import fr.poulpogaz.musicdl.model.Music;
-import fr.poulpogaz.musicdl.ui.ActionUtils;
+import fr.poulpogaz.musicdl.ui.table.ActionUtils;
 import fr.poulpogaz.musicdl.ui.table.MTable;
 import fr.poulpogaz.musicdl.ui.table.MTableModel;
 import fr.poulpogaz.musicdl.ui.TablePopupMenuSupport;

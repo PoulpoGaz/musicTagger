@@ -5,7 +5,7 @@ import fr.poulpogaz.musicdl.ui.Icons;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 
-public class RemoveRowAction extends AbstractAction {
+public class RemoveRowAction extends AbstractMAction {
 
     public static RemoveRowAction create(MTable table, String rowName) {
         RemoveRowAction action = new RemoveRowAction(table);
@@ -17,26 +17,34 @@ public class RemoveRowAction extends AbstractAction {
         return action;
     }
 
-
-    private final MTable table;
-
     public RemoveRowAction(MTable table) {
-        this.table = table;
-        table.addAction(this);
-        setEnabled(isEnabled());
+        super(table);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        int row = table.getSelectedRow();
-        int col = table.getSelectedColumn();
+        if (table == null) {
+            return;
+        }
 
-        if (row != -1 && table.getModel().removeRow(row)) {
-            int newSelection = Math.min(row, table.getRowCount() - 1);
+        ListSelectionModel rows = table.getSelectionModel();
+        int firstRow = table.getSelectedRow();
+        int col = Math.max(table.getSelectedColumn(), 0);
+
+        boolean moveSelection = false;
+        if (ActionUtils.isSingleItemSelected(rows)) {
+            moveSelection = table.getModel().removeRows(rows);
+        } else if (firstRow >= 0) {
+            moveSelection = table.getModel().removeRow(firstRow);
+        }
+
+
+        if (moveSelection) {
+            int newSelection = Math.min(firstRow, table.getRowCount() - 1);
             if (newSelection >= 0) {
                 table.setRowSelectionInterval(newSelection, newSelection);
 
-                if (col >= 0 && col < table.getColumnCount()) {
+                if (!table.getColumnSelectionAllowed()) {
                     table.setColumnSelectionInterval(col, col);
                 }
             }
@@ -45,6 +53,8 @@ public class RemoveRowAction extends AbstractAction {
 
     @Override
     public boolean isEnabled() {
-        return table.getSelectedRow() >= 0;
+        return table != null &&
+                table.getSelectedRow() >= 0 &&
+                (table.getColumnSelectionAllowed() && table.getSelectedColumn() >= 0 || !table.getColumnSelectionAllowed());
     }
 }

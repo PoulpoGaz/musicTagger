@@ -7,8 +7,10 @@ import fr.poulpogaz.musicdl.properties.Property;
 import fr.poulpogaz.musicdl.properties.PropertyListener;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
@@ -16,56 +18,21 @@ import java.util.Map;
 
 public class TemplatesPanel extends JPanel {
 
-    private final JToolBar toolBar;
-    private JButton insertMusic;
-    private JButton removeMusic;
-    private final JTabbedPane templatesPane;
+    private final TabPane templatesPane;
+    private JToolBar toolBar;
 
     private final Map<Template, TemplateTable> panels = new HashMap<>();
-    private final PropertyListener<String> templateNameListener = this::setTabName;
 
     public TemplatesPanel() {
-        toolBar = createToolBar();
-        templatesPane = createTemplatesPane();
+        templatesPane = new TabPane();
+        setLayout(new BorderLayout());
+        add(templatesPane, BorderLayout.CENTER);
 
         for (Template t : Templates.getTemplates()) {
             templatesPane.addTab(t.getName(), new TemplateTable(t));
         }
-        if (templatesPane.getTabCount() > 0) {
-            templatesPane.setSelectedIndex(0);
-        }
 
         Templates.addTemplatesListener(createTemplateListener());
-
-        setLayout(new BorderLayout());
-        add(toolBar, BorderLayout.WEST);
-        add(templatesPane, BorderLayout.CENTER);
-    }
-
-    private JToolBar createToolBar() {
-        insertMusic = new JButton(Icons.get("add.svg"));
-        insertMusic.setToolTipText("Insert music below selection");
-        insertMusic.addActionListener(e -> {
-            TemplateTable table = getSelectedTemplateTable();
-            table.addMusicBelowSelection();
-        });
-
-        removeMusic = new JButton(Icons.get("delete.svg"));
-        removeMusic.setToolTipText("Delete selected musics");
-        removeMusic.addActionListener(e -> {
-            TemplateTable table = getSelectedTemplateTable();
-            table.deleteSelectedMusics();
-        });
-
-        JToolBar toolBar = new JToolBar(JToolBar.VERTICAL);
-        toolBar.add(insertMusic);
-        toolBar.add(removeMusic);
-
-        return toolBar;
-    }
-
-    private JTabbedPane createTemplatesPane() {
-        return new TabPane();
     }
 
     private TemplatesListener createTemplateListener() {
@@ -83,11 +50,15 @@ public class TemplatesPanel extends JPanel {
         };
     }
 
-    private void setTabName(Property<? extends String> prop, String oldValue, String newValue) {
-        if (prop.getOwner() instanceof Template template) {
-            TemplateTable table = panels.get(template);
-            int index = templatesPane.indexOfComponent(table);
-            templatesPane.setTitleAt(index, template.getName());
+    private void changeToolbar() {
+        if (toolBar != null) {
+            remove(toolBar);
+        }
+        TemplateTable table = getSelectedTemplateTable();
+        if (table != null) {
+            toolBar = table.getToolBar();
+            add(toolBar, BorderLayout.WEST);
+            repaint();
         }
     }
 
@@ -123,6 +94,7 @@ public class TemplatesPanel extends JPanel {
     private class TabPane extends JTabbedPane {
 
         private final TabPopupMenu popupMenu;
+        private final PropertyListener<String> templateNameListener = this::setTabName;
 
         public TabPane() {
             super(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
@@ -161,6 +133,29 @@ public class TemplatesPanel extends JPanel {
             table.getTemplate().nameProperty().removeListener(templateNameListener);
 
             super.removeTabAt(index);
+        }
+
+
+        private void setTabName(Property<? extends String> prop, String oldValue, String newValue) {
+            if (prop.getOwner() instanceof Template template) {
+                TemplateTable table = panels.get(template);
+                int index = templatesPane.indexOfComponent(table);
+                templatesPane.setTitleAt(index, template.getName());
+            }
+        }
+
+
+        @Override
+        protected ChangeListener createChangeListener() {
+            return new ModelListener();
+        }
+
+        private class ModelListener extends JTabbedPane.ModelListener {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                super.stateChanged(e);
+                changeToolbar();
+            }
         }
     }
 
