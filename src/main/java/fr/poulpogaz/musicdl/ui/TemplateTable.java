@@ -11,10 +11,13 @@ import fr.poulpogaz.musicdl.ui.table.NewRowAction;
 import fr.poulpogaz.musicdl.ui.table.RemoveRowAction;
 
 import javax.swing.*;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -26,7 +29,7 @@ public class TemplateTable extends JPanel {
 
     private Action newMusicAction;
     private Action removeMusicsAction;
-    private Action transferAction; // TODO
+    private JMenu changeTemplate;
 
     private Action editTagAction;
     private Action setNullAction;
@@ -36,7 +39,7 @@ public class TemplateTable extends JPanel {
 
 
     private JToolBar toolBar;
-    private TemplateTablePopupMenu tablePopupMenu;
+    private JPopupMenu tablePopupMenu;
 
     public TemplateTable(Template template) {
         this.tableModel = new TemplateTableModel(template);
@@ -49,7 +52,7 @@ public class TemplateTable extends JPanel {
 
         toolBar = createToolBar();
 
-        tablePopupMenu = new TemplateTablePopupMenu();
+        tablePopupMenu = createPopupMenu();
         table.addMouseListener(new TablePopupMenuSupport(table, tablePopupMenu));
 
         setLayout(new BorderLayout());
@@ -174,6 +177,82 @@ public class TemplateTable extends JPanel {
         return bar;
     }
 
+    protected JPopupMenu createPopupMenu() {
+        JPopupMenu menu = new JPopupMenu();
+        changeTemplate = new JMenu("Change template");
+
+        menu.add(newMusicAction);
+        menu.add(removeMusicsAction);
+        menu.add(changeTemplate);
+        menu.addSeparator();
+
+        menu.add(editTagAction);
+        menu.add(setNullAction);
+        menu.addSeparator();
+
+        menu.add(downloadAction);
+        menu.add(showMetadataAction);
+
+        menu.addPopupMenuListener(createPopupMenuListener());
+
+        return menu;
+    }
+
+    protected PopupMenuListener createPopupMenuListener() {
+        return new PopupMenuListener() {
+            @Override
+            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+                if (Templates.templateCount() <= 1
+                        || table.getSelectionModel().isSelectionEmpty()
+                        || table.getColumnModel().getSelectionModel().isSelectionEmpty()) {
+                    changeTemplate.setEnabled(false);
+                } else {
+                    changeTemplate.setEnabled(true);
+                    TemplatesPanel panel = MusicdlFrame.getInstance().getTemplatesPanel();
+
+                    int i;
+                    for (i = 0; i < panel.getTemplateTableCount(); i++) {
+                        Template template = panel.getTemplateTable(i).getTemplate();
+
+                        if (template == panel.getSelectedTemplate()) {
+                            continue;
+                        }
+
+                        if (i < changeTemplate.getItemCount()) {
+                            changeTemplate.setName(template.getName());
+                        } else {
+                            JMenuItem item = changeTemplate.add(template.getName());
+                            item.addActionListener(TemplateTable.this::transferTemplate);
+                        }
+                    }
+
+                    int expectedSize = panel.getTemplateTableCount() - 1;
+                    while (changeTemplate.getItemCount() > expectedSize) {
+                        changeTemplate.remove(expectedSize);
+                    }
+                }
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+
+            }
+
+            @Override
+            public void popupMenuCanceled(PopupMenuEvent e) {
+
+            }
+        };
+    }
+
+    private void transferTemplate(ActionEvent actionEvent) {
+        JMenuItem item = (JMenuItem) actionEvent.getSource();
+        String templateName = item.getText();
+
+        Template dest = Templates.getTemplate(templateName);
+        transferSelectionTo(dest);
+    }
+
     private void openSingleMetadataEditor(int row, int column) {
         if (tableModel.canOpenTagEditor(row, column)) {
             Music m = tableModel.getMusic(row);
@@ -216,81 +295,6 @@ public class TemplateTable extends JPanel {
             } else {
                 return UNEDITABLE;
             }
-        }
-    }
-
-
-
-    private class TemplateTablePopupMenu extends JPopupMenu implements PopupMenuListener {
-
-        protected JMenu changeTemplate;
-
-        public TemplateTablePopupMenu() {
-            initPopup();
-            // addPopupMenuListener(this);
-        }
-
-        protected void initPopup() {
-            add(newMusicAction);
-            add(removeMusicsAction);
-            // TODO: change template
-            addSeparator();
-
-            add(editTagAction);
-            add(setNullAction);
-            addSeparator();
-
-            add(downloadAction);
-            add(showMetadataAction);
-        }
-
-        @Override
-        public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
-            if (Templates.templateCount() <= 1) {
-                changeTemplate.setEnabled(false);
-            } else {
-                changeTemplate.setEnabled(true);
-                TemplatesPanel panel = MusicdlFrame.getInstance().getTemplatesPanel();
-
-                int i;
-                for (i = 0; i < panel.getTemplateTableCount(); i++) {
-                    Template template = panel.getTemplateTable(i).getTemplate();
-
-                    if (template == panel.getSelectedTemplate()) {
-                        continue;
-                    }
-
-                    if (i < changeTemplate.getItemCount()) {
-                        changeTemplate.setName(template.getName());
-                    } else {
-                        JMenuItem item = changeTemplate.add(template.getName());
-                        item.addActionListener(this::transferTemplate);
-                    }
-                }
-
-                int expectedSize = panel.getTemplateTableCount() - 1;
-                while (changeTemplate.getItemCount() > expectedSize) {
-                    changeTemplate.remove(expectedSize);
-                }
-            }
-        }
-
-        private void transferTemplate(ActionEvent actionEvent) {
-            JMenuItem item = (JMenuItem) actionEvent.getSource();
-            String templateName = item.getText();
-
-            Template dest = Templates.getTemplate(templateName);
-            transferSelectionTo(dest);
-        }
-
-        @Override
-        public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-
-        }
-
-        @Override
-        public void popupMenuCanceled(PopupMenuEvent e) {
-
         }
     }
 }
