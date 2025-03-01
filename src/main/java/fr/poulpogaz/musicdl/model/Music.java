@@ -104,7 +104,7 @@ public class Music {
     public Music(OpusFile file) {
         this.file = file;
 
-        setDownloadURL(file.getFirst("PURL"));
+        setDownloadURL(getOriginalDownloadURL());
         covers.addAll(file.getCoverArts());
         metadata.putAll(file.getMetadata());
     }
@@ -206,12 +206,34 @@ public class Music {
         metadata.put(key, value);
     }
 
+    public void putMetadata(String key, String value) {
+        if (value == null) {
+            removeMetadata(key);
+        } else {
+            List<String> values = metadata.get(key);
+            values.clear();
+            values.add(value);
+        }
+    }
+
+    public void putMetadata(int key, String value) {
+        if (template != null) {
+            putMetadata(template.getKeyMetadataField(key), value);
+        }
+    }
+
     public void removeMetadata(String key, String value) {
         metadata.removeMapping(OpusFile.sanitize(key), value);
     }
 
     public void removeMetadata(String key) {
         metadata.remove(OpusFile.sanitize(key));
+    }
+
+    public void removeMetadata(int key) {
+        if (template != null) {
+            metadata.remove(template.getKeyMetadataField(key));
+        }
     }
 
     public List<String> getMetadata(String key) {
@@ -222,9 +244,33 @@ public class Music {
         return metadata.get(key);
     }
 
+    public List<String> getMetadata(int key) {
+        if (template == null) {
+            return List.of();
+        } else {
+            return getMetadata(template.getKeyMetadataField(key));
+        }
+    }
+
+
+
+    public List<String> getOriginalMetadata(int key) {
+        if (file == null || template == null) {
+            return List.of();
+        } else {
+            return file.get(template.getKeyMetadataField(key));
+        }
+    }
+
+    public boolean metadataHasChanged(int key) {
+        return !getOriginalMetadata(key).equals(getMetadata(key));
+    }
+
+
     public MapIterator<String, String> metadataIterator() {
         return metadata.mapIterator();
     }
+
 
     public boolean hasMultipleValues(String key) {
         key = OpusFile.sanitize(key);
@@ -238,6 +284,10 @@ public class Music {
         }
     }
 
+    public boolean hasMultipleValues(int key) {
+        return hasMultipleValues(template.getKeyMetadataField(key));
+    }
+
     public boolean contains(String key) {
         key = OpusFile.sanitize(key);
 
@@ -249,6 +299,7 @@ public class Music {
             return !metadata.get(key).isEmpty();
         }
     }
+
 
 
     public void addCoverArt(CoverArt cover) {
@@ -265,42 +316,6 @@ public class Music {
 
     public List<CoverArt> getCovers() {
         return covers;
-    }
-
-
-    public String getTag(int key) {
-        if (template == null) {
-            return null;
-        } else {
-            List<String> str = metadata.get(template.getKeyMetadataField(key));
-
-            return str.isEmpty() ? null : String.join("; ", str);
-        }
-    }
-
-    public void putTag(int key, String value) {
-        if (template != null) {
-            if (value == null) {
-                removeTag(key);
-            } else {
-                String metadataKey = template.getKeyMetadataField(key);
-
-                List<String> values = metadata.get(metadataKey);
-                values.clear();
-                values.add(value);
-            }
-        }
-    }
-
-    public void removeTag(int key) {
-        if (template != null) {
-            String metadataKey = template.getKeyMetadataField(key);
-            metadata.remove(metadataKey);
-        }
-    }
-
-    public boolean hasMultipleValues(int key) {
-        return hasMultipleValues(template.getKeyMetadataField(key));
     }
 
 
@@ -327,6 +342,10 @@ public class Music {
 
     public String getDownloadURL() {
         return downloadURL;
+    }
+
+    public String getOriginalDownloadURL() {
+        return file == null ? null : file.getFirst("PURL");
     }
 
     public void setDownloadURL(String downloadURL) {

@@ -5,19 +5,13 @@ import fr.poulpogaz.musicdl.model.Template;
 import fr.poulpogaz.musicdl.model.Templates;
 import fr.poulpogaz.musicdl.ui.dialogs.MetadataDialog;
 import fr.poulpogaz.musicdl.ui.dialogs.SingleMetadataEditorDialog;
-import fr.poulpogaz.musicdl.ui.table.AbstractMAction;
-import fr.poulpogaz.musicdl.ui.table.MTable;
-import fr.poulpogaz.musicdl.ui.table.NewRowAction;
-import fr.poulpogaz.musicdl.ui.table.RemoveRowAction;
+import fr.poulpogaz.musicdl.ui.table.*;
 
 import javax.swing.*;
-import javax.swing.event.MenuEvent;
-import javax.swing.event.MenuListener;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -31,7 +25,8 @@ public class TemplateTable extends JPanel {
     private Action removeMusicsAction;
     private JMenu changeTemplate;
 
-    private Action editTagAction;
+    private Action editMetadataAction;
+    private Action revertAction;
     private Action setNullAction;
 
     private Action downloadAction;
@@ -79,7 +74,7 @@ public class TemplateTable extends JPanel {
 
                     Music m = tableModel.getMusic(modelRow);
 
-                    if (m.hasMultipleValues(col - 1)) {
+                    if (col != 0 && m.hasMultipleValues(col - 1)) {
                         openSingleMetadataEditor(modelRow, modelCol);
                     }
                 }
@@ -93,7 +88,8 @@ public class TemplateTable extends JPanel {
         newMusicAction = NewRowAction.create(table, "music");
         removeMusicsAction = RemoveRowAction.create(table, "music");
 
-        editTagAction = createEditTagAction();
+        editMetadataAction = createEditTagAction();
+        revertAction = RevertAction.create(table);
         setNullAction = createSetNullAction();
 
         downloadAction = createDownloadAction();
@@ -186,7 +182,8 @@ public class TemplateTable extends JPanel {
         menu.add(changeTemplate);
         menu.addSeparator();
 
-        menu.add(editTagAction);
+        menu.add(editMetadataAction);
+        menu.add(revertAction);
         menu.add(setNullAction);
         menu.addSeparator();
 
@@ -256,7 +253,7 @@ public class TemplateTable extends JPanel {
     private void openSingleMetadataEditor(int row, int column) {
         if (tableModel.canOpenTagEditor(row, column)) {
             Music m = tableModel.getMusic(row);
-            String key = tableModel.getMetadataKey(column);
+            String key = tableModel.getMetadataField(column);
 
             SingleMetadataEditorDialog.showDialog(MusicdlFrame.getInstance(), m, key);
         }
@@ -290,7 +287,9 @@ public class TemplateTable extends JPanel {
             int mRow = jTable.convertRowIndexToModel(row);
             int mCol = jTable.convertColumnIndexToModel(column);
 
-            if (model.isCellEditable(row, column) || model.canOpenTagEditor(mRow, mCol)) {
+            if (model.hasChanged(mRow, mCol)) {
+                return CHANGED;
+            } else if (model.isCellEditable(row, column) || model.canOpenTagEditor(mRow, mCol)) {
                 return DEFAULT;
             } else {
                 return UNEDITABLE;

@@ -7,8 +7,8 @@ import fr.poulpogaz.musicdl.ui.table.MTableModel;
 
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
-import javax.swing.table.AbstractTableModel;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class TemplateTableModel extends AbstractRevertTableModel implements MTableModel {
@@ -52,18 +52,20 @@ public class TemplateTableModel extends AbstractRevertTableModel implements MTab
         if (columnIndex == 0) {
             return m.getDownloadURL();
         } else {
-            return m.getTag(columnIndex - 1);
+            List<String> metadata = m.getMetadata(columnIndex - 1);
+            return String.join("; ", metadata);
         }
     }
 
     @Override
     public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
         if (isCellEditable(rowIndex, columnIndex)) {
+            String value = (String) aValue;
             Music m = data.getMusic(rowIndex);
             if (columnIndex == 0) {
-                m.setDownloadURL((String) aValue);
+                m.setDownloadURL(value);
             } else {
-                m.putTag(columnIndex - 1, (String) aValue);
+                m.putMetadata(columnIndex - 1, value);
             }
             fireTableCellUpdated(rowIndex, columnIndex);
         }
@@ -94,74 +96,6 @@ public class TemplateTableModel extends AbstractRevertTableModel implements MTab
     }
 
 
-
-
-
-
-
-
-
-
-
-    public void downloadSelected(ListSelectionModel selectedRows) {
-        int min = selectedRows.getMinSelectionIndex();
-        int max = Math.min(selectedRows.getMaxSelectionIndex() + 1, getRowCount());
-
-        for (int i = min; i <= max; i++) {
-            if (selectedRows.isSelectedIndex(i)) {
-                download(i, false);
-            }
-        }
-
-        fireTableRowsUpdated(min, max);
-    }
-
-    public void download(int row) {
-        download(row, true);
-    }
-
-    private void download(int row, boolean fireEvent) {
-        Music m = data.getMusic(row);
-        YTDLP ytdlp = SimpleDownloadTask.ytdlp(m.getDownloadURL());
-        ytdlp.setMetadata("template", template.getName());
-
-        Map<String, String> t = new HashMap<>();
-        for (int i = 0; i < template.keyCount(); i++) {
-            Key key = template.getKey(i);
-            String tag = m.getTag(i);
-
-            if (tag != null) {
-                ytdlp.setMetadata(key.getMetadataField(), tag);
-                t.put(key.getName(), tag);
-            }
-        }
-
-        for (Template.MetadataGenerator generator : template.getGenerators()) {
-            ytdlp.setMetadata(generator.getKey(), generator.getFormatter().format(t));
-        }
-
-        Formatter formatter = template.getFormatter();
-        if (formatter != null) {
-            ytdlp.setOutput(formatter.format(t));
-        }
-
-        SimpleDownloadTask task = new SimpleDownloadTask(m, ytdlp);
-        task.addListener(EventThread.SWING_THREAD, (event, _) -> {
-            if (event != DownloadListener.Event.QUEUED && event != DownloadListener.Event.STARTED) {
-                m.setDownloading(false);
-                m.notifyChanges();
-            }
-        });
-
-        m.setDownloading(true);
-        DownloadManager.offer(task);
-
-        if (fireEvent) {
-            fireTableRowsUpdated(row, row);
-        }
-    }
-
-
     public Template getTemplate() {
         return template;
     }
@@ -174,7 +108,7 @@ public class TemplateTableModel extends AbstractRevertTableModel implements MTab
         }
     }
 
-    public String getMetadataKey(int column) {
+    public String getMetadataField(int column) {
         if (column == 0) {
             return null;
         } else {
@@ -182,6 +116,7 @@ public class TemplateTableModel extends AbstractRevertTableModel implements MTab
         }
     }
 
+    @Deprecated
     public String[][] getContent() {
         String[][] content = new String[getRowCount()][getColumnCount()];
 
@@ -190,7 +125,7 @@ public class TemplateTableModel extends AbstractRevertTableModel implements MTab
 
             content[row][0] = m.getDownloadURL();
             for (int key = 1; key < getColumnCount(); key++) {
-                content[row][key] = m.getTag(key - 1);
+                content[row][key] = null; // m.getTag(key - 1);
             }
         }
 
@@ -267,15 +202,102 @@ public class TemplateTableModel extends AbstractRevertTableModel implements MTab
                                         if (col == 0) {
                                             music.setDownloadURL(null);
                                         } else {
-                                            music.removeTag(col - 1);
+                                            music.removeMetadata(col - 1);
                                         }
                                     }
                                 }
                             }, minRow, maxRow + 1);
     }
 
+
     @Override
     protected boolean doRevert(int row, int column) {
+        Music music = getMusic(row);
+        if (music.isDownloaded()) {
+            if (column == 0) {
+                music.setDownloadURL(music.getOriginalDownloadURL());
+            } else {
+                int key = column - 1;
+                List<String> metadata = music.getMetadata(key);
+                metadata.clear();
+                metadata.addAll(music.getOriginalMetadata(key));
+            }
+            return true;
+        }
         return false;
+    }
+
+    public boolean hasChanged(int row, int column) {
+        if (row >= 0 && row < data.getMusicCount() && column >= 0 && column < getColumnCount()) {
+            Music m = data.getMusic(row);
+
+            if (m.isDownloaded()) {
+                if (column == 0) {
+                    return !m.getDownloadURL().equals(m.getOriginalDownloadURL());
+                } else {
+                    return m.metadataHasChanged(column - 1);
+                }
+            }
+        }
+        return false;
+    }
+
+
+    public void downloadSelected(ListSelectionModel selectedRows) {
+        int min = selectedRows.getMinSelectionIndex();
+        int max = Math.min(selectedRows.getMaxSelectionIndex() + 1, getRowCount());
+
+        for (int i = min; i <= max; i++) {
+            if (selectedRows.isSelectedIndex(i)) {
+                download(i, false);
+            }
+        }
+
+        fireTableRowsUpdated(min, max);
+    }
+
+    public void download(int row) {
+        download(row, true);
+    }
+
+    private void download(int row, boolean fireEvent) {
+        Music m = data.getMusic(row);
+        YTDLP ytdlp = SimpleDownloadTask.ytdlp(m.getDownloadURL());
+        ytdlp.setMetadata("template", template.getName());
+
+        Map<String, String> t = new HashMap<>();
+        for (int i = 0; i < template.keyCount(); i++) {
+            Key key = template.getKey(i);
+            String tag = (String) getValueAt(row, i + 1);
+
+            if (tag != null) {
+                ytdlp.setMetadata(key.getMetadataField(), tag);
+                t.put(key.getName(), tag);
+            }
+        }
+
+        for (Template.MetadataGenerator generator : template.getGenerators()) {
+            ytdlp.setMetadata(generator.getKey(), generator.getFormatter().format(t));
+        }
+
+        Formatter formatter = template.getFormatter();
+        if (formatter != null) {
+            ytdlp.setOutput(formatter.format(t));
+        }
+
+        SimpleDownloadTask task = new SimpleDownloadTask(m, ytdlp);
+        task.addListener(EventThread.SWING_THREAD, (event, _) -> {
+            if (event != DownloadListener.Event.QUEUED && event != DownloadListener.Event.STARTED) {
+                m.setDownloading(false);
+                m.notifyChanges();
+            }
+        });
+
+        m.setDownloading(true);
+        DownloadManager.offer(task);
+
+        if (fireEvent) {
+            fireTableRowsUpdated(row, row);
+        }
     }
 }
