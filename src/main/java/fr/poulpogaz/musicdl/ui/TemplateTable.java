@@ -147,18 +147,13 @@ public class TemplateTable extends JPanel {
 
                 if (row >= 0) {
                     Music m = tableModel.getTemplate().getData().getMusic(row);
-
-                    if (m.isDownloaded()) {
-                        MetadataDialog.showDialog(MusicdlFrame.getInstance(), m);
-                    }
+                    MetadataDialog.showDialog(MusicdlFrame.getInstance(), m);
                 }
             }
 
             @Override
             public boolean isEnabled() {
-                return table.getSelectedRow() >= 0 &&
-                        tableModel.getTemplate().getData().getMusic(table.getSelectedRow())
-                                  .isDownloaded();
+                return table.getSelectedRow() >= 0;
             }
         };
     }

@@ -158,12 +158,14 @@ public class MusicdlFrame extends JFrame {
         quit.addActionListener(_ -> close());
 
 
-        JMenu templates = new JMenu("Templates");
-        newTemplate = templates.add(TemplateHelper.createAction());
-        editTemplate = templates.add(TemplateHelper.editAction());
-        deleteTemplate = templates.add(TemplateHelper.deleteAction());
-        templates.add(TemplateHelper.saveAction());
-        templates.add(TemplateHelper.loadAction());
+        JMenu edit = new JMenu("Edit");
+        edit.add(Actions.moveMetadata());
+        edit.addSeparator();
+        newTemplate = edit.add(TemplateHelper.createAction());
+        editTemplate = edit.add(TemplateHelper.editAction());
+        deleteTemplate = edit.add(TemplateHelper.deleteAction());
+        edit.add(TemplateHelper.saveAction());
+        edit.add(TemplateHelper.loadAction());
 
 
 
@@ -179,7 +181,7 @@ public class MusicdlFrame extends JFrame {
 
         JMenuBar bar = new JMenuBar();
         bar.add(file);
-        bar.add(templates);
+        bar.add(edit);
         bar.add(view);
 
         return bar;

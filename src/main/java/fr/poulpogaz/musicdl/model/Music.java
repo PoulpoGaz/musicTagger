@@ -250,7 +250,7 @@ public class Music {
 
     public List<String> getMetadata(int key) {
         if (template == null) {
-            return List.of();
+            return null;
         } else {
             return getMetadata(template.getKeyMetadataField(key));
         }
@@ -260,14 +260,14 @@ public class Music {
 
     public List<String> getOriginalMetadata(int key) {
         if (file == null || template == null) {
-            return List.of();
+            return null;
         } else {
             return file.get(template.getKeyMetadataField(key));
         }
     }
 
     public boolean metadataHasChanged(int key) {
-        return !getOriginalMetadata(key).equals(getMetadata(key));
+        return template != null && !Objects.equals(getOriginalMetadata(key), getMetadata(key));
     }
 
 
@@ -333,19 +333,19 @@ public class Music {
 
 
     public Path getPath() {
-        return file.getFile();
+        return file == null ? null : file.getFile();
     }
 
     public long getSize() {
-        return file.getSize();
+        return file == null ? -1L : file.getSize();
     }
 
     public double getLength() {
-        return file.getLength();
+        return file == null ? -1L : file.getLength();
     }
 
     public Channels getChannels() {
-        return file.getChannels();
+        return file == null ? Channels.UNKNOWN : file.getChannels();
     }
 
 

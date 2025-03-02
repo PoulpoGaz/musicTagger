@@ -5,7 +5,7 @@
 * DONE: template: allow creation of new metadata key based on yt-dlp expression
 * ui:
   * TemplateTable
-    * disable menu items when clicking outside the table
+    * DONE: disable menu items when clicking outside the table
     * add select all
     * add mass move of metadata -> move/swap all values associated with metadata 'M1' to 'M2'
   * DONE: disable menu items when right+click on template tab

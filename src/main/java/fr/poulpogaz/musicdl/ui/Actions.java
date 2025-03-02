@@ -4,6 +4,7 @@ import fr.poulpogaz.musicdl.model.CoverArt;
 import fr.poulpogaz.musicdl.model.Music;
 import fr.poulpogaz.musicdl.model.Templates;
 import fr.poulpogaz.musicdl.opus.OpusFile;
+import fr.poulpogaz.musicdl.ui.dialogs.MoveSwapDialog;
 import org.apache.commons.collections4.MapIterator;
 
 import javax.swing.*;
@@ -15,6 +16,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class Actions {
 
     private static Action SAVE_ACTION;
+    private static Action MOVE_METADATA_ACTION;
 
     public static Action saveAction() {
         if (SAVE_ACTION == null) {
@@ -75,5 +77,22 @@ public class Actions {
         public void allMusicsAdded() {
             allAdded = true;
         }
+    }
+
+
+
+
+
+    public static Action moveMetadata() {
+        if (MOVE_METADATA_ACTION == null) {
+            MOVE_METADATA_ACTION = new AbstractAction("Move metadata") {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    MoveSwapDialog.showDialog(MusicdlFrame.getInstance());
+                }
+            };
+
+        }
+        return MOVE_METADATA_ACTION;
     }
 }
