@@ -19,18 +19,20 @@ import java.util.Map;
 public class TemplatesPanel extends JPanel {
 
     private final TabPane templatesPane;
-    private JToolBar toolBar;
+    private final JToolBar toolBar;
 
     private final Map<Template, TemplateTable> panels = new HashMap<>();
 
     public TemplatesPanel() {
+        toolBar = new JToolBar(SwingConstants.VERTICAL);
         templatesPane = new TabPane();
-        setLayout(new BorderLayout());
-        add(templatesPane, BorderLayout.CENTER);
-
         for (Template t : Templates.getTemplates()) {
             templatesPane.addTab(t.getName(), new TemplateTable(t));
         }
+
+        setLayout(new BorderLayout());
+        add(templatesPane, BorderLayout.CENTER);
+        add(toolBar, BorderLayout.WEST);
 
         Templates.addTemplatesListener(createTemplateListener());
     }
@@ -51,14 +53,13 @@ public class TemplatesPanel extends JPanel {
     }
 
     private void changeToolbar() {
-        if (toolBar != null) {
-            remove(toolBar);
-        }
         TemplateTable table = getSelectedTemplateTable();
         if (table != null) {
-            toolBar = table.getToolBar();
-            add(toolBar, BorderLayout.WEST);
-            repaint();
+            toolBar.removeAll();
+            table.populateToolbar(toolBar);
+            toolBar.add(Actions.saveAction());
+            toolBar.revalidate();
+            toolBar.repaint();
         }
     }
 

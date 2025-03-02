@@ -53,7 +53,7 @@ public class TemplateTableModel extends AbstractRevertTableModel implements MTab
             return m.getDownloadURL();
         } else {
             List<String> metadata = m.getMetadata(columnIndex - 1);
-            return String.join("; ", metadata);
+            return metadata.isEmpty() ? null : String.join("; ", metadata);
         }
     }
 

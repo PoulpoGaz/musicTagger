@@ -105,7 +105,7 @@ public class OpusHead {
     public Channels getChannels() {
         return switch (channelCount) {
             case 1 -> Channels.MONO;
-            case 2 -> Channels.STERO;
+            case 2 -> Channels.STEREO;
             case 3 -> Channels.LINEAR_SURROUND;
             case 4 -> Channels.QUADRAPHONIC;
             case 5 -> Channels.SURROUND_5_0;

@@ -7,7 +7,6 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 import java.io.*;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -45,7 +44,7 @@ public class OpusMetadataWriter {
         try {
             // write vendor
             byte[] bytes = vendor.getBytes(StandardCharsets.UTF_8);
-            IOUtils.writeInt(commentBytes, bytes.length);
+            IOUtils.writeIntL(commentBytes, bytes.length);
             commentBytes.write(bytes);
 
             // save comment count position for later
@@ -64,7 +63,7 @@ public class OpusMetadataWriter {
             byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
             byte[] valueBytes = value.getBytes(StandardCharsets.UTF_8);
 
-            IOUtils.writeInt(commentBytes, keyBytes.length + 1 + valueBytes.length);
+            IOUtils.writeIntL(commentBytes, keyBytes.length + 1 + valueBytes.length);
             commentBytes.writeBytes(keyBytes);
             commentBytes.write('=');
             commentBytes.writeBytes(valueBytes);
@@ -74,40 +73,42 @@ public class OpusMetadataWriter {
     public void addCoverArt(BufferedImage image, String description, CoverType type) throws IOException {
         commentCount++;
 
-        byte[] keyBytes = "METADATA_BLOCK_PICTURE".getBytes(StandardCharsets.UTF_8);
-
-        // comment key
-        int start = commentBytes.getCount();
-        commentBytes.skip(4);
-        commentBytes.writeBytes(keyBytes);
-        commentBytes.write('=');
-
         // value
-        OutputStream os = Base64.getEncoder().wrap(commentBytes);
+        ByteArrayOutputStream imageBytes = new ByteArrayOutputStream();
+        OutputStream os = Base64.getEncoder().wrap(imageBytes);
 
         // write metadata picture header
-        os.write((byte) type.ordinal());
+        IOUtils.writeIntB(os, type.ordinal());
         IOUtils.writeStringWithLength(os, "image/png");
         if (description != null) {
             IOUtils.writeStringWithLength(os, description);
         } else {
-            IOUtils.writeInt(os, 0);
+            IOUtils.writeIntB(os, 0);
         }
-        IOUtils.writeInt(os, image.getWidth());
-        IOUtils.writeInt(os, image.getHeight());
-        IOUtils.writeInt(os, image.getColorModel().getPixelSize());
+        IOUtils.writeIntB(os, image.getWidth());
+        IOUtils.writeIntB(os, image.getHeight());
+        IOUtils.writeIntB(os, image.getColorModel().getPixelSize());
         if (image.getColorModel() instanceof IndexColorModel model) {
-            IOUtils.writeInt(os, model.getMapSize());
+            IOUtils.writeIntB(os, model.getMapSize());
         } else {
-            IOUtils.writeInt(os, 0);
+            IOUtils.writeIntB(os, 0);
         }
 
+        // write image
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageIO.write(image, "png", baos);
-        IOUtils.writeInt(os, baos.size());
+        IOUtils.writeIntB(os, baos.size());
+
         os.write(baos.toByteArray());
 
-        commentBytes.writeIntAt(start, commentBytes.getCount() - start);
+
+        // write comment
+        byte[] keyBytes = "METADATA_BLOCK_PICTURE".getBytes(StandardCharsets.UTF_8);
+
+        IOUtils.writeIntL(commentBytes, keyBytes.length + 1 + imageBytes.size());
+        commentBytes.writeBytes(keyBytes);
+        commentBytes.write('=');
+        imageBytes.writeTo(commentBytes);
     }
 
     public void write() throws IOException {

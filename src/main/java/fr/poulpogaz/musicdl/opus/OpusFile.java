@@ -162,7 +162,7 @@ public class OpusFile {
         this.file = file;
 
         OpusMetadataWriter omw = new OpusMetadataWriter(file);
-        omw.setVendor(vendor);
+        omw.setVendor(Objects.requireNonNullElse(vendor, "music-dl"));
 
         MapIterator<String, String> it = metadata.mapIterator();
         while (it.hasNext()) {
@@ -195,9 +195,6 @@ public class OpusFile {
     }
 
     public void setVendor(String vendor) {
-        if (vendor == null) {
-            vendor = "music-dl";
-        }
         this.vendor = vendor;
     }
 

@@ -33,7 +33,6 @@ public class TemplateTable extends JPanel {
     private Action showMetadataAction;
 
 
-    private JToolBar toolBar;
     private JPopupMenu tablePopupMenu;
 
     public TemplateTable(Template template) {
@@ -44,8 +43,6 @@ public class TemplateTable extends JPanel {
     protected void initComponents() {
         table = createTable();
         createActions();
-
-        toolBar = createToolBar();
 
         tablePopupMenu = createPopupMenu();
         table.addMouseListener(new TablePopupMenuSupport(table, tablePopupMenu));
@@ -166,13 +163,6 @@ public class TemplateTable extends JPanel {
         };
     }
 
-    protected JToolBar createToolBar() {
-        JToolBar bar = new JToolBar(SwingConstants.VERTICAL);
-        bar.add(newMusicAction);
-        bar.add(removeMusicsAction);
-        return bar;
-    }
-
     protected JPopupMenu createPopupMenu() {
         JPopupMenu menu = new JPopupMenu();
         changeTemplate = new JMenu("Change template");
@@ -275,8 +265,9 @@ public class TemplateTable extends JPanel {
         return table.getSelectionModel();
     }
 
-    public JToolBar getToolBar() {
-        return toolBar;
+    public void populateToolbar(JToolBar toolBar) {
+        toolBar.add(newMusicAction);
+        toolBar.add(removeMusicsAction);
     }
 
     private static class CellRenderer extends CellRendererBase {

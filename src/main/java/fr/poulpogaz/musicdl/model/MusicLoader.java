@@ -103,18 +103,22 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
                 continue;
             }
 
-            if (Files.isDirectory(path)) {
-                processDirectory(path);
-            } else if (Files.isRegularFile(path)) {
-                if (isJsonFile(path)) {
-                    processJson(path);
-                } else if (isOpusFile(path)) {
-                    processMusic(path);
+            try {
+                if (Files.isDirectory(path)) {
+                    processDirectory(path);
+                } else if (Files.isRegularFile(path)) {
+                    if (isJsonFile(path)) {
+                        processJson(path);
+                    } else if (isOpusFile(path)) {
+                        processMusic(path);
+                    } else {
+                        LOGGER.warn("Not a JSON or opus: {}", path);
+                    }
                 } else {
-                    LOGGER.warn("Not a JSON or opus: {}", path);
+                    LOGGER.warn("Invalid file type: {}", path);
                 }
-            } else {
-                LOGGER.warn("Invalid file type: {}", path);
+            } catch (Exception e) {
+                LOGGER.warn("Failed to load music", e);
             }
         }
 

@@ -3,7 +3,7 @@ package fr.poulpogaz.musicdl.opus;
 public enum Channels {
 
     MONO("Mono"),
-    STERO("Stero"),
+    STEREO("Stereo"),
     LINEAR_SURROUND("Linear surround"),
     QUADRAPHONIC("Quadraphonic"),
     SURROUND_5_0("5.0 surround"),

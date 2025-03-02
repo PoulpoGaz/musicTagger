@@ -118,6 +118,10 @@ public class Music {
         covers.addAll(file.getCoverArts());
     }
 
+    public OpusFile getOpusFile() {
+        return file;
+    }
+
 
     public void writeTo(IJsonWriter jw, boolean imageToBase64, Path coverArtDest)
             throws JsonException, IOException, InterruptedException {
@@ -317,6 +321,15 @@ public class Music {
     public List<CoverArt> getCovers() {
         return covers;
     }
+
+
+
+    public boolean hasChanged() {
+        return file != null && (!file.getMetadata().equals(metadata)
+                || !file.getCoverArts().equals(covers));
+    }
+
+
 
 
     public Path getPath() {

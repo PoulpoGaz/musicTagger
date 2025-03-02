@@ -53,7 +53,14 @@ public class IOUtils {
         return (b1 & 0xFF) | (b2 & 0xFF) << 8 | (b3 & 0xFF) << 16 | (b4 & 0xFF) << 24;
     }
 
-    public static void writeInt(OutputStream os, int value) throws IOException {
+    public static void writeIntB(OutputStream os, int value) throws IOException {
+        os.write((value >> 24) & 0xFF);
+        os.write((value >> 16) & 0xFF);
+        os.write((value >> 8) & 0xFF);
+        os.write(value & 0xFF);
+    }
+
+    public static void writeIntL(OutputStream os, int value) throws IOException {
         os.write(value & 0xFF);
         os.write((value >> 8) & 0xFF);
         os.write((value >> 16) & 0xFF);
@@ -92,7 +99,7 @@ public class IOUtils {
             byte[] bytes = is.readNBytes((int) length);
 
             if (bytes.length != length) {
-                throw new IOException("Not enough bytes");
+                throw new IOException("Not enough bytes: expected " + length + " but got " + bytes.length);
             }
 
             return new String(bytes, StandardCharsets.UTF_8);
@@ -101,7 +108,7 @@ public class IOUtils {
 
     public static void writeStringWithLength(OutputStream os, String str) throws IOException {
         byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
-        writeInt(os, bytes.length);
+        writeIntB(os, bytes.length);
         os.write(bytes);
     }
 
