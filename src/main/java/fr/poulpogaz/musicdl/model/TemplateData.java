@@ -1,5 +1,7 @@
 package fr.poulpogaz.musicdl.model;
 
+import fr.poulpogaz.musicdl.ui.TemplateTableModel;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -197,6 +199,10 @@ public class TemplateData implements Iterable<Music> {
         if (music.getTemplate() == template && music.index >= 0) {
             fireEvent(TemplateDataListener.UPDATE, music.index, music.index);
         }
+    }
+
+    public void notifyChanges() {
+        fireEvent(TemplateDataListener.UPDATE, 0, getMusicCount());
     }
 
     public Music getMusic(int index) {

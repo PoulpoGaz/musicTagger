@@ -226,18 +226,25 @@ public class Music {
         }
     }
 
+    public void putAllMetadata(String key, List<String> values) {
+        key = OpusFile.sanitize(key);
+        checkKey(key);
+        metadata.putAll(key, values);
+    }
+
     public void removeMetadata(String key, String value) {
         metadata.removeMapping(OpusFile.sanitize(key), value);
     }
 
-    public void removeMetadata(String key) {
-        metadata.remove(OpusFile.sanitize(key));
+    public List<String> removeMetadata(String key) {
+        return metadata.remove(OpusFile.sanitize(key));
     }
 
-    public void removeMetadata(int key) {
+    public List<String> removeMetadata(int key) {
         if (template != null) {
-            metadata.remove(template.getKeyMetadataField(key));
+            return metadata.remove(template.getKeyMetadataField(key));
         }
+        return null;
     }
 
     public List<String> getMetadata(String key) {

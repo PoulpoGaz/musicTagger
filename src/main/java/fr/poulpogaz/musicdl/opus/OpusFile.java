@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class OpusFile {
 
@@ -41,6 +42,32 @@ public class OpusFile {
             return key;
         } else {
             return key.toUpperCase(Locale.ROOT);
+        }
+    }
+
+    public static String reduce(String key) {
+        int status = keyStatus(key);
+
+        if (status == UPPERCASE) {
+            return key;
+        } else if (status == LOWERCASE) {
+            return key.toUpperCase(Locale.ROOT);
+        } else {
+            StringBuilder sb = new StringBuilder();
+
+            for (int i = 0; i < key.length(); i++) {
+                char c = key.charAt(i);
+
+                if (c >= 0x20 && c <= 0x7D) {
+                    if (c >= 0x61 && c <= 0x7A) {
+                        sb.append(Character.toUpperCase(c));
+                    } else {
+                        sb.append(c);
+                    }
+                }
+            }
+
+            return sb.toString();
         }
     }
 

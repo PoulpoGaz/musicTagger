@@ -1,6 +1,10 @@
 package fr.poulpogaz.musicdl.ui.dialogs;
 
 import fr.poulpogaz.musicdl.model.Music;
+import fr.poulpogaz.musicdl.model.Template;
+import fr.poulpogaz.musicdl.model.Templates;
+import fr.poulpogaz.musicdl.opus.OpusFile;
+import fr.poulpogaz.musicdl.ui.MusicdlFrame;
 import fr.poulpogaz.musicdl.ui.layout.HCOrientation;
 import fr.poulpogaz.musicdl.ui.layout.HorizontalConstraint;
 import fr.poulpogaz.musicdl.ui.layout.HorizontalLayout;
@@ -9,7 +13,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
+import javax.swing.text.PlainDocument;
 import java.awt.*;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -45,8 +54,8 @@ public class MoveSwapDialog extends AbstractDialog {
     @Override
     protected void initComponents() {
         selectComponent = new SelectComponent();
-        from = new JTextField();
-        to = new JTextField();
+        from = createMetadataFieldTextField();
+        to = createMetadataFieldTextField();
         swap = new JCheckBox("Swap values");
 
         progress = new JProgressBar();
@@ -132,6 +141,25 @@ public class MoveSwapDialog extends AbstractDialog {
         getRootPane().setDefaultButton(apply);
     }
 
+    private JTextField createMetadataFieldTextField() {
+        JTextField field = new JTextField();
+        ((PlainDocument) field.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string,
+                                     AttributeSet attr) throws BadLocationException {
+                super.insertString(fb, offset, OpusFile.reduce(string), attr);
+            }
+
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text,
+                                AttributeSet attrs) throws BadLocationException {
+                super.replace(fb, offset, length, OpusFile.reduce(text), attrs);
+            }
+        });
+
+        return field;
+    }
+
     private void cancel() {
         if (worker != null) {
             worker.cancel(false);
@@ -140,7 +168,7 @@ public class MoveSwapDialog extends AbstractDialog {
     }
 
     private void apply() {
-        if (worker == null) {
+        if (worker == null && !from.getText().equals(to.getText())) {
             selectComponent.setEnabled(false);
             from.setEnabled(false);
             to.setEnabled(false);
@@ -163,23 +191,29 @@ public class MoveSwapDialog extends AbstractDialog {
             LOGGER.debug(total);
             publish(total);
 
+            String from = MoveSwapDialog.this.from.getText();
+            String to = MoveSwapDialog.this.to.getText();
+
             long lastTime = System.currentTimeMillis();
             int processed = 0;
             Iterator<Music> it = selectComponent.iterator();
             while (it.hasNext()) {
                 Music music = it.next();
 
-                List<String> src = music.getMetadata(from.getText());
-                List<String> dst = music.getMetadata(to.getText());
-
-                if (src != null && dst != null && src != dst) {
-                    if (swap.isSelected()) {
-
-                    } else {
-                        dst.clear();
-                        dst.addAll(src);
-                        src.clear();
+                if (swap.isSelected()) {
+                    List<String> src = music.removeMetadata(from);
+                    List<String> dst = music.removeMetadata(to);
+                    if (src != null) {
+                        music.putAllMetadata(to, src);
                     }
+                    if (dst != null) {
+                        music.putAllMetadata(from, dst);
+                    }
+                } else {
+                    List<String> src = music.removeMetadata(from);
+                    List<String> dst = music.getMetadata(to);
+                    dst.clear();
+                    dst.addAll(src);
                 }
 
                 processed++;
@@ -224,6 +258,10 @@ public class MoveSwapDialog extends AbstractDialog {
 
                 setProgressBar(progress.getMaximum());
                 dispose();
+
+                for (Template t : Templates.getTemplates()) {
+                    t.getData().notifyChanges();
+                }
             }
         }
 
