@@ -59,7 +59,6 @@ public class Actions {
 
                     for (CoverArt cover : m.getCovers()) {
                         file.addCoverArt(cover);
-                        file.addCoverArt(cover);
                     }
 
                     file.save();

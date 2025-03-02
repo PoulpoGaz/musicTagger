@@ -161,6 +161,7 @@ public class OpusFile {
         Objects.requireNonNull(file);
         this.file = file;
 
+        LOGGER.debug("Saving {}", file);
         OpusMetadataWriter omw = new OpusMetadataWriter(file);
         omw.setVendor(Objects.requireNonNullElse(vendor, "music-dl"));
 

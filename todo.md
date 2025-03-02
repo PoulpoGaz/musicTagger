@@ -14,4 +14,4 @@
 * DONE: save to json
   * DONE: with sub menu to only save musics that aren't downloaded
 * DONE: load from json
-* save metadata of already downloaded musics
+* DONE: save metadata of already downloaded musics
