@@ -7,7 +7,7 @@
   * TemplateTable
     * DONE: disable menu items when clicking outside the table
     * add select all
-    * add mass move of metadata -> move/swap all values associated with metadata 'M1' to 'M2'
+    * DONE: add mass move of metadata -> move/swap all values associated with metadata 'M1' to 'M2'
   * DONE: disable menu items when right+click on template tab
 * DONE: reduce memory consumption by loading only thumbnails or loading images lazily
   * DONE: reuse OggPage and MetadataPicture data

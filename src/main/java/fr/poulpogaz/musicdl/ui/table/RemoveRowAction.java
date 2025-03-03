@@ -33,9 +33,9 @@ public class RemoveRowAction extends AbstractMAction {
 
         boolean moveSelection = false;
         if (ActionUtils.isSingleItemSelected(rows)) {
-            moveSelection = table.getModel().removeRows(rows);
-        } else if (firstRow >= 0) {
             moveSelection = table.getModel().removeRow(firstRow);
+        } else if (firstRow >= 0) {
+            moveSelection = table.getModel().removeRows(rows);
         }
 
 

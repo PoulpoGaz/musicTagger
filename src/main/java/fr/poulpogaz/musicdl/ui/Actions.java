@@ -1,17 +1,18 @@
 package fr.poulpogaz.musicdl.ui;
 
-import fr.poulpogaz.musicdl.model.CoverArt;
-import fr.poulpogaz.musicdl.model.Music;
-import fr.poulpogaz.musicdl.model.Templates;
+import fr.poulpogaz.musicdl.model.*;
 import fr.poulpogaz.musicdl.opus.OpusFile;
 import fr.poulpogaz.musicdl.ui.dialogs.MoveSwapDialog;
 import org.apache.commons.collections4.MapIterator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 
 public class Actions {
 
@@ -42,6 +43,8 @@ public class Actions {
 
     private static class SaveWorker extends SwingWorker<Void, Void> {
 
+        private static final Logger LOGGER = LogManager.getLogger(SaveWorker.class);
+
         private final Queue<Music> toProcess = new ConcurrentLinkedQueue<>();
         private boolean allAdded = false;
 
@@ -63,11 +66,29 @@ public class Actions {
                         file.addCoverArt(cover);
                     }
 
-                    file.save();
+                    Template t = m.getTemplate();
+                    if (t != null) {
+                        file.put("TEMPLATE", t.getName());
+                    }
+
+                    try {
+                        file.save();
+                    } catch (Exception e) {
+                        LOGGER.error("Failed to save music to {}", file.getPath(), e);
+                    }
                 }
             }
 
             return null;
+        }
+
+        @Override
+        protected void done() {
+            try {
+                get();
+            } catch (InterruptedException | ExecutionException e) {
+                LOGGER.error("Failed to save musics", e);
+            }
         }
 
         public void offer(Music music) {

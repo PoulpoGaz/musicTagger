@@ -112,6 +112,10 @@ public class Utils {
             int max = (int) Math.min(remaining, buff.length);
             int r = is.read(buff, 0, max);
 
+            if (r == -1) {
+                break;
+            }
+
             SHA_256.update(buff, 0, r);
 
             remaining -= r;

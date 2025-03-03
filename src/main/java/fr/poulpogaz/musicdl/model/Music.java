@@ -332,15 +332,32 @@ public class Music {
 
 
     public boolean hasChanged() {
-        return file != null && (!file.getMetadata().equals(metadata)
-                || !file.getCoverArts().equals(covers));
+        if (file != null) {
+            if (!file.getMetadata().equals(metadata)) {
+                return true;
+            }
+            if (!file.getCoverArts().equals(covers)) {
+                return true;
+            }
+            String t = file.getFirst("TEMPLATE");
+
+            if (template == null) {
+                return t != null;
+            } else if (template.isInternalTemplate()) { // TODO; better internal template handling, distinguish Unassigned Musics template
+                return t != null;
+            } else {
+                return !Objects.equals(t, template.getName());
+            }
+        }
+
+        return false;
     }
 
 
 
 
     public Path getPath() {
-        return file == null ? null : file.getFile();
+        return file == null ? null : file.getPath();
     }
 
     public long getSize() {

@@ -75,31 +75,32 @@ public class OpusMetadataWriter {
 
         // value
         ByteArrayOutputStream imageBytes = new ByteArrayOutputStream();
-        OutputStream os = Base64.getEncoder().wrap(imageBytes);
+        OutputStream base64 = Base64.getEncoder().wrap(imageBytes);
 
         // write metadata picture header
-        IOUtils.writeIntB(os, type.ordinal());
-        IOUtils.writeStringWithLength(os, "image/png");
+        IOUtils.writeIntB(base64, type.ordinal());
+        IOUtils.writeStringWithLength(base64, "image/png");
         if (description != null) {
-            IOUtils.writeStringWithLength(os, description);
+            IOUtils.writeStringWithLength(base64, description);
         } else {
-            IOUtils.writeIntB(os, 0);
+            IOUtils.writeIntB(base64, 0);
         }
-        IOUtils.writeIntB(os, image.getWidth());
-        IOUtils.writeIntB(os, image.getHeight());
-        IOUtils.writeIntB(os, image.getColorModel().getPixelSize());
+        IOUtils.writeIntB(base64, image.getWidth());
+        IOUtils.writeIntB(base64, image.getHeight());
+        IOUtils.writeIntB(base64, image.getColorModel().getPixelSize());
         if (image.getColorModel() instanceof IndexColorModel model) {
-            IOUtils.writeIntB(os, model.getMapSize());
+            IOUtils.writeIntB(base64, model.getMapSize());
         } else {
-            IOUtils.writeIntB(os, 0);
+            IOUtils.writeIntB(base64, 0);
         }
 
         // write image
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageIO.write(image, "png", baos);
-        IOUtils.writeIntB(os, baos.size());
 
-        os.write(baos.toByteArray());
+        IOUtils.writeIntB(base64, baos.size());
+        baos.writeTo(base64);
+        base64.close();
 
 
         // write comment

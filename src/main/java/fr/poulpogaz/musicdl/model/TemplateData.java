@@ -110,8 +110,8 @@ public class TemplateData implements Iterable<Music> {
 
             if (cond.test(i, m)) {
                 m.template = dest.getTemplate();
-                dest.musics.add(m);
                 m.index = dest.musics.size();
+                dest.musics.add(m);
                 musics.remove(internalI);
             } else {
                 musics.get(internalI).index = internalI;

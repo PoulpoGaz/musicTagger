@@ -21,7 +21,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class OpusFile {
 
@@ -206,7 +205,7 @@ public class OpusFile {
         omw.write();
     }
 
-    public Path getFile() {
+    public Path getPath() {
         return file;
     }
 

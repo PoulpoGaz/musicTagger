@@ -19,7 +19,7 @@ import java.util.*;
 
 public class Templates {
 
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
     private static final String[] URLS = new String[] {
         "https://www.youtube.com/watch?v=yDVEuISEr1Q",
         "https://www.youtube.com/watch?v=Urcnqat6P0s",

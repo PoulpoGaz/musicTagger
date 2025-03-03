@@ -10,6 +10,7 @@ import javax.swing.event.TableModelEvent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class TemplateTableModel extends AbstractRevertTableModel implements MTableModel {
 
@@ -233,7 +234,7 @@ public class TemplateTableModel extends AbstractRevertTableModel implements MTab
 
             if (m.isDownloaded()) {
                 if (column == 0) {
-                    return !m.getDownloadURL().equals(m.getOriginalDownloadURL());
+                    return !Objects.equals(m.getDownloadURL(), m.getOriginalDownloadURL());
                 } else {
                     return m.metadataHasChanged(column - 1);
                 }
