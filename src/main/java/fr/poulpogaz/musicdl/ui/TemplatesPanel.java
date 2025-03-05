@@ -1,5 +1,6 @@
 package fr.poulpogaz.musicdl.ui;
 
+import com.formdev.flatlaf.icons.FlatOptionPaneErrorIcon;
 import fr.poulpogaz.musicdl.model.Template;
 import fr.poulpogaz.musicdl.model.Templates;
 import fr.poulpogaz.musicdl.model.TemplatesListener;
@@ -60,6 +61,7 @@ public class TemplatesPanel extends JPanel {
             toolBar.add(Actions.saveAction());
             toolBar.revalidate();
             toolBar.repaint();
+            new FlatOptionPaneErrorIcon();
         }
     }
 

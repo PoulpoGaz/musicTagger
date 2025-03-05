@@ -93,7 +93,7 @@ public class TemplateHelper {
 
     public static Action saveAction() {
         if (SAVE_TEMPLATES_ACTION == null) {
-            SAVE_TEMPLATES_ACTION = new AbstractAction(SAVE_TEMPLATES) {
+            SAVE_TEMPLATES_ACTION = new AbstractAction(SAVE_TEMPLATES, Icons.get("save.svg")) {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     saveTemplates(MusicdlFrame.getInstance());

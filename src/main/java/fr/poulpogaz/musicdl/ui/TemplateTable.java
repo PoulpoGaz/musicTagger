@@ -94,7 +94,7 @@ public class TemplateTable extends JPanel {
     }
 
     protected Action createEditTagAction() {
-        return new AbstractMAction("Edit tag", table) {
+        Action action = new AbstractMAction("Edit tag", Icons.get("edit.svg"), table) {
             @Override
             public void actionPerformed(ActionEvent e) {
                 openSingleMetadataEditor(table.getSelectedRow(), table.getSelectedColumn());
@@ -105,10 +105,12 @@ public class TemplateTable extends JPanel {
                 return tableModel.canOpenTagEditor(table.getSelectedRow(), table.getSelectedColumn());
             }
         };
+        action.putValue(Action.SHORT_DESCRIPTION, "Edit selected tag in another window (for multi-value editing)");
+        return action;
     }
 
     protected Action createSetNullAction() {
-        return new AbstractMAction("Unset", table) {
+        Action action = new AbstractMAction("Unset", table) {
             @Override
             public void actionPerformed(ActionEvent e) {
                 ListSelectionModel selectedRows = table.getSelectionModel();
@@ -122,10 +124,12 @@ public class TemplateTable extends JPanel {
                         && !table.getColumnModel().getSelectionModel().isSelectionEmpty();
             }
         };
+        action.putValue(Action.SHORT_DESCRIPTION, "Remove values for every selected cells");
+        return action;
     }
 
     protected Action createDownloadAction() {
-        return new AbstractMAction("Download", table) {
+        Action action = new AbstractMAction("Download", Icons.get("download.svg"), table) {
             @Override
             public void actionPerformed(ActionEvent e) {
                 ListSelectionModel selectedRows = table.getSelectionModel();
@@ -137,10 +141,12 @@ public class TemplateTable extends JPanel {
                 return table.getSelectedRow() >= 0;
             }
         };
+        action.putValue(Action.SHORT_DESCRIPTION, "Download selected musics");
+        return action;
     }
 
     protected Action createShowMetadataAction() {
-        return new AbstractMAction("Show all metadata", table) {
+        Action action = new AbstractMAction("Show all metadata", table) {
             @Override
             public void actionPerformed(ActionEvent e) {
                 int row = table.getSelectedRow();
@@ -156,6 +162,8 @@ public class TemplateTable extends JPanel {
                 return table.getSelectedRow() >= 0;
             }
         };
+        action.putValue(Action.SHORT_DESCRIPTION, "Show all metadata of selected musics");
+        return action;
     }
 
     protected JPopupMenu createPopupMenu() {
@@ -263,6 +271,8 @@ public class TemplateTable extends JPanel {
     public void populateToolbar(JToolBar toolBar) {
         toolBar.add(newMusicAction);
         toolBar.add(removeMusicsAction);
+        toolBar.add(revertAction);
+        toolBar.add(downloadAction);
     }
 
     private static class CellRenderer extends CellRendererBase {

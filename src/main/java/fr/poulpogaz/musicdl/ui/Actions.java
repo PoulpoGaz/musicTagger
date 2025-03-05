@@ -36,6 +36,7 @@ public class Actions {
                     worker.allMusicsAdded();
                 }
             };
+            SAVE_ACTION.putValue(Action.SHORT_DESCRIPTION, "Save all modified and downloaded musics");
         }
 
         return SAVE_ACTION;

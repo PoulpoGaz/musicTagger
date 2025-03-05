@@ -1,5 +1,7 @@
 package fr.poulpogaz.musicdl.ui.table;
 
+import fr.poulpogaz.musicdl.ui.Icons;
+
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 
@@ -12,6 +14,7 @@ public class RevertAction extends AbstractMAction {
         action.putValue(Action.NAME, "Revert");
         action.putValue(Action.SHORT_DESCRIPTION,
                         "Revert selected cells to their previous values");
+        action.putValue(Action.SMALL_ICON, Icons.get("revert.svg"));
 
         return action;
     }
