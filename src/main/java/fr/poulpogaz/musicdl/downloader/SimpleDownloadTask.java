@@ -1,6 +1,5 @@
 package fr.poulpogaz.musicdl.downloader;
 
-import fr.poulpogaz.json.utils.Pair;
 import fr.poulpogaz.musicdl.Units;
 import fr.poulpogaz.musicdl.model.Music;
 import fr.poulpogaz.musicdl.opus.OpusFile;
@@ -22,6 +21,26 @@ import java.util.concurrent.ThreadFactory;
 
 public class SimpleDownloadTask extends DownloadTask {
 
+    private static final String[] fieldsToRemove = new String[] {
+            "title",
+            "date",
+            "description",
+            "synopsis",
+            "comment",
+            "track",
+            "artist",
+            "composer",
+            "genre",
+            "album",
+            "album_artist",
+            "disc",
+            "show",
+            "season_number",
+            "episode_id",
+            "episode_sort",
+            "language",
+    };
+
 
     public static YTDLP ytdlp(String url) {
         YTDLP ytdlp = new YTDLP(url);
@@ -34,11 +53,12 @@ public class SimpleDownloadTask extends DownloadTask {
              .addOption("--no-simulate")
              .addOption("--extract-audio")
              .addOption("--format", "bestaudio")
-             .addOption("--embed-metadata")
-             .addOption("--parse-metadata", ":(?P<meta_language>)")
-             .addOption("--parse-metadata", ":(?P<meta_synopsis>)")
-             .addOption("--parse-metadata", "%(title)s:%(meta_yt_title)s") // wtf is this, thanks to https://stackoverflow.com/questions/71347719/set-metadata-based-on-the-output-filename-in-yt-dlp
-             .addOption("--parse-metadata", "%(artist,creator,uploader,uploader_id)s:%(meta_yt_artist)s");
+             .addOption("--embed-metadata");
+
+        // remove all default metadata fields, except purl
+        for (String field : fieldsToRemove) {
+            ytdlp.addOption("--parse-metadata", ":(?P<meta_" + field + ">)");
+        }
 
         return ytdlp;
     }

@@ -2,6 +2,7 @@ package fr.poulpogaz.musicdl.ui.dialogs;
 
 import com.formdev.flatlaf.extras.components.FlatButton;
 import com.formdev.flatlaf.icons.FlatOptionPaneQuestionIcon;
+import fr.poulpogaz.musicdl.ui.MetadataFieldDocumentFilter;
 import fr.poulpogaz.musicdl.ui.table.MTable;
 import fr.poulpogaz.musicdl.ui.SimpleDocumentListener;
 import fr.poulpogaz.musicdl.ui.TablePopupMenuSupport;
@@ -12,8 +13,11 @@ import fr.poulpogaz.musicdl.ui.table.SetAction;
 import fr.poulpogaz.musicdl.ui.text.ErrorTextField;
 
 import javax.swing.*;
+import javax.swing.event.CellEditorListener;
 import javax.swing.event.DocumentEvent;
+import javax.swing.table.TableCellEditor;
 import java.awt.*;
+import java.util.EventObject;
 
 public abstract class TemplateDialogBase extends AbstractDialog {
 
@@ -116,7 +120,7 @@ public abstract class TemplateDialogBase extends AbstractDialog {
 
 
 
-        keyTable = createTable(templateModel.getKeyTableModel());
+        keyTable = createTable(templateModel.getKeyTableModel(), keyTableMetadataFieldColumn());
         createKeyTableActions();
 
         keyToolbar = createKeyToolbar();
@@ -127,7 +131,7 @@ public abstract class TemplateDialogBase extends AbstractDialog {
 
 
 
-        generatorTable = createTable(templateModel.getMetadataGeneratorTableModel());
+        generatorTable = createTable(templateModel.getMetadataGeneratorTableModel(), generatorTableMetadataFieldColumn());
         createGeneratorTableActions();
 
         generatorToolBar = createGeneratorToolbar();
@@ -232,8 +236,18 @@ public abstract class TemplateDialogBase extends AbstractDialog {
         return b;
     }
 
-    protected MTable createTable(RestoreTableModel<?> model) {
-        MTable table = new MTable(model);
+    protected MTable createTable(RestoreTableModel<?> model, int metadataColumn) {
+        DefaultCellEditor metadataEditor = new DefaultCellEditor(MetadataFieldDocumentFilter.createTextField());
+
+        MTable table = new MTable(model) {
+            @Override
+            public TableCellEditor getCellEditor(int row, int column) {
+                if (column == metadataColumn) {
+                    return metadataEditor;
+                }
+                return super.getCellEditor(row, column);
+            }
+        };
         table.setDefaultRenderer(Object.class, new RevertTableCellRenderer());
         table.setModel(model);
         table.setColumnSelectionAllowed(true);
@@ -246,6 +260,8 @@ public abstract class TemplateDialogBase extends AbstractDialog {
 
         return table;
     }
+
+    protected abstract int keyTableMetadataFieldColumn();
 
     protected void createKeyTableActions() {
         keyTableNewAction = NewRowAction.create(keyTable, "key");
@@ -275,6 +291,8 @@ public abstract class TemplateDialogBase extends AbstractDialog {
         return menu;
     }
 
+
+    protected abstract int generatorTableMetadataFieldColumn();
 
     protected void createGeneratorTableActions() {
         generatorNewAction = NewRowAction.create(generatorTable, "metadata generator");

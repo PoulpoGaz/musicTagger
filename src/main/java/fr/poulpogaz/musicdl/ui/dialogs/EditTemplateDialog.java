@@ -32,6 +32,11 @@ public class EditTemplateDialog extends TemplateDialogBase {
     }
 
     @Override
+    protected int keyTableMetadataFieldColumn() {
+        return 2;
+    }
+
+    @Override
     protected void createKeyTableActions() {
         super.createKeyTableActions();
         keyRevertAction = RevertAction.create(keyTable);
@@ -46,6 +51,11 @@ public class EditTemplateDialog extends TemplateDialogBase {
         menu.add(keyRevertAction);
         menu.add(keyRestoreAction);
         return menu;
+    }
+
+    @Override
+    protected int generatorTableMetadataFieldColumn() {
+        return 0;
     }
 
     @Override

@@ -15,4 +15,14 @@ public class NewTemplateDialog extends TemplateDialogBase {
         init();
         doneButton.setText("Create");
     }
+
+    @Override
+    protected int keyTableMetadataFieldColumn() {
+        return 2;
+    }
+
+    @Override
+    protected int generatorTableMetadataFieldColumn() {
+        return 0;
+    }
 }

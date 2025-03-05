@@ -3,8 +3,7 @@ package fr.poulpogaz.musicdl.ui.dialogs;
 import fr.poulpogaz.musicdl.model.Music;
 import fr.poulpogaz.musicdl.model.Template;
 import fr.poulpogaz.musicdl.model.Templates;
-import fr.poulpogaz.musicdl.opus.OpusFile;
-import fr.poulpogaz.musicdl.ui.MusicdlFrame;
+import fr.poulpogaz.musicdl.ui.MetadataFieldDocumentFilter;
 import fr.poulpogaz.musicdl.ui.layout.HCOrientation;
 import fr.poulpogaz.musicdl.ui.layout.HorizontalConstraint;
 import fr.poulpogaz.musicdl.ui.layout.HorizontalLayout;
@@ -13,12 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
-import javax.swing.text.AttributeSet;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.DocumentFilter;
-import javax.swing.text.PlainDocument;
 import java.awt.*;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -54,8 +48,8 @@ public class MoveSwapDialog extends AbstractDialog {
     @Override
     protected void initComponents() {
         selectComponent = new SelectComponent();
-        from = createMetadataFieldTextField();
-        to = createMetadataFieldTextField();
+        from = MetadataFieldDocumentFilter.createTextField();
+        to = MetadataFieldDocumentFilter.createTextField();
         swap = new JCheckBox("Swap values");
 
         progress = new JProgressBar();
@@ -139,25 +133,6 @@ public class MoveSwapDialog extends AbstractDialog {
         add(top, BorderLayout.CENTER);
         add(south, BorderLayout.SOUTH);
         getRootPane().setDefaultButton(apply);
-    }
-
-    private JTextField createMetadataFieldTextField() {
-        JTextField field = new JTextField();
-        ((PlainDocument) field.getDocument()).setDocumentFilter(new DocumentFilter() {
-            @Override
-            public void insertString(FilterBypass fb, int offset, String string,
-                                     AttributeSet attr) throws BadLocationException {
-                super.insertString(fb, offset, OpusFile.reduce(string), attr);
-            }
-
-            @Override
-            public void replace(FilterBypass fb, int offset, int length, String text,
-                                AttributeSet attrs) throws BadLocationException {
-                super.replace(fb, offset, length, OpusFile.reduce(text), attrs);
-            }
-        });
-
-        return field;
     }
 
     private void cancel() {

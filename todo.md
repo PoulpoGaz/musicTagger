@@ -15,3 +15,7 @@
   * DONE: with sub menu to only save musics that aren't downloaded
 * DONE: load from json
 * DONE: save metadata of already downloaded musics
+* better error handling
+  * create OpusException/OggException
+  * show error to user
+* allow user to add more options to yt-dlp
