@@ -161,11 +161,11 @@ public class MusicdlFrame extends JFrame {
         JMenu edit = new JMenu("Edit");
         edit.add(Actions.moveMetadata());
         edit.addSeparator();
-        newTemplate = edit.add(TemplateHelper.createAction());
-        editTemplate = edit.add(TemplateHelper.editAction());
-        deleteTemplate = edit.add(TemplateHelper.deleteAction());
-        edit.add(TemplateHelper.saveAction());
-        edit.add(TemplateHelper.loadAction());
+        newTemplate = edit.add(TemplateActions.createAction());
+        editTemplate = edit.add(TemplateActions.editAction());
+        deleteTemplate = edit.add(TemplateActions.deleteAction());
+        edit.add(TemplateActions.saveAction());
+        edit.add(TemplateActions.loadAction());
 
 
 
@@ -220,11 +220,11 @@ public class MusicdlFrame extends JFrame {
     private void updateTemplateActions() {
         Template t = templatesPanel.getSelectedTemplate();
         if (t != null) {
-            TemplateHelper.editAction().setEnabled(true);
-            TemplateHelper.deleteAction().setEnabled(!t.isInternalTemplate());
+            TemplateActions.editAction().setEnabled(true);
+            TemplateActions.deleteAction().setEnabled(!t.isInternalTemplate());
         } else {
-            TemplateHelper.editAction().setEnabled(false);
-            TemplateHelper.deleteAction().setEnabled(false);
+            TemplateActions.editAction().setEnabled(false);
+            TemplateActions.deleteAction().setEnabled(false);
         }
     }
 

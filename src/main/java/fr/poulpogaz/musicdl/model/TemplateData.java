@@ -1,7 +1,5 @@
 package fr.poulpogaz.musicdl.model;
 
-import fr.poulpogaz.musicdl.ui.TemplateTableModel;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

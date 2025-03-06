@@ -1,4 +1,4 @@
-package fr.poulpogaz.musicdl;
+package fr.poulpogaz.musicdl.utils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,30 +64,6 @@ public class Utils {
         }
 
         return n;
-    }
-
-    public static String prettyPrintBytes(long bytes) {
-        if (bytes < 1024) {
-            return bytes + " B";
-        } else if (bytes < 1024 * 1024) {
-            return format.format(bytes / 1024d) + " KiB";
-        } else if (bytes < 1024 * 1024 * 1024L) {
-            return format.format(bytes / (1024 * 1024d)) + " MiB";
-        } else {
-            return format.format(bytes / (1024 * 1024 * 1024d)) + " GiB";
-        }
-    }
-
-    public static String prettyPrintSeconds(int length) {
-        if (length < 60) {
-            return length + " s";
-        } else if (length < 60 * 60) {
-            return (length / 60) + " min " + (length % 60) + " s";
-        } else {
-            int hours = length / (60 * 60);
-            int remaining = length - hours * 60 * 60;
-            return hours + " h " + remaining / 60 + " min " + (remaining % 60) + " s";
-        }
     }
 
     public static boolean equals(double a, double b) {

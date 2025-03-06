@@ -1,6 +1,6 @@
 package fr.poulpogaz.musicdl.downloader;
 
-import fr.poulpogaz.musicdl.Units;
+import fr.poulpogaz.musicdl.utils.Units;
 import fr.poulpogaz.musicdl.model.Music;
 import fr.poulpogaz.musicdl.opus.OpusFile;
 import fr.poulpogaz.musicdl.ui.layout.VerticalConstraint;
@@ -204,7 +204,7 @@ public class SimpleDownloadTask extends DownloadTask {
             StringBuilder sb = new StringBuilder();
             boolean space = false;
             if (progress.getSpeed() >= 0) {
-                sb.append(Units.humanReadableSpeed(progress.getSpeed()));
+                sb.append(Units.humanReadableSpeed((long) progress.getSpeed()));
                 space = true;
             }
             if (progress.getETA() >= 0) {

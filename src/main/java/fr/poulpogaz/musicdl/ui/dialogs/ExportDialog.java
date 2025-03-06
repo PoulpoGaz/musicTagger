@@ -5,16 +5,11 @@ import com.formdev.flatlaf.icons.FlatTreeOpenIcon;
 import fr.poulpogaz.json.IJsonWriter;
 import fr.poulpogaz.json.JsonPrettyWriter;
 import fr.poulpogaz.musicdl.model.Music;
-import fr.poulpogaz.musicdl.model.Template;
-import fr.poulpogaz.musicdl.model.Templates;
-import fr.poulpogaz.musicdl.ui.MusicdlFrame;
-import fr.poulpogaz.musicdl.ui.TemplatesPanel;
 import fr.poulpogaz.musicdl.ui.layout.HCOrientation;
 import fr.poulpogaz.musicdl.ui.layout.HorizontalConstraint;
 import fr.poulpogaz.musicdl.ui.layout.HorizontalLayout;
 import fr.poulpogaz.musicdl.ui.text.MTextField;
 import fr.poulpogaz.musicdl.ui.text.TextUtils;
-import org.apache.commons.collections4.iterators.FilterIterator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -28,7 +23,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 

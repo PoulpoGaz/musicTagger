@@ -10,8 +10,8 @@ import org.apache.commons.collections4.iterators.FilterIterator;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 public class SelectComponent extends JComponent {
 

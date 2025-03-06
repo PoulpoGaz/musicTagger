@@ -1,7 +1,7 @@
 package fr.poulpogaz.musicdl.opus;
 
-import fr.poulpogaz.musicdl.LimitedInputStream;
-import fr.poulpogaz.musicdl.LimitedReader;
+import fr.poulpogaz.musicdl.utils.LimitedInputStream;
+import fr.poulpogaz.musicdl.utils.LimitedReader;
 
 import java.io.Closeable;
 import java.io.IOException;

@@ -1,8 +1,8 @@
 package fr.poulpogaz.musicdl.ui.dialogs;
 
 import com.formdev.flatlaf.FlatClientProperties;
-import fr.poulpogaz.musicdl.Utils;
-import fr.poulpogaz.musicdl.Zoom;
+import fr.poulpogaz.musicdl.utils.Utils;
+import fr.poulpogaz.musicdl.utils.Zoom;
 import fr.poulpogaz.musicdl.model.CoverArt;
 import fr.poulpogaz.musicdl.model.ExecutionStrategy;
 import org.apache.logging.log4j.LogManager;

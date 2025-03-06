@@ -11,7 +11,6 @@ import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
@@ -169,9 +168,9 @@ public class TemplatesPanel extends JPanel {
         private JMenuItem delete;
 
         public TabPopupMenu() {
-            add(TemplateHelper.createAction());
-            edit = add(TemplateHelper.editAction(() -> template));
-            delete = add(TemplateHelper.deleteAction(() -> template));
+            add(TemplateActions.createAction());
+            edit = add(TemplateActions.editAction(() -> template));
+            delete = add(TemplateActions.deleteAction(() -> template));
         }
 
         public void show(Template template, Component component, int x, int y) {

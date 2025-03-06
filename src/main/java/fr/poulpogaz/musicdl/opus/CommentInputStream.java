@@ -1,6 +1,6 @@
 package fr.poulpogaz.musicdl.opus;
 
-import fr.poulpogaz.musicdl.LimitedInputStream;
+import fr.poulpogaz.musicdl.utils.LimitedInputStream;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

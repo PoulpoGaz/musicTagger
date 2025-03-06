@@ -1,12 +1,9 @@
 package fr.poulpogaz.musicdl.ui;
 
 import javax.swing.*;
-import javax.swing.event.PopupMenuEvent;
-import javax.swing.event.PopupMenuListener;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.IOException;
 import java.util.Objects;
 
 public class TablePopupMenuSupport extends MouseAdapter {

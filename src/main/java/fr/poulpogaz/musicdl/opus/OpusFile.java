@@ -1,8 +1,8 @@
 package fr.poulpogaz.musicdl.opus;
 
-import fr.poulpogaz.musicdl.ArrayListValuedLinkedMap;
-import fr.poulpogaz.musicdl.LimitedInputStream;
-import fr.poulpogaz.musicdl.Utils;
+import fr.poulpogaz.musicdl.utils.ArrayListValuedLinkedMap;
+import fr.poulpogaz.musicdl.utils.LimitedInputStream;
+import fr.poulpogaz.musicdl.utils.Utils;
 import fr.poulpogaz.musicdl.model.CoverArt;
 import fr.poulpogaz.musicdl.model.SoftCoverArt;
 import org.apache.commons.collections4.ListValuedMap;

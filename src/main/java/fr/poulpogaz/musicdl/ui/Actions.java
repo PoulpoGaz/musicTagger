@@ -1,6 +1,9 @@
 package fr.poulpogaz.musicdl.ui;
 
-import fr.poulpogaz.musicdl.model.*;
+import fr.poulpogaz.musicdl.model.CoverArt;
+import fr.poulpogaz.musicdl.model.Music;
+import fr.poulpogaz.musicdl.model.Template;
+import fr.poulpogaz.musicdl.model.Templates;
 import fr.poulpogaz.musicdl.opus.OpusFile;
 import fr.poulpogaz.musicdl.ui.dialogs.MoveSwapDialog;
 import org.apache.commons.collections4.MapIterator;

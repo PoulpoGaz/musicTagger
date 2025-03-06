@@ -1,4 +1,4 @@
-package fr.poulpogaz.musicdl;
+package fr.poulpogaz.musicdl.utils;
 
 public enum OS {
 

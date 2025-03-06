@@ -3,7 +3,6 @@ package fr.poulpogaz.musicdl.ui.dialogs;
 import fr.poulpogaz.musicdl.ui.table.AbstractRevertTableModel;
 import fr.poulpogaz.musicdl.ui.table.MTableModel;
 
-import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

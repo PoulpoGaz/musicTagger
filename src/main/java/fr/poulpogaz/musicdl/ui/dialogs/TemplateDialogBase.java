@@ -3,21 +3,15 @@ package fr.poulpogaz.musicdl.ui.dialogs;
 import com.formdev.flatlaf.extras.components.FlatButton;
 import com.formdev.flatlaf.icons.FlatOptionPaneQuestionIcon;
 import fr.poulpogaz.musicdl.ui.MetadataFieldDocumentFilter;
-import fr.poulpogaz.musicdl.ui.table.MTable;
 import fr.poulpogaz.musicdl.ui.SimpleDocumentListener;
 import fr.poulpogaz.musicdl.ui.TablePopupMenuSupport;
-import fr.poulpogaz.musicdl.ui.table.MoveAction;
-import fr.poulpogaz.musicdl.ui.table.NewRowAction;
-import fr.poulpogaz.musicdl.ui.table.RemoveRowAction;
-import fr.poulpogaz.musicdl.ui.table.SetAction;
+import fr.poulpogaz.musicdl.ui.table.*;
 import fr.poulpogaz.musicdl.ui.text.ErrorTextField;
 
 import javax.swing.*;
-import javax.swing.event.CellEditorListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.table.TableCellEditor;
 import java.awt.*;
-import java.util.EventObject;
 
 public abstract class TemplateDialogBase extends AbstractDialog {
 

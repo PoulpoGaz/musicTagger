@@ -2,12 +2,9 @@ package fr.poulpogaz.musicdl.model;
 
 import fr.poulpogaz.musicdl.opus.CoverType;
 
-import javax.swing.*;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 import java.util.List;
-import java.util.function.Consumer;
 
 public class StrongCoverArt extends CoverArt {
 

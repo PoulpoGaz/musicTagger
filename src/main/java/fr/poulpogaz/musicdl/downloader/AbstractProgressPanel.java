@@ -1,6 +1,6 @@
 package fr.poulpogaz.musicdl.downloader;
 
-import fr.poulpogaz.musicdl.Units;
+import fr.poulpogaz.musicdl.utils.Units;
 
 import javax.swing.*;
 

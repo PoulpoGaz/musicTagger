@@ -1,7 +1,7 @@
 package fr.poulpogaz.musicdl.model;
 
-import fr.poulpogaz.musicdl.ExecutorWithException;
-import fr.poulpogaz.musicdl.Utils;
+import fr.poulpogaz.musicdl.utils.ExecutorWithException;
+import fr.poulpogaz.musicdl.utils.Utils;
 import org.apache.commons.collections4.ListValuedMap;
 import org.apache.commons.collections4.map.ReferenceMap;
 import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;

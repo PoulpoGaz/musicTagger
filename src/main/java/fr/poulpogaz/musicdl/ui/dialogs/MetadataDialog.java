@@ -1,9 +1,11 @@
 package fr.poulpogaz.musicdl.ui.dialogs;
 
-import fr.poulpogaz.musicdl.ImageUtils;
-import fr.poulpogaz.musicdl.Utils;
-import fr.poulpogaz.musicdl.Zoom;
-import fr.poulpogaz.musicdl.model.*;
+import fr.poulpogaz.musicdl.utils.ImageUtils;
+import fr.poulpogaz.musicdl.utils.Units;
+import fr.poulpogaz.musicdl.utils.Zoom;
+import fr.poulpogaz.musicdl.model.CoverArt;
+import fr.poulpogaz.musicdl.model.ExecutionStrategy;
+import fr.poulpogaz.musicdl.model.Music;
 import org.apache.commons.collections4.MapIterator;
 
 import javax.swing.*;
@@ -12,7 +14,6 @@ import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.image.ImageObserver;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -49,8 +50,8 @@ public class MetadataDialog extends AbstractDialog {
                          Length: %s
                          Channels: %s
                          """.formatted(music.getPath().toAbsolutePath(),
-                                       Utils.prettyPrintBytes(music.getSize()),
-                                       Utils.prettyPrintSeconds((int) music.getLength()),
+                                       Units.humanReadableBytes(music.getSize()),
+                                       Units.humanReadableSeconds((int) music.getLength()),
                                        music.getChannels()));
         }
 

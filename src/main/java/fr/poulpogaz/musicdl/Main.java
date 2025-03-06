@@ -5,6 +5,8 @@ import com.formdev.flatlaf.FlatLaf;
 import fr.poulpogaz.json.JsonException;
 import fr.poulpogaz.musicdl.model.Templates;
 import fr.poulpogaz.musicdl.ui.MusicdlFrame;
+import fr.poulpogaz.musicdl.utils.Directories;
+import fr.poulpogaz.musicdl.utils.OS;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

@@ -1,6 +1,6 @@
 package fr.poulpogaz.musicdl.downloader;
 
-import fr.poulpogaz.musicdl.Utils;
+import fr.poulpogaz.musicdl.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;

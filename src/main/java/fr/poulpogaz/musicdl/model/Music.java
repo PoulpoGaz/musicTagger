@@ -4,8 +4,9 @@ import fr.poulpogaz.json.IJsonReader;
 import fr.poulpogaz.json.IJsonWriter;
 import fr.poulpogaz.json.JsonException;
 import fr.poulpogaz.json.utils.Pair;
-import fr.poulpogaz.musicdl.ArrayListValuedLinkedMap;
-import fr.poulpogaz.musicdl.opus.*;
+import fr.poulpogaz.musicdl.utils.ArrayListValuedLinkedMap;
+import fr.poulpogaz.musicdl.opus.Channels;
+import fr.poulpogaz.musicdl.opus.OpusFile;
 import org.apache.commons.collections4.ListValuedMap;
 import org.apache.commons.collections4.MapIterator;
 import org.apache.logging.log4j.LogManager;
@@ -18,7 +19,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.Objects;
 
 public class Music {
 

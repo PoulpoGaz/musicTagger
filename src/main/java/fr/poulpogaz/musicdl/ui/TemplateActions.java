@@ -20,9 +20,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 
-public class TemplateHelper {
+public class TemplateActions {
 
-    private static final Logger LOGGER = LogManager.getLogger(TemplateHelper.class);
+    private static final Logger LOGGER = LogManager.getLogger(TemplateActions.class);
 
     public static final String CREATE_TEMPLATE = "Create new template";
     public static final Icon CREATE_TEMPLATE_ICON = Icons.get("add.svg");

@@ -1,4 +1,4 @@
-package fr.poulpogaz.musicdl;
+package fr.poulpogaz.musicdl.utils;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
