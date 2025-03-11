@@ -1,7 +1,7 @@
 package fr.poulpogaz.musicdl.utils;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
@@ -98,6 +98,12 @@ public class Utils {
         }
 
         return bytesToHex(SHA_256.digest());
+    }
+
+    public static String sha256(File file) throws IOException {
+        try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
+            return Utils.sha256(is);
+        }
     }
 
     public static String bytesToHex(byte[] bytes) {

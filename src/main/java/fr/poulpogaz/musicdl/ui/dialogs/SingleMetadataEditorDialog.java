@@ -1,7 +1,7 @@
 package fr.poulpogaz.musicdl.ui.dialogs;
 
 import fr.poulpogaz.musicdl.model.Music;
-import fr.poulpogaz.musicdl.ui.TablePopupMenuSupport;
+import fr.poulpogaz.musicdl.ui.table.TablePopupMenuSupport;
 import fr.poulpogaz.musicdl.ui.layout.HCOrientation;
 import fr.poulpogaz.musicdl.ui.layout.HorizontalConstraint;
 import fr.poulpogaz.musicdl.ui.layout.HorizontalLayout;
@@ -75,7 +75,7 @@ public class SingleMetadataEditorDialog extends AbstractDialog {
         toolbar.setFloatable(false);
 
         JPopupMenu popup = ActionUtils.popupMenuFromActions(actions);
-        table.addMouseListener(new TablePopupMenuSupport(table, popup));
+        TablePopupMenuSupport.install(table, popup);
 
 
         done = new JButton("Done");

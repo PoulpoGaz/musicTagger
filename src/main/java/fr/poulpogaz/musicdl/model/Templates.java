@@ -79,8 +79,8 @@ public class Templates {
                 template.getData().addMusic(m);
 
                 m.setDownloadURL(URLS[i]);
-                m.putMetadata(0, "Title " + i);
-                m.putMetadata(1, "Artist " + i);
+                m.replaceMetadata(0, "Title " + i);
+                m.replaceMetadata(1, "Artist " + i);
 
                 if (i % 2 == 0) {
                     m.addMetadata(template.getKeyMetadataField(0), "Title bis " + i);

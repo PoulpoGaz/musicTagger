@@ -33,6 +33,12 @@ public class ImageDialog extends AbstractDialog {
         dialog.setVisible(true);
     }
 
+    public static void showDialog(BufferedImage image, Dialog owner, String title, boolean modal) {
+        ImageDialog dialog = new ImageDialog(owner, title, modal);
+        dialog.model.setImage(image);
+        dialog.setVisible(true);
+    }
+
     private ViewerModel model;
 
     public ImageDialog(Frame owner, String title, boolean modal) {

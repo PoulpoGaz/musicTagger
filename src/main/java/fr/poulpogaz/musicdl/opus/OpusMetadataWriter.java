@@ -84,7 +84,7 @@ public class OpusMetadataWriter {
         OutputStream base64 = Base64.getEncoder().wrap(imageBytes);
 
         // write metadata picture header
-        IOUtils.writeIntB(base64, type.ordinal());
+        IOUtils.writeIntB(base64, type == null ? CoverType.COVER_FRONT.ordinal() : type.ordinal());
         IOUtils.writeStringWithLength(base64, "image/png");
         if (description != null) {
             IOUtils.writeStringWithLength(base64, description);

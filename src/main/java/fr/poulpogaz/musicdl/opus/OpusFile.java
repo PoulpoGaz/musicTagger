@@ -138,6 +138,9 @@ public class OpusFile {
                     String sha256 = Utils.sha256(picIS, pic.getDataLength());
                     picIS.close();
                     SoftCoverArt cover = createSoftCoverArt(sha256, file, position, offset);
+                    cover.setType(pic.getType());
+                    cover.setDescription(pic.getDescription());
+                    cover.setMimeType(pic.getMimeType());
                     addCoverArt(cover);
                 } else {
                     put(key, ois.readValue());
@@ -197,9 +200,9 @@ public class OpusFile {
             omw.addComment(it.getKey(), it.getValue());
         }
 
-        for (CoverArt art : covers) {
-            BufferedImage img = art.waitImage();
-            omw.addCoverArt(img, null, CoverType.COVER_FRONT);
+        for (CoverArt coverArt : covers) {
+            BufferedImage img = coverArt.waitImage();
+            omw.addCoverArt(img, coverArt.getDescription(), coverArt.getType());
         }
 
         omw.write();

@@ -1,14 +1,44 @@
 package fr.poulpogaz.musicdl.ui.dialogs;
 
+import fr.poulpogaz.musicdl.ui.table.AbstractMAction;
 import fr.poulpogaz.musicdl.ui.table.AbstractRevertTableModel;
+import fr.poulpogaz.musicdl.ui.table.MTable;
 import fr.poulpogaz.musicdl.ui.table.MTableModel;
 
+import javax.swing.*;
+import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public abstract class RestoreTableModel<R extends RestoreTableModel.Row>
         extends AbstractRevertTableModel implements MTableModel {
+
+    public static Action createRestoreAction(MTable table, String name) {
+        String n = "Restore " + name;
+        Action action = new AbstractMAction(n, table) {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (table.getSelectedRow() != -1 && table.getModel() instanceof RestoreTableModel<?> model) {
+                    model.restoreRow(table.getSelectedRow());
+                }
+            }
+
+            @Override
+            public boolean isEnabled() {
+                int r = table.getSelectedRow();
+                return table.getModel() instanceof RestoreTableModel<?> model && r >= model.notRemovedRowCount();
+            }
+        };
+        action.putValue(Action.SHORT_DESCRIPTION, n);
+
+        return action;
+    }
+
+
+
+
+
 
     protected final List<R> rows = new ArrayList<>();
     protected final List<R> removedRows = new ArrayList<>();
@@ -41,9 +71,13 @@ public abstract class RestoreTableModel<R extends RestoreTableModel.Row>
                 r.removed = true;
                 r.index = -1;
                 removedRows.add(r);
+                resetIndex(row);
+                fireTableRowsUpdated(row, getRowCount() - 1);
+            } else {
+                resetIndex(row);
+                fireTableRowsDeleted(row, row);
             }
-            resetIndex(row);
-            fireTableDataChanged();
+
             return true;
         }
 

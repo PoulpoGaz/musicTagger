@@ -4,7 +4,7 @@ import com.formdev.flatlaf.extras.components.FlatButton;
 import com.formdev.flatlaf.icons.FlatOptionPaneQuestionIcon;
 import fr.poulpogaz.musicdl.ui.MetadataFieldDocumentFilter;
 import fr.poulpogaz.musicdl.ui.SimpleDocumentListener;
-import fr.poulpogaz.musicdl.ui.TablePopupMenuSupport;
+import fr.poulpogaz.musicdl.ui.table.TablePopupMenuSupport;
 import fr.poulpogaz.musicdl.ui.table.*;
 import fr.poulpogaz.musicdl.ui.text.ErrorTextField;
 
@@ -121,7 +121,7 @@ public abstract class TemplateDialogBase extends AbstractDialog {
         keyToolbar.setFloatable(false);
         keyToolbar.setOrientation(SwingConstants.VERTICAL);
         JPopupMenu menu = createKeyPopupMenu();
-        keyTable.addMouseListener(new TablePopupMenuSupport(keyTable, menu));
+        TablePopupMenuSupport.install(keyTable, menu);
 
 
 
@@ -132,7 +132,7 @@ public abstract class TemplateDialogBase extends AbstractDialog {
         generatorToolBar.setFloatable(false);
         generatorToolBar.setOrientation(SwingConstants.VERTICAL);
         menu = createGeneratorPopupMenu();
-        generatorTable.addMouseListener(new TablePopupMenuSupport(generatorTable, menu));
+        TablePopupMenuSupport.install(generatorTable, menu);
 
 
         doneButton = new JButton();
@@ -259,7 +259,7 @@ public abstract class TemplateDialogBase extends AbstractDialog {
 
     protected void createKeyTableActions() {
         keyTableNewAction = NewRowAction.create(keyTable, "key");
-        keyTableRemoveAction = RemoveRowAction.create(keyTable, "value");
+        keyTableRemoveAction = new RestoreTableRemoveRowAction(keyTable, "value");
         keyTableMoveUpAction = MoveAction.moveUp(keyTable, "value");
         keyTableMoveDownAction = MoveAction.moveDown(keyTable, "value");
         keyTableSetNullAction = SetAction.setNull(keyTable);

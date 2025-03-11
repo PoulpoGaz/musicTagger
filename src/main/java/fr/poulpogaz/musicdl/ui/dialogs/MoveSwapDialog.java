@@ -179,10 +179,10 @@ public class MoveSwapDialog extends AbstractDialog {
                     List<String> src = music.removeMetadata(from);
                     List<String> dst = music.removeMetadata(to);
                     if (src != null) {
-                        music.putAllMetadata(to, src);
+                        music.addAllMetadata(to, src);
                     }
                     if (dst != null) {
-                        music.putAllMetadata(from, dst);
+                        music.addAllMetadata(from, dst);
                     }
                 } else {
                     List<String> src = music.removeMetadata(from);

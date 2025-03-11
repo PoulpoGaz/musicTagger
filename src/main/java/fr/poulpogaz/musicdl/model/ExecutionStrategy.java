@@ -67,16 +67,4 @@ public interface ExecutionStrategy {
             runnable.forEach(Runnable::run);
         }
     }
-
-    class SwingWorkerStrategy implements ExecutionStrategy {
-
-        public SwingWorkerStrategy() {
-
-        }
-
-        @Override
-        public void execute(List<CoverArtCallback> callbacks, BufferedImage image, Exception exc) {
-
-        }
-    }
 }

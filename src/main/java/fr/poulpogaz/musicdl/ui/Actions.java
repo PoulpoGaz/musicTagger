@@ -53,7 +53,7 @@ public class Actions {
         private boolean allAdded = false;
 
         @Override
-        protected Void doInBackground() throws Exception {
+        protected Void doInBackground() {
             while (!allAdded) {
                 Music m = toProcess.poll();
                 if (m != null) {
@@ -66,7 +66,7 @@ public class Actions {
                         file.put(it.getKey(), it.getValue());
                     }
 
-                    for (CoverArt cover : m.getCovers()) {
+                    for (CoverArt cover : m.getCoverArts()) {
                         file.addCoverArt(cover);
                     }
 

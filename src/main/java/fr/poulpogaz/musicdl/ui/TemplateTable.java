@@ -45,7 +45,7 @@ public class TemplateTable extends JPanel {
         createActions();
 
         tablePopupMenu = createPopupMenu();
-        table.addMouseListener(new TablePopupMenuSupport(table, tablePopupMenu));
+        TablePopupMenuSupport.install(table, tablePopupMenu);
 
         setLayout(new BorderLayout());
         add(new JScrollPane(table), BorderLayout.CENTER);
@@ -152,14 +152,16 @@ public class TemplateTable extends JPanel {
                 int row = table.getSelectedRow();
 
                 if (row >= 0) {
-                    Music m = tableModel.getTemplate().getData().getMusic(row);
-                    MetadataDialog.showDialog(MusicdlFrame.getInstance(), m);
+                    Music m = tableModel.getMusic(row);
+                    if (!m.isDownloading()) {
+                        MetadataDialog.showDialog(MusicdlFrame.getInstance(), m);
+                    }
                 }
             }
 
             @Override
             public boolean isEnabled() {
-                return table.getSelectedRow() >= 0;
+                return table.getSelectedRow() >= 0 && !tableModel.getMusic(table.getSelectedRow()).isDownloading();
             }
         };
         action.putValue(Action.SHORT_DESCRIPTION, "Show all metadata of selected musics");

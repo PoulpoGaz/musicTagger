@@ -14,10 +14,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -66,7 +63,7 @@ public class Music {
                     }
 
                     jr.beginArray();
-                    m.addCoverArt(SoftCoverArt.createFromFile(Path.of(jr.nextString())));
+                    m.addCoverArt(SoftCoverArt.createFromFile(new File(jr.nextString())));
                     jr.endArray();
                 }
                 default -> {
@@ -214,7 +211,7 @@ public class Music {
         metadata.put(key, value);
     }
 
-    public void putMetadata(String key, String value) {
+    public void replaceMetadata(String key, String value) {
         if (value == null) {
             removeMetadata(key);
         } else {
@@ -224,13 +221,13 @@ public class Music {
         }
     }
 
-    public void putMetadata(int key, String value) {
+    public void replaceMetadata(int key, String value) {
         if (template != null) {
-            putMetadata(template.getKeyMetadataField(key), value);
+            replaceMetadata(template.getKeyMetadataField(key), value);
         }
     }
 
-    public void putAllMetadata(String key, List<String> values) {
+    public void addAllMetadata(String key, List<String> values) {
         key = OpusFile.sanitize(key);
         checkKey(key);
         metadata.putAll(key, values);
@@ -249,6 +246,10 @@ public class Music {
             return metadata.remove(template.getKeyMetadataField(key));
         }
         return null;
+    }
+
+    public void clearMetadata() {
+        metadata.clear();
     }
 
     public List<String> getMetadata(String key) {
@@ -329,8 +330,12 @@ public class Music {
         }
     }
 
-    public List<CoverArt> getCovers() {
+    public List<CoverArt> getCoverArts() {
         return covers;
+    }
+
+    public void clearCoverArts() {
+        covers.clear();
     }
 
 

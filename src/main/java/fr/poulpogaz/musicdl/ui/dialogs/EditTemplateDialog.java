@@ -40,9 +40,7 @@ public class EditTemplateDialog extends TemplateDialogBase {
     protected void createKeyTableActions() {
         super.createKeyTableActions();
         keyRevertAction = RevertAction.create(keyTable);
-        keyRestoreAction = createRestoreAction(keyTable,
-                                               templateModel.getKeyTableModel(),
-                                               "key");
+        keyRestoreAction = RestoreTableModel.createRestoreAction(keyTable, "key");
     }
 
     @Override
@@ -62,9 +60,7 @@ public class EditTemplateDialog extends TemplateDialogBase {
     protected void createGeneratorTableActions() {
         super.createGeneratorTableActions();
         generatorRevertAction = RevertAction.create(generatorTable);
-        generatorRestoreAction = createRestoreAction(generatorTable,
-                                                     templateModel.getMetadataGeneratorTableModel(),
-                                                     "generator");
+        generatorRestoreAction = RestoreTableModel.createRestoreAction(generatorTable, "generator");
     }
 
     @Override
@@ -73,29 +69,6 @@ public class EditTemplateDialog extends TemplateDialogBase {
         menu.add(generatorRevertAction);
         menu.add(generatorRestoreAction);
         return menu;
-    }
-
-    private Action createRestoreAction(MTable table, RestoreTableModel<?> model, String name) {
-        String n = "Restore " + name;
-        Action action = new AbstractAction(n, null) {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (table.getSelectedRow() != -1) {
-                    model.restoreRow(table.getSelectedRow());
-                }
-            }
-
-            @Override
-            public boolean isEnabled() {
-                int r = table.getSelectedRow();
-                return r >= model.notRemovedRowCount();
-            }
-        };
-        action.putValue(Action.SHORT_DESCRIPTION, n);
-
-        table.addAction(action);
-
-        return action;
     }
 
 

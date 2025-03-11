@@ -11,11 +11,10 @@ import org.apache.logging.log4j.Logger;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.DigestInputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -33,20 +32,30 @@ public abstract class SoftCoverArt extends CoverArt {
         executor.shutdown();
     }
 
-    public static SoftCoverArt createFromFile(Path path) throws IOException {
+    public static SoftCoverArt createFromFile(File file) throws IOException {
+        return createFromFile(file, false);
+    }
+
+    public static SoftCoverArt createFromFile(File file, boolean cacheImage) throws IOException {
         String sha256;
-        try (InputStream is = Files.newInputStream(path)) {
-            sha256 = Utils.sha256(is);
+        BufferedImage image = null;
+
+        try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
+            if (cacheImage) {
+                DigestInputStream dis = new DigestInputStream(is, Utils.SHA_256);
+                image = ImageIO.read(dis);
+
+                sha256 = Utils.bytesToHex(Utils.SHA_256.digest());
+            } else {
+                sha256 = Utils.sha256(is);
+            }
         }
 
-        File file = path.toFile();
-        return new SoftCoverArt(sha256) {
-            @Override
-            public BufferedImage loadImage() throws Exception {
-                LOGGER.debug("Loading cover art from {}", file);
-                return ImageIO.read(file);
-            }
-        };
+        return new FileSoftCoverArt(file, sha256, image);
+    }
+
+    public static SoftCoverArt createFromFile(File file, String sha256, BufferedImage image) {
+        return new FileSoftCoverArt(file, sha256, image);
     }
 
 
@@ -238,4 +247,27 @@ public abstract class SoftCoverArt extends CoverArt {
     public void setColorCount(int colorCount) {
         this.colorCount = colorCount;
     }
+
+
+
+    private static class FileSoftCoverArt extends SoftCoverArt {
+
+        private final File file;
+
+        public FileSoftCoverArt(File file, String sha256, BufferedImage image) {
+            super(sha256);
+            this.file = file;
+
+            if (image != null) {
+                cache.putIfAbsent(sha256, image);
+            }
+        }
+
+        @Override
+        public BufferedImage loadImage() throws Exception {
+            LOGGER.debug("Loading cover art from {}", file);
+            return ImageIO.read(file);
+        }
+    }
+
 }

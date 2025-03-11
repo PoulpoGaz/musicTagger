@@ -66,7 +66,7 @@ public class TemplateTableModel extends AbstractRevertTableModel implements MTab
             if (columnIndex == 0) {
                 m.setDownloadURL(value);
             } else {
-                m.putMetadata(columnIndex - 1, value);
+                m.replaceMetadata(columnIndex - 1, value);
             }
             fireTableCellUpdated(rowIndex, columnIndex);
         }

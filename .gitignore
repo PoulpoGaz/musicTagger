@@ -35,4 +35,5 @@ build/
 .DS_Store
 
 ### MusicDB ###
-musicdb.log
+music-dl.log
+*.opus

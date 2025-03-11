@@ -9,12 +9,15 @@ public class RemoveRowAction extends AbstractMAction {
 
     public static RemoveRowAction create(MTable table, String rowName) {
         RemoveRowAction action = new RemoveRowAction(table);
+        putValues(action, rowName);
+        return action;
+    }
+
+    public static void putValues(Action action, String rowName) {
         action.putValue(Action.SMALL_ICON, Icons.get("delete.svg"));
         action.putValue(Action.NAME, "Remove " + rowName);
         action.putValue(Action.SHORT_DESCRIPTION,
                         "Remove selected " + rowName);
-
-        return action;
     }
 
     public RemoveRowAction(MTable table) {
@@ -40,7 +43,7 @@ public class RemoveRowAction extends AbstractMAction {
 
 
         if (moveSelection) {
-            int newSelection = Math.min(firstRow, table.getRowCount() - 1);
+            int newSelection = newSelectionIndex(table, firstRow);
             if (newSelection >= 0) {
                 table.setRowSelectionInterval(newSelection, newSelection);
 
@@ -49,6 +52,10 @@ public class RemoveRowAction extends AbstractMAction {
                 }
             }
         }
+    }
+
+    protected int newSelectionIndex(MTable table, int firstRemovedRow) {
+        return Math.min(firstRemovedRow, table.getRowCount() - 1);
     }
 
     @Override
