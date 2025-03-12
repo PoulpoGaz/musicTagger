@@ -1,11 +1,9 @@
 package fr.poulpogaz.musicdl.ui.dialogs;
 
 import fr.poulpogaz.musicdl.model.Template;
-import fr.poulpogaz.musicdl.ui.table.MTable;
 import fr.poulpogaz.musicdl.ui.table.RevertAction;
 
 import javax.swing.*;
-import java.awt.event.ActionEvent;
 import java.util.Objects;
 
 public class EditTemplateDialog extends TemplateDialogBase {

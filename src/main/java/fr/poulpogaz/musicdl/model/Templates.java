@@ -7,8 +7,8 @@ import fr.poulpogaz.json.tree.JsonArray;
 import fr.poulpogaz.json.tree.JsonElement;
 import fr.poulpogaz.json.tree.JsonObject;
 import fr.poulpogaz.json.tree.JsonTreeReader;
-import fr.poulpogaz.musicdl.utils.Directories;
 import fr.poulpogaz.musicdl.properties.PropertyListener;
+import fr.poulpogaz.musicdl.utils.Directories;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

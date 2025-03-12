@@ -4,9 +4,11 @@ import fr.poulpogaz.json.IJsonReader;
 import fr.poulpogaz.json.IJsonWriter;
 import fr.poulpogaz.json.JsonException;
 import fr.poulpogaz.json.utils.Pair;
-import fr.poulpogaz.musicdl.utils.ArrayListValuedLinkedMap;
 import fr.poulpogaz.musicdl.opus.Channels;
 import fr.poulpogaz.musicdl.opus.OpusFile;
+import fr.poulpogaz.musicdl.utils.ArrayListValuedLinkedMap;
+import fr.poulpogaz.musicdl.utils.LoadedImage;
+import fr.poulpogaz.musicdl.utils.SoftLazyImage;
 import org.apache.commons.collections4.ListValuedMap;
 import org.apache.commons.collections4.MapIterator;
 import org.apache.logging.log4j.LogManager;
@@ -63,7 +65,7 @@ public class Music {
                     }
 
                     jr.beginArray();
-                    m.addCoverArt(SoftCoverArt.createFromFile(new File(jr.nextString())));
+                    m.addCoverArt(new CoverArt(SoftLazyImage.createFromFile(new File(jr.nextString()))));
                     jr.endArray();
                 }
                 default -> {
@@ -78,7 +80,7 @@ public class Music {
                 byte[] bytes = base64.getBytes();
                 InputStream is = Base64.getDecoder().wrap(new ByteArrayInputStream(bytes));
 
-                m.addCoverArt(new StrongCoverArt(ImageIO.read(is)));
+                m.addCoverArt(new CoverArt(new LoadedImage(ImageIO.read(is))));
             }
         }
 
@@ -159,7 +161,7 @@ public class Music {
 
                 jw.key("base64covers").beginArray();
                 for (CoverArt cover : covers) {
-                    BufferedImage img = cover.waitImage();
+                    BufferedImage img = cover.getImage();
                     ImageIO.write(img, "png", baos);
 
                     String base64 = Base64.getEncoder().encodeToString(baos.toByteArray());
@@ -179,7 +181,7 @@ public class Music {
                 jw.key("covers").beginArray();
                 for (int i = 0; i < covers.size(); i++) {
                     CoverArt cover = covers.get(i);
-                    BufferedImage img = cover.waitImage();
+                    BufferedImage img = cover.getImage();
 
                     String name = fileName + (covers.size() == 1 ? "" : i) + ".png";
                     Path dest = coverArtDest.resolveSibling(name);

@@ -1,7 +1,6 @@
 package fr.poulpogaz.musicdl.ui.dialogs;
 
 import fr.poulpogaz.musicdl.model.Music;
-import fr.poulpogaz.musicdl.ui.table.TablePopupMenuSupport;
 import fr.poulpogaz.musicdl.ui.layout.HCOrientation;
 import fr.poulpogaz.musicdl.ui.layout.HorizontalConstraint;
 import fr.poulpogaz.musicdl.ui.layout.HorizontalLayout;

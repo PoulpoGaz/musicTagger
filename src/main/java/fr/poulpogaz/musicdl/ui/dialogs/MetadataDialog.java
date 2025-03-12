@@ -1,25 +1,20 @@
 package fr.poulpogaz.musicdl.ui.dialogs;
 
 import fr.poulpogaz.musicdl.model.CoverArt;
-import fr.poulpogaz.musicdl.model.ExecutionStrategy;
 import fr.poulpogaz.musicdl.model.Music;
-import fr.poulpogaz.musicdl.model.SoftCoverArt;
 import fr.poulpogaz.musicdl.opus.CoverType;
 import fr.poulpogaz.musicdl.ui.Icons;
+import fr.poulpogaz.musicdl.ui.LazyImageIcon;
 import fr.poulpogaz.musicdl.ui.MetadataFieldDocumentFilter;
 import fr.poulpogaz.musicdl.ui.layout.HCOrientation;
 import fr.poulpogaz.musicdl.ui.layout.HorizontalConstraint;
 import fr.poulpogaz.musicdl.ui.layout.HorizontalLayout;
 import fr.poulpogaz.musicdl.ui.table.*;
-import fr.poulpogaz.musicdl.utils.ImageUtils;
-import fr.poulpogaz.musicdl.utils.Units;
-import fr.poulpogaz.musicdl.utils.Utils;
-import fr.poulpogaz.musicdl.utils.Zoom;
+import fr.poulpogaz.musicdl.utils.*;
 import org.apache.commons.collections4.MapIterator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -29,11 +24,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.io.*;
-import java.security.DigestInputStream;
-import java.util.List;
+import java.awt.image.BufferedImageFilter;
+import java.awt.image.ImageFilter;
+import java.io.File;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
 
 public class MetadataDialog extends AbstractDialog {
 
@@ -172,8 +166,11 @@ public class MetadataDialog extends AbstractDialog {
                     for (int i = 0; i < getRowCount(); i++) {
                         RestoreTableModel.Row r = metadataModel.getRow(i);
                         int height = getRowHeight();
-                        if ((r instanceof CovertArtRow row)) {
-                            height = row.icon.getIconHeight();
+                        if ((r instanceof CovertArtRow row) && row.thumbnail != null) {
+                            BufferedImage img = row.thumbnail.getImageNow();
+                            if (img != null) {
+                                height = img.getHeight();
+                            }
                         }
 
                         if (getRowHeight(i) != height && height > 0) {
@@ -216,12 +213,8 @@ public class MetadataDialog extends AbstractDialog {
                     RestoreTableModel.Row r = metadataModel.getRow(modelRow);
 
                     if (r instanceof CovertArtRow covertArtRow) {
-                        if (covertArtRow.image != null && covertArtRow.coverArt != null) {
-                            CoverArt cover = covertArtRow.coverArt;
-                            ImageDialog.showDialog(cover, MetadataDialog.this, "Picture", false);
-                        } else if (covertArtRow.image != null) {
-                            ImageDialog.showDialog(covertArtRow.image, MetadataDialog.this, "Picture", false);
-                        }
+                        LazyImage img = covertArtRow.getFullDisplayedImage();
+                        ImageDialog.showDialog(img, MetadataDialog.this, "Picture", false);
                     }
                 }
             }
@@ -244,16 +237,7 @@ public class MetadataDialog extends AbstractDialog {
 
                     if (chooser.showOpenDialog(MetadataDialog.this) == JFileChooser.APPROVE_OPTION) {
                         File image = chooser.getSelectedFile();
-
-                        try (InputStream is = new BufferedInputStream(new FileInputStream(image))) {
-                            DigestInputStream dis = new DigestInputStream(is, Utils.SHA_256);
-                            BufferedImage img = ImageIO.read(dis);
-
-                            String sha256 = Utils.bytesToHex(Utils.SHA_256.digest());
-                            row.setFromDisk(image, sha256, img, resize(img));
-                        } catch (IOException ex) {
-                            throw new RuntimeException(ex);
-                        }
+                        row.setImage(SoftLazyImage.createFromFileHashAsync(image));
                     }
                 }
             }
@@ -278,14 +262,12 @@ public class MetadataDialog extends AbstractDialog {
 
                 if (chooser.showOpenDialog(MetadataDialog.this) == JFileChooser.APPROVE_OPTION) {
                     File[] images = chooser.getSelectedFiles();
-                    CovertArtRow[] rows = new CovertArtRow[images.length];
 
-                    for (int i = 0; i < images.length; i++) {
-                        rows[i] = new CovertArtRow();
-                        metadataModel.newRow(rows[i]);
+                    for (File image : images) {
+                        CovertArtRow row = new CovertArtRow();
+                        metadataModel.newRow(row);
+                        row.setImage(SoftLazyImage.createFromFileHashAsync(image));
                     }
-
-                    new ImageLoader(rows, images).execute();
                 }
             }
         };
@@ -310,9 +292,12 @@ public class MetadataDialog extends AbstractDialog {
 
     private static class CellRenderer extends RevertTableCellRenderer {
 
+        private static final LazyImageIcon icon = new LazyImageIcon();
+
         @Override
         protected void setValue(Object value) {
-            if (value instanceof Icon icon) {
+            if (value instanceof LazyImage img) {
+                icon.setImage(img);
                 setHorizontalAlignment(JLabel.CENTER);
                 setIcon(icon);
                 setText(null);
@@ -342,7 +327,7 @@ public class MetadataDialog extends AbstractDialog {
             for (CoverArt art : music.getCoverArts()) {
                 CovertArtRow row = new CovertArtRow(art);
                 newRow(row);
-                row.setFromCoverArt();
+                row.loadThumbnailAsync();
             }
         }
 
@@ -463,12 +448,9 @@ public class MetadataDialog extends AbstractDialog {
     private static class CovertArtRow extends Row {
 
         private CoverArt coverArt;
+        private LazyImage image;
 
-        private File location;
-        private String sha256;
-        private BufferedImage image;
-
-        private final ImageIcon icon = new ImageIcon();
+        private LazyImage thumbnail;
         private CoverType type;
         private String description;
 
@@ -482,51 +464,41 @@ public class MetadataDialog extends AbstractDialog {
             description = coverArt.getDescription();
         }
 
-        public void setFromDisk(File location, String sha256, BufferedImage image, Image resizedImage) {
-            this.location = location;
-            this.sha256 = sha256;
-            this.image = image;
-            icon.setImage(resizedImage);
-            table.fireTableCellUpdated(index, 1);
+        public void setImage(LazyImage image) {
+            if (image != this.image) {
+                this.image = image;
+                thumbnail = null;
+                if (table != null) {
+                    table.fireTableCellUpdated(index, 1);
+                }
+                loadThumbnailAsync();
+            }
         }
 
-        public void setFromCoverArt() {
-            coverArt.getImageLater((image, _) -> {
-                if (image != null) {
-                    if (SwingUtilities.isEventDispatchThread()) {
-                        new SwingWorker<Image, Void>() {
+        public void loadThumbnailAsync() {
+            LazyImage lazyImage = getFullDisplayedImage();
+            if (lazyImage == null) {
+                return;
+            }
 
-                            @Override
-                            protected Image doInBackground() {
-                                return resize(image);
-                            }
+            thumbnail = lazyImage.transformAsync(MetadataDialog::resize);
+            thumbnail.getImageLater((_, _) -> table.fireTableCellUpdated(index, 1),
+                                    Utils.eventQueueExecutor());
+        }
 
-                            @Override
-                            protected void done() {
-                                try {
-                                    icon.setImage(get());
-                                } catch (InterruptedException | ExecutionException e) {
-                                    throw new RuntimeException(e);
-                                }
-                                table.fireTableCellUpdated(index, 1);
-                            }
-                        }.execute();
-                    } else {
-                        Image img = resize(image);
-                        SwingUtilities.invokeLater(() -> {
-                            icon.setImage(img);
-                            table.fireTableCellUpdated(index, 1);
-                        });
-                    }
-                }
-            }, ExecutionStrategy.sameThread());
+        public LazyImage getFullDisplayedImage() {
+            if (image != null) {
+                return image;
+            } else {
+                return coverArt;
+            }
         }
 
         @Override
         public Object getValue(int column) {
             return switch (column) {
                 case 0 -> "METADATA_BLOCK_PICTURE";
-                case 1 -> icon;
+                case 1 -> thumbnail;
                 case 2 -> type;
                 case 3 -> description;
                 default -> null;
@@ -570,7 +542,7 @@ public class MetadataDialog extends AbstractDialog {
         public void updateMusic(Music music) {
             CoverArt cover = coverArt;
             if (image != null) {
-                cover = SoftCoverArt.createFromFile(location, sha256, image);
+                cover = new CoverArt(image);
             }
             if (cover != null) {
                 cover.setDescription(description);
@@ -580,62 +552,16 @@ public class MetadataDialog extends AbstractDialog {
         }
     }
 
-    private static Image resize(BufferedImage image) {
+    private static BufferedImage resize(BufferedImage image) {
         Image img = ImageUtils.scale(image, 384, 384, Zoom.Fit.INSTANCE);
-        img.getHeight(null);
-        return img;
+        BufferedImage buff = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = buff.createGraphics();
+        try {
+            g2d.drawImage(img, 0, 0, null);
+        } finally {
+            g2d.dispose();
+        }
+
+        return buff;
     }
-
-    private static class ImageLoader extends SwingWorker<Void, ImageLoader.Chunk> {
-
-        private final CovertArtRow[] rows;
-        private int i = 0;
-
-        private final File[] images;
-
-        public ImageLoader(CovertArtRow[] rows, File[] images) {
-            this.rows = rows;
-            this.images = images;
-        }
-
-        @Override
-        protected Void doInBackground() throws Exception {
-            for (File image : images) {
-                LOGGER.debug("Loading image at {}", image);
-
-                try (InputStream is = new BufferedInputStream(new FileInputStream(image))) {
-                    DigestInputStream dis = new DigestInputStream(is, Utils.SHA_256);
-                    BufferedImage img = ImageIO.read(dis);
-
-                    String sha256 = Utils.bytesToHex(Utils.SHA_256.digest());
-                    publish(new Chunk(sha256, img, resize(img)));
-                }
-            }
-
-            return null;
-        }
-
-        @Override
-        protected void process(List<Chunk> chunks) {
-            for (Chunk chunk : chunks) {
-                rows[i].setFromDisk(images[i], chunk.sha256, chunk.img, chunk.resizedImage);
-                i++;
-            }
-        }
-
-        @Override
-        protected void done() {
-            try {
-                get();
-            } catch (InterruptedException | ExecutionException e) {
-                LOGGER.error("Failed to load images", e);
-            }
-        }
-
-
-        private record Chunk(String sha256, BufferedImage img, Image resizedImage) {}
-    }
-
-    // TODO: replace image
-    // TODO: image are not saved when loading image and quickly applying before the image finished loading
 }

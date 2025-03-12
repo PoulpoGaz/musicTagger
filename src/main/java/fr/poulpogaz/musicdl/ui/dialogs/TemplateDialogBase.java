@@ -4,7 +4,6 @@ import com.formdev.flatlaf.extras.components.FlatButton;
 import com.formdev.flatlaf.icons.FlatOptionPaneQuestionIcon;
 import fr.poulpogaz.musicdl.ui.MetadataFieldDocumentFilter;
 import fr.poulpogaz.musicdl.ui.SimpleDocumentListener;
-import fr.poulpogaz.musicdl.ui.table.TablePopupMenuSupport;
 import fr.poulpogaz.musicdl.ui.table.*;
 import fr.poulpogaz.musicdl.ui.text.ErrorTextField;
 

@@ -1,10 +1,9 @@
 package fr.poulpogaz.musicdl.ui.dialogs;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import fr.poulpogaz.musicdl.utils.LazyImage;
 import fr.poulpogaz.musicdl.utils.Utils;
 import fr.poulpogaz.musicdl.utils.Zoom;
-import fr.poulpogaz.musicdl.model.CoverArt;
-import fr.poulpogaz.musicdl.model.ExecutionStrategy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,11 +24,11 @@ import java.util.regex.Pattern;
 
 public class ImageDialog extends AbstractDialog {
 
-    public static void showDialog(CoverArt art, Dialog owner, String title, boolean modal) {
+    public static void showDialog(LazyImage lazyImage, Dialog owner, String title, boolean modal) {
         ImageDialog dialog = new ImageDialog(owner, title, modal);
-        art.getImageLater((image, error) -> {
+        lazyImage.getImageLater((image, error) -> {
             dialog.model.setImage(image);
-        }, ExecutionStrategy.eventQueue());
+        }, Utils.eventQueueExecutor());
         dialog.setVisible(true);
     }
 

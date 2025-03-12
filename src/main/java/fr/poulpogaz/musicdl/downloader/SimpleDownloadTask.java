@@ -1,10 +1,10 @@
 package fr.poulpogaz.musicdl.downloader;
 
-import fr.poulpogaz.musicdl.utils.Units;
 import fr.poulpogaz.musicdl.model.Music;
 import fr.poulpogaz.musicdl.opus.OpusFile;
 import fr.poulpogaz.musicdl.ui.layout.VerticalConstraint;
 import fr.poulpogaz.musicdl.ui.layout.VerticalLayout;
+import fr.poulpogaz.musicdl.utils.Units;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

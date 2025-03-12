@@ -1,10 +1,10 @@
 package fr.poulpogaz.musicdl.opus;
 
+import fr.poulpogaz.musicdl.model.CoverArt;
 import fr.poulpogaz.musicdl.utils.ArrayListValuedLinkedMap;
 import fr.poulpogaz.musicdl.utils.LimitedInputStream;
+import fr.poulpogaz.musicdl.utils.SoftLazyImage;
 import fr.poulpogaz.musicdl.utils.Utils;
-import fr.poulpogaz.musicdl.model.CoverArt;
-import fr.poulpogaz.musicdl.model.SoftCoverArt;
 import org.apache.commons.collections4.ListValuedMap;
 import org.apache.commons.collections4.MapIterator;
 import org.apache.commons.collections4.MultiValuedMap;
@@ -137,7 +137,7 @@ public class OpusFile {
 
                     String sha256 = Utils.sha256(picIS, pic.getDataLength());
                     picIS.close();
-                    SoftCoverArt cover = createSoftCoverArt(sha256, file, position, offset);
+                    CoverArt cover = new CoverArt(createSoftLazyImage(sha256, file, position, offset));
                     cover.setType(pic.getType());
                     cover.setDescription(pic.getDescription());
                     cover.setMimeType(pic.getMimeType());
@@ -155,10 +155,10 @@ public class OpusFile {
         }
     }
 
-    private SoftCoverArt createSoftCoverArt(String sha256, Path file, long pagePosition, long dataOffset) {
-        LOGGER.debug("Creating soft cover art for {} at {} with an offset of {}", file, pagePosition, dataOffset);
+    private SoftLazyImage createSoftLazyImage(String sha256, Path file, long pagePosition, long dataOffset) {
+        LOGGER.debug("Creating SoftLazyImage for {} at {} with an offset of {}", file, pagePosition, dataOffset);
 
-        return new SoftCoverArt(sha256) {
+        return new SoftLazyImage(sha256) {
             @Override
             public BufferedImage loadImage() throws IOException {
                 LOGGER.debug("Loading cover art from {} at {} with an offset of {}", file, pagePosition, dataOffset);
@@ -201,7 +201,7 @@ public class OpusFile {
         }
 
         for (CoverArt coverArt : covers) {
-            BufferedImage img = coverArt.waitImage();
+            BufferedImage img = coverArt.getImage();
             omw.addCoverArt(img, coverArt.getDescription(), coverArt.getType());
         }
 

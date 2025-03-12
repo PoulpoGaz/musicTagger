@@ -1,15 +1,19 @@
 package fr.poulpogaz.musicdl.utils;
 
+import javax.swing.*;
 import java.io.*;
-import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
+import java.util.concurrent.Executor;
 
 public class Utils {
 
     private static final DecimalFormat format = new DecimalFormat("#.##");
     private static final char[] HEX_CHARS = "0123456789ABCDEF".toCharArray();
+
+    private static final Executor EVENT_QUEUE_EXECUTOR = SwingUtilities::invokeLater; // maybe use accumalativerunnable as demonstrated in SwingWorker
+
 
     public static final MessageDigest SHA_256;
 
@@ -115,5 +119,9 @@ public class Utils {
         }
 
         return new String(chars);
+    }
+
+    public static Executor eventQueueExecutor() {
+        return EVENT_QUEUE_EXECUTOR;
     }
 }

@@ -6,6 +6,7 @@ import fr.poulpogaz.musicdl.model.*;
 import fr.poulpogaz.musicdl.ui.dialogs.Dialogs;
 import fr.poulpogaz.musicdl.ui.dialogs.ExportDialog;
 import fr.poulpogaz.musicdl.ui.layout.*;
+import fr.poulpogaz.musicdl.utils.AbstractLazyImage;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -275,7 +276,7 @@ public class MusicdlFrame extends JFrame {
         }
 
         if (close) {
-            SoftCoverArt.shutdown();
+            AbstractLazyImage.shutdown();
             MusicLoader.shutdown();
             DownloadManager.shutdown();
             DownloadManager.cancelAll();
