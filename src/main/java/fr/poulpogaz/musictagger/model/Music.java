@@ -354,8 +354,6 @@ public class Music {
 
             if (template == null) {
                 return t != null;
-            } else if (template.isInternalTemplate()) { // TODO; better internal template handling, distinguish Unassigned Musics template
-                return t != null;
             } else {
                 return !Objects.equals(t, template.getName());
             }

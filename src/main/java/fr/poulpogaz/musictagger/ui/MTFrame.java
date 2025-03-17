@@ -200,7 +200,7 @@ public class MTFrame extends JFrame {
         int ret = chooser.showOpenDialog(this);
         if (ret == JFileChooser.APPROVE_OPTION) {
             File[] files = chooser.getSelectedFiles();
-            MusicLoader.load(files);
+            MusicLoader.load(templatesPanel.getSelectedTemplate(), files);
         }
     }
 
@@ -222,7 +222,7 @@ public class MTFrame extends JFrame {
         Template t = templatesPanel.getSelectedTemplate();
         if (t != null) {
             TemplateActions.editAction().setEnabled(true);
-            TemplateActions.deleteAction().setEnabled(!t.isInternalTemplate());
+            TemplateActions.deleteAction().setEnabled(Templates.templateCount() > 1);
         } else {
             TemplateActions.editAction().setEnabled(false);
             TemplateActions.deleteAction().setEnabled(false);

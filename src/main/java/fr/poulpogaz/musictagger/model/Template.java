@@ -202,11 +202,6 @@ public class Template implements Iterable<Key> {
     }
 
 
-    public boolean isInternalTemplate() {
-        return Templates.isNameInternal(name.get());
-    }
-
-
     public void addMetadataGenerator(MetadataGenerator generator) {
         generators.add(generator);
     }

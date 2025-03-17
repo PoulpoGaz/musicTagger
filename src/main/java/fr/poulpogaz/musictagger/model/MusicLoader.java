@@ -29,14 +29,14 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
     private static MusicLoader loader;
     private static final ExecutorService counter = Executors.newSingleThreadExecutor();
 
-    public static void load(File[] files) {
+    public static void load(Template dest, File[] files) {
         synchronized (LOCK) {
             if (loader == null) {
                 loader = new MusicLoader();
                 loader.execute();
             }
 
-            loader.offerAll(files);
+            loader.offer(dest, files);
         }
     }
 
@@ -48,22 +48,21 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
 
     private static final Logger LOGGER = LogManager.getLogger(MusicLoader.class);
 
-    private final Queue<Path> queue = new ArrayDeque<>();
+    private final Queue<Task> queue = new ArrayDeque<>();
     private final AtomicLong fileCount = new AtomicLong();
 
-    private Chunk chunk = new Chunk();
+    private Chunk chunk;
     private long lastPublish = 0;
 
 
     private MusicLoader() {}
 
-    public void offerAll(File[] files) {
-        for (File file : files) {
-            Path path = file.toPath();
-            queue.add(path);
+    public void offer(Template defaultTemplate, File[] files) {
+        queue.add(new Task(defaultTemplate.getName(), files));
 
-            if (Files.isDirectory(path)) {
-                counter.execute(() -> countFiles(path));
+        for (File file : files) {
+            if (file.isDirectory()) {
+                counter.execute(() -> countFiles(file.toPath()));
             } else {
                 fileCount.incrementAndGet();
             }
@@ -88,59 +87,67 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
     protected Void doInBackground() {
         LOGGER.debug("Music loader start");
         while (true) {
-            Path path;
+            Task task;
             synchronized (LOCK) {
                 if (queue.isEmpty()) {
                     loader = null;
                     break;
                 }
 
-                path = queue.poll();
+                task = queue.poll();
             }
 
-            if (!Files.exists(path)) {
-                LOGGER.warn("File doesn't exist: {}", path);
-                continue;
+            if (chunk == null) {
+                chunk = new Chunk(task.defaultTemplateName);
             }
 
-            try {
-                if (Files.isDirectory(path)) {
-                    processDirectory(path);
-                } else if (Files.isRegularFile(path)) {
-                    if (isJsonFile(path)) {
-                        processJson(path);
-                    } else if (isOpusFile(path)) {
-                        processMusic(path);
-                    } else {
-                        LOGGER.warn("Not a JSON or opus: {}", path);
-                    }
-                } else {
-                    LOGGER.warn("Invalid file type: {}", path);
+            for (File file : task.files) {
+                Path path = file.toPath();
+
+                if (!Files.exists(path)) {
+                    LOGGER.warn("File doesn't exist: {}", path);
+                    continue;
                 }
-            } catch (Exception e) {
-                LOGGER.warn("Failed to load music", e);
+
+                try {
+                    if (Files.isDirectory(path)) {
+                        processDirectory(task.defaultTemplateName, path);
+                    } else if (Files.isRegularFile(path)) {
+                        if (isJsonFile(path)) {
+                            processJson(task.defaultTemplateName, path);
+                        } else if (isOpusFile(path)) {
+                            processMusic(task.defaultTemplateName, path);
+                        } else {
+                            LOGGER.warn("Not a JSON or opus: {}", path);
+                        }
+                    } else {
+                        LOGGER.warn("Invalid file type: {}", path);
+                    }
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to load music", e);
+                }
             }
         }
 
-        sendChunk(true);
+        sendChunk(null, true);
         LOGGER.debug("Music loader stopped");
         return null;
     }
 
-    private void processDirectory(Path directory) {
+    private void processDirectory(String defaultTemplate, Path directory) {
         try (Stream<Path> stream = Files.walk(directory)) {
             Iterator<Path> it = stream.filter(this::isOpusFile).iterator();
 
             while (it.hasNext()) {
                 Path path = it.next();
-                processMusic(path);
+                processMusic(defaultTemplate, path);
             }
         } catch (IOException e) {
             LOGGER.warn("Exception while processing directory {}", directory, e);
         }
     }
 
-    private void processJson(Path path) {
+    private void processJson(String defaultTemplate, Path path) {
         try (BufferedReader br = Files.newBufferedReader(path)) {
             IJsonReader jr = new JsonReader(br);
 
@@ -150,7 +157,7 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
                 Pair<Music, String> music = Music.load(jr);
                 jr.endObject();
                 chunk.addMusic(music.getLeft(), music.getRight());
-                sendChunk(false);
+                sendChunk(defaultTemplate, false);
             }
 
             jr.endArray();
@@ -161,7 +168,7 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
         }
     }
 
-    private void processMusic(Path path) {
+    private void processMusic(String defaultTemplate, Path path) {
         Pair<Music, String> music = null;
         try {
             OpusFile file = new OpusFile(path);
@@ -181,16 +188,17 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
             }
 
             fileCount.decrementAndGet();
-            sendChunk(false);
+            sendChunk(defaultTemplate, false);
         }
     }
 
 
-    private void sendChunk(boolean force) {
-        if (System.currentTimeMillis() - lastPublish >= 200 || force) {
+    private void sendChunk(String defaultTemplate, boolean force) {
+        if (force || System.currentTimeMillis() - lastPublish >= 200
+                || (chunk != null && !chunk.musics.isEmpty() && !chunk.defaultTemplate.equals(defaultTemplate))) {
             chunk.remaining = fileCount.get();
             publish(chunk);
-            chunk = new Chunk();
+            chunk = new Chunk(defaultTemplate);
             lastPublish = System.currentTimeMillis();
         }
     }
@@ -214,12 +222,9 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
         for (Chunk chunk : chunks) {
             for (int i = 0; i < chunk.musics.size(); i++) {
                 Music music = chunk.musics.get(i);
-                String templateName = chunk.templateNames.get(i);
 
-                Template template = Templates.getTemplate(templateName);
-                if (template == null) {
-                    template = Templates.getDefaultTemplate();
-                }
+                String templateName = chunk.templateNames.get(i);
+                Template template = getTemplate(templateName, chunk.defaultTemplate);
 
                 template.getData().addMusic(music);
             }
@@ -227,6 +232,23 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
 
         Chunk d = chunks.getLast();
         MTFrame.getInstance().setLoadingFileCount(Math.max(d.remaining, 0));
+    }
+
+    private Template getTemplate(String templateName, String defaultTemplateName) {
+        Template template = null;
+        if (templateName != null) {
+            template = Templates.getTemplate(templateName);
+        }
+
+        if (template == null && defaultTemplateName != null) {
+            template = Templates.getTemplate(defaultTemplateName);
+        }
+
+        if (template == null) {
+            return Templates.getTemplates().iterator().next();
+        } else {
+            return template;
+        }
     }
 
     @Override
@@ -247,17 +269,21 @@ public class MusicLoader extends SwingWorker<Void, MusicLoader.Chunk> {
 
     protected static class Chunk {
         private long remaining;
-        private final List<Music> musics;
-        private final List<String> templateNames;
+        private final String defaultTemplate;
+        private final List<Music> musics = new ArrayList<>();
+        private final List<String> templateNames = new ArrayList<>();
 
-        public Chunk() {
-            musics = new ArrayList<>();
-            templateNames = new ArrayList<>();
+        public Chunk(String defaultTemplate) {
+            this.defaultTemplate = defaultTemplate;
         }
 
         public void addMusic(Music music, String template) {
             musics.add(music);
             templateNames.add(template);
         }
+    }
+
+    private record Task(String defaultTemplateName, File[] files) {
+
     }
 }

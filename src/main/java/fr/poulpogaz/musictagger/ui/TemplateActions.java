@@ -42,6 +42,8 @@ public class TemplateActions {
     private static Action SAVE_TEMPLATES_ACTION;
     private static Action LOAD_TEMPLATES_ACTION;
 
+    private static final String[] DELETE_OPTIONS = {"Remove and transfer", "Remove", "Cancel"};
+
     public static Action createAction() {
         if (CREATE_TEMPLATE_ACTION == null) {
             CREATE_TEMPLATE_ACTION = new AbstractAction(CREATE_TEMPLATE, CREATE_TEMPLATE_ICON) {
@@ -133,24 +135,55 @@ public class TemplateActions {
     }
 
     public static void deleteTemplate(MTFrame frame, Template template) {
-        if (template.isInternalTemplate()) {
+        Template[] opt = new Template[Templates.templateCount() - 1];
+        int i = 0;
+        for (Template t : Templates.getTemplates()) {
+            if (t != template) {
+                opt[i] = t;
+                i++;
+            }
+        }
+
+
+        JOptionPane pane = new JOptionPane("Remove all musics and transfer to?", JOptionPane.QUESTION_MESSAGE,
+                                           JOptionPane.OK_CANCEL_OPTION, null,
+                                           DELETE_OPTIONS, DELETE_OPTIONS[0]);
+        pane.setWantsInput(true);
+        pane.setSelectionValues(opt);
+        pane.setInitialSelectionValue(opt[0]);
+        pane.setComponentOrientation(((frame == null) ? JOptionPane.getRootFrame() : frame).getComponentOrientation());
+
+        JComboBox<?> box = (JComboBox<?>) ((JPanel) ((JPanel) ((JPanel) pane.getComponent(0)).getComponent(0)).getComponent(1)).getComponent(1);
+        box.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
+                                                          boolean cellHasFocus) {
+                return super.getListCellRendererComponent(list, ((Template) value).getName(), index, isSelected, cellHasFocus);
+            }
+        });
+
+        JDialog dialog = pane.createDialog(frame, "Confirm deletion");
+        pane.selectInitialValue();
+        dialog.setVisible(true);
+        dialog.dispose();
+
+        Object value = pane.getInputValue();
+        if (value == JOptionPane.UNINITIALIZED_VALUE) {
             return;
         }
 
-        int r = JOptionPane.showConfirmDialog(frame,
-                                              "All musics will be transferred to \"Unassigned musics\" template",
-                                              "Confirm deletion",
-                                              JOptionPane.YES_NO_OPTION);
-
-        if (r == JOptionPane.YES_OPTION) {
-            Templates.removeTemplate(template, true);
+        if (pane.getValue() == DELETE_OPTIONS[0]) {
+            Templates.removeTemplate(template, (Template) value);
+            saveTemplates();
+        } else if (pane.getValue() == DELETE_OPTIONS[1]) {
+            Templates.removeTemplate(template, null);
             saveTemplates();
         }
     }
 
     private static void saveTemplates() {
         try {
-            Templates.saveTemplates();
+            Templates.writeTemplates();
         } catch (JsonException | IOException e) {
             LOGGER.warn("Failed to save templates", e);
         }
@@ -164,7 +197,7 @@ public class TemplateActions {
         }
 
         try {
-            Templates.readTemplates(path);
+            Templates.loadTemplates(path);
         } catch (JsonException | IOException e) {
             Dialogs.showError(frame, "Failed to load templates", e);
         }
@@ -195,9 +228,7 @@ public class TemplateActions {
         protected void initComponents() {
             DefaultListModel<Template> model = new DefaultListModel<>();
             for (Template t : Templates.getTemplates()) {
-                if (!t.isInternalTemplate()) {
-                    model.addElement(t);
-                }
+                model.addElement(t);
             }
             templates = new JList<>(model);
             templates.addListSelectionListener(e -> {
@@ -314,7 +345,7 @@ public class TemplateActions {
                         Template template = templates.getModel().getElementAt(i);
 
                         jw.key(template.getName()).beginObject();
-                        Templates.writeTemplate(jw, template);
+                        Templates.saveTemplate(jw, template);
                         jw.endObject();
                     }
                  }

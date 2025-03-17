@@ -1,7 +1,8 @@
 * DONE: update "Music" metadata after downloading
 * REFUSED: don't use yt-dlp to write metadata
   * yt-dlp handles properly metadata with a trick (see YTDLP#setMetadata)
-* better internal template handling (saving internal template without having to rename it)
+  * COUNTER: it's not possible with yt-dlp to write multiple values to the same field
+* DONE: better internal template handling (saving internal template without having to rename it)
 * DONE: template: allow creation of new metadata key based on yt-dlp expression
 * ui:
   * TemplateTable
@@ -19,3 +20,5 @@
   * create OpusException/OggException
   * show error to user
 * allow user to add more options to yt-dlp
+* mass move of musics
+* add tests -_-

@@ -45,11 +45,10 @@ public class Templates {
         "https://music.youtube.com/watch?v=gegcg4hVN0A"
     };
 
-    private static final String UNASSIGNED_MUSIC_TEMPLATE_NAME = "Unassigned musics";
-
     private static final Logger LOGGER = LogManager.getLogger(Templates.class);
 
     private static final Map<String, Template> templates = new HashMap<>();
+    private static Template defaultTemplate;
     private static final List<TemplatesListener> listeners = new ArrayList<>();
 
     private static final PropertyListener<String> templateNameListener = (_, oldValue, newValue) -> {
@@ -62,7 +61,7 @@ public class Templates {
 
     static {
         Template template = new Template();
-        template.setName(UNASSIGNED_MUSIC_TEMPLATE_NAME);
+        template.setName("template");
 
         Key title = new Key("Title");
         title.setMetadataField("title");
@@ -87,22 +86,30 @@ public class Templates {
                 }
             }
         }
-
-
-        templates.put(UNASSIGNED_MUSIC_TEMPLATE_NAME, template);
     }
 
     private Templates() {}
 
-    public static void readTemplates() throws JsonException, IOException {
-        readTemplates(Directories.getConfigurationDirectory().resolve("templates.json"));
+    public static void loadTemplates() throws JsonException, IOException {
+        loadTemplates(Directories.getConfigurationDirectory().resolve("templates.json"));
+
+        if (templates.isEmpty()) {
+            addTemplate(createDefaultTemplate());
+        }
     }
 
-    public static void saveTemplates() throws JsonException, IOException {
-        saveTemplates(Directories.getConfigurationDirectory().resolve("templates.json"));
+    private static Template createDefaultTemplate() {
+        Template template = new Template();
+        template.setName("Musics");
+        template.addKey(new Key("Title"));
+        template.addKey(new Key("Artist"));
+        template.addKey(new Key("Album"));
+        template.setFormat("%(artist,channel)s/%(album,playlist)s/{key:title} · {key:artist} · {key:album}.%(ext)s");
+
+        return template;
     }
 
-    public static void readTemplates(Path out) throws JsonException, IOException {
+    public static void loadTemplates(Path out) throws JsonException, IOException {
         if (Files.notExists(out) || Files.isDirectory(out)) {
             return;
         }
@@ -142,6 +149,11 @@ public class Templates {
         }
     }
 
+
+    public static void writeTemplates() throws JsonException, IOException {
+        saveTemplates(Directories.getConfigurationDirectory().resolve("templates.json"));
+    }
+
     public static void saveTemplates(Path in) throws JsonException, IOException {
         LOGGER.info("Saving templates to {}", in);
         Files.createDirectories(in.getParent());
@@ -150,12 +162,8 @@ public class Templates {
 
         jw.beginObject();
         for (Template template : templates.values()) {
-            if (template.isInternalTemplate()) {
-                continue;
-            }
-
             jw.key(template.getName()).beginObject();
-            writeTemplate(jw, template);
+            saveTemplate(jw, template);
             jw.endObject();
         }
         jw.endObject();
@@ -163,7 +171,7 @@ public class Templates {
         jw.close();
     }
 
-    public static void writeTemplate(IJsonWriter jw, Template template) throws JsonException, IOException {
+    public static void saveTemplate(IJsonWriter jw, Template template) throws JsonException, IOException {
         if (template.getFormat() != null) {
             jw.field("format", template.getFormat());
         }
@@ -196,7 +204,7 @@ public class Templates {
     }
 
     public static void addTemplate(Template template) {
-        if (template.isInternalTemplate() || templates.containsKey(template.getName())) {
+        if (templates.containsKey(template.getName())) {
             return;
         }
 
@@ -205,24 +213,15 @@ public class Templates {
         fireEvent(TemplatesListener.TEMPLATE_ADDED, template);
     }
 
-    public static void removeTemplate(Template template, boolean moveToUnassignedMusics) {
-        if (!template.isInternalTemplate() && templates.remove(template.getName(), template)) {
-            if (moveToUnassignedMusics) {
-                Template unassignedMusics = templates.get(UNASSIGNED_MUSIC_TEMPLATE_NAME);
-                template.getData().transferAllTo(unassignedMusics.getData());
+    public static void removeTemplate(Template template, Template moveMusicsTo) {
+        if (templates.size() > 1 && templates.remove(template.getName(), template)) {
+            if (moveMusicsTo != null) {
+                template.getData().transferAllTo(moveMusicsTo.getData());
             }
 
             template.nameProperty().removeListener(templateNameListener);
             fireEvent(TemplatesListener.TEMPLATE_REMOVED, template);
         }
-    }
-
-    public static boolean isNameInternal(String templateName) {
-        return UNASSIGNED_MUSIC_TEMPLATE_NAME.equals(templateName);
-    }
-
-    public static Template getDefaultTemplate() {
-        return templates.get(UNASSIGNED_MUSIC_TEMPLATE_NAME);
     }
 
     public static Collection<Template> getTemplates() {

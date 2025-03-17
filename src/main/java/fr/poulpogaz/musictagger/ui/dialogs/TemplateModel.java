@@ -107,10 +107,6 @@ public class TemplateModel {
             return "Name is required";
         }
 
-        if (hasNameChanged() && Templates.isNameInternal(name)) {
-            return "Cannot use internal name";
-        }
-
         Template t = Templates.getTemplate(name);
         if (t != null && t != template) {
             return "Name already taken";

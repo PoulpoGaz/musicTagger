@@ -177,7 +177,7 @@ public class TemplatesPanel extends JPanel {
             this.template = template;
             if (template != null) {
                 edit.setEnabled(true);
-                delete.setEnabled(!template.isInternalTemplate());
+                delete.setEnabled(Templates.templateCount() > 1);
             } else {
                 edit.setEnabled(false);
                 delete.setEnabled(false);

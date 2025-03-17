@@ -23,7 +23,7 @@ public class Main {
         LOGGER.info("Configuration directory: {}", Directories.getConfigurationDirectory());
 
         try {
-            Templates.readTemplates();
+            Templates.loadTemplates();
         } catch (JsonException | IOException e) {
             LOGGER.fatal("Failed to read template file", e);
             return;

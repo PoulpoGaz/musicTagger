@@ -322,7 +322,7 @@ public abstract class TemplateDialogBase extends AbstractDialog {
             errorLabelScroll.setVisible(true);
         }
 
-        if (nameError != null && keyError != null) {
+        if (nameError != null || keyError != null) {
             revalidate();
             repaint();
             return;
