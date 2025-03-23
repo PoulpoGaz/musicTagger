@@ -22,3 +22,9 @@
 * allow user to add more options to yt-dlp
 * mass move of musics
 * add tests -_-
+* filenaming:
+  * more functions
+  * check function semantics
+  * if should probably a keyword
+    * if may not always return a value
+    * having a special FOp may be useful for only evaluating the condition than the appropriate expression

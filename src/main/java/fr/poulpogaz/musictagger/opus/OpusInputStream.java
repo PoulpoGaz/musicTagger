@@ -168,7 +168,7 @@ public class OpusInputStream implements Closeable {
 
     /**
      * <a href="https://www.xiph.org/vorbis/doc/v-comment.html">v-comment</a>
-     * A case-insensitive field name that may consist of ASCII 0x20 through
+     * A case-insensitive field variable that may consist of ASCII 0x20 through
      * 0x7D, 0x3D ('=') excluded. ASCII 0x41 through 0x5A inclusive (A-Z) is
      * to be considered equivalent to ASCII 0x61 through 0x7A inclusive (a-z).
      */

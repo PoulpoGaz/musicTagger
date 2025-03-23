@@ -128,7 +128,7 @@ public class Templates {
                 JsonObject keyO = (JsonObject) e;
 
                 Key key = new Key();
-                key.setName(keyO.getAsString("name"));
+                key.setName(keyO.getAsString("variable"));
                 key.setMetadataField(keyO.getOptionalString("metadataKey").orElse(null));
                 template.addKey(key);
             }
@@ -179,7 +179,7 @@ public class Templates {
         jw.key("keys").beginArray();
         for (Key key : template.getKeys()) {
             jw.beginObject();
-            jw.field("name", key.getName());
+            jw.field("variable", key.getName());
             if (key.isMetadataFieldSet()) {
                 jw.field("metadataKey", key.getMetadataField());
             }

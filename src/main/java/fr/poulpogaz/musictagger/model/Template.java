@@ -17,7 +17,9 @@ public class Template implements Iterable<Key> {
     private final TemplateData data = new TemplateData(this);
 
     public Template() {
-
+        // formatter -> location on disk, download location can't be choosed by user
+        // rename Key to visible fields/values/metadata
+        // yt-dlp parameters -> YTDLPConfig
     }
 
     public String getName() {

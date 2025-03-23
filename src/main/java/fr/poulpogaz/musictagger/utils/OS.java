@@ -10,7 +10,7 @@ public enum OS {
 
     public static OS getOS() {
         if (os == null) {
-            String osName = System.getProperty("os.name").toLowerCase();
+            String osName = System.getProperty("os.variable").toLowerCase();
             if (osName.startsWith("mac os x")) {
                 os = MACOS;
             } else if (osName.startsWith("windows")) {

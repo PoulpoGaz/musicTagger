@@ -1,0 +1,43 @@
+package fr.poulpogaz.musictagger.filenaming;
+
+import java_cup.runtime.*;
+import java.util.List;
+import java.util.LinkedList;
+
+class FParser;
+
+
+terminal COMMA, LPAREN, RPAREN;
+terminal String STRING, IDENTIFIER;
+terminal Integer INTEGER;
+
+non terminal FTree.ExpressionList explist;
+non terminal FTree exp;
+non terminal List<FTree.ExpressionList> args;
+
+start with explist;
+
+// here the rules start
+explist ::= exp:e
+                {: RESULT = new FTree.ExpressionList().add(e); :}
+            | exp:e explist:l
+                {: RESULT = l.add(e); :}
+            ;
+
+exp ::= STRING:s
+            {: RESULT = new FTree.Literal(s); :}
+        | INTEGER:i
+            {: RESULT = new FTree.Literal(i); :}
+        | IDENTIFIER:i LPAREN RPAREN
+            {: RESULT = new FTree.FunctionCall(i); :}
+        | IDENTIFIER:i LPAREN args:a RPAREN
+             {: RESULT = new FTree.FunctionCall(i, a); :}
+        | IDENTIFIER:i
+            {: RESULT = new FTree.Variable(i); :}
+        ;
+
+args ::= explist:l
+            {: RESULT = new LinkedList<>(); RESULT.add(l); :}
+         | explist:l COMMA args:a
+            {: RESULT = a; a.addFirst(l); :}
+         ;

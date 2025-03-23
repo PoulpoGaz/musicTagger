@@ -51,7 +51,7 @@ public class TemplateModel {
         if (!Objects.equals(name, this.name)) {
             String old = this.name;
             this.name = name;
-            propertyChangeSupport.firePropertyChange("name", old, name);
+            propertyChangeSupport.firePropertyChange("variable", old, name);
         }
     }
 
@@ -137,7 +137,7 @@ public class TemplateModel {
                 if (b.getName() != null && a.getName().equals(b.getName())) {
                     sb = Objects.requireNonNullElseGet(sb, StringBuilder::new)
                             .append("Keys n°").append(i + 1).append(" and n°").append(j + 1)
-                            .append(" have the same name.\n");
+                            .append(" have the same variable.\n");
                 }
             }
         }
@@ -193,7 +193,7 @@ public class TemplateModel {
             KeyRow row = keyTable.getRow(i);
 
             int i2 = template.indexOfKey(row.getName());
-            if (i2 >= 0 && i2 != i) { // template already contains a key with the same name
+            if (i2 >= 0 && i2 != i) { // template already contains a key with the same variable
                 template.swap(i, i2);
                 key = template.getKey(i);
             } else {

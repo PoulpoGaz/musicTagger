@@ -83,7 +83,7 @@ public abstract class TemplateDialogBase extends AbstractDialog {
                 nameAdjusting = false;
             }
         });
-        templateModel.addPropertyChangeListener("name", evt -> {
+        templateModel.addPropertyChangeListener("variable", evt -> {
             if (!nameAdjusting) {
                 nameField.setText((String) evt.getNewValue());
             }

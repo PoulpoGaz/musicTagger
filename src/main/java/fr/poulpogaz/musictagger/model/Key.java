@@ -14,7 +14,7 @@ public class Key {
 
     public Key(String name) {
         if (!isNameValid(name)) {
-            throw new IllegalArgumentException("Invalid name");
+            throw new IllegalArgumentException("Invalid variable");
         }
         this.name = name;
     }

@@ -30,7 +30,7 @@ class CommentInputStream extends LimitedInputStream {
                 break;
             } else if (b >= 'a' && b <= 'z') {
                 baos.write(b - 'a' + 'A');
-            } else if (b >= 0x20 && b <= 0x7D) {
+            } else if (b >= 0x30 && b <= 0x7D) {
                 baos.write(b);
             } else {
                 throw new IOException("Invalid character in key: " + b);

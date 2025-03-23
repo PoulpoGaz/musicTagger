@@ -1,0 +1,11 @@
+?(albumartist, artist)"/"
+if (albumartist,
+    album "num"
+)
+/*
+    Multiline comment
+*/
+if (eq(cd, 2),
+    "two cds", // comment
+    $cd count$
+)
