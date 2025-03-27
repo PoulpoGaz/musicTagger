@@ -3,41 +3,139 @@ package fr.poulpogaz.musictagger.filenaming;
 import java_cup.runtime.*;
 import java.util.List;
 import java.util.LinkedList;
+import java.util.ArrayList;
 
 class FParser;
 
+parser code {:
 
+    private ErrorHandler error;
+
+    public FParser(Scanner s, SymbolFactory sf, ErrorHandler error) {
+        this(s, sf);
+        this.error = error;
+    }
+
+    public void report_error(String message, Object info) {
+        if (info instanceof ComplexSymbolFactory.ComplexSymbol) {
+            ComplexSymbolFactory.ComplexSymbol cs = (ComplexSymbolFactory.ComplexSymbol)info;
+            error.report(message + " for input symbol \"" + cs.getName() + "\" spanning from " + cs.getLeft() + " to " + cs.getRight());
+        } else {
+            if (info instanceof Symbol sym && sym.left != -1) {
+                error.report(message + " at character " + sym.left + " of input");
+            } else {
+                error.report(message);
+            }
+        }
+    }
+
+    protected void report_expected_token_ids() {
+        List<Integer> ids = this.expected_token_ids();
+        LinkedList<String> list = new LinkedList();
+
+        for(Integer expected : ids) {
+            list.add(this.symbl_name_from_id(expected));
+        }
+
+        error.report("instead expected token classes are " + list);
+    }
+:};
+
+
+terminal IF, ELSE;
+terminal PLUS, MINUS, MULT, DIV;
+terminal EQ, NOTEQ, LT, LTEQ, GT, GTEQ;
+terminal AND, OR, NOT;
+terminal LBRACKET, RBRACKET;
+terminal LBRACE, RBRACE;
 terminal COMMA, LPAREN, RPAREN;
-terminal String STRING, IDENTIFIER;
+
+// literals
+terminal String IDENTIFIER;
+terminal String STRING;
 terminal Integer INTEGER;
+terminal Boolean BOOLEAN;
+terminal NULL;
 
-non terminal FTree.ExpressionList explist;
-non terminal FTree exp;
-non terminal List<FTree.ExpressionList> args;
 
-start with explist;
+non terminal FTree.ExpressionList expression_list_opt;
+non terminal FTree.ExpressionList expression_list;
+non terminal FTree expression;
+non terminal FTree.Literal literal;
+non terminal FTree.FunctionCall function_call;
+non terminal List<FTree.ExpressionList> arguments_opt;
+non terminal List<FTree.ExpressionList> arguments;
+non terminal FTree.If if_expression;
+non terminal FTree.ExpressionList else_if_opt;
+non terminal FTree conditional_expression;
+
+non terminal Integer comp_op;
+
+
+precedence left NOT;
+precedence left MULT, DIV;
+precedence left PLUS, MINUS;
+precedence left LT, LTEQ, GT, GTEQ;
+precedence left EQ, NOTEQ;
+precedence left AND;
+precedence left OR;
+
+start with expression_list_opt;
 
 // here the rules start
-explist ::= exp:e
-                {: RESULT = new FTree.ExpressionList().add(e); :}
-            | exp:e explist:l
-                {: RESULT = l.add(e); :}
+expression_list_opt ::=                      {: RESULT = FTree.expList(); :}
+                      | expression_list:list {: RESULT = list; :}
+                      ;
+
+expression_list ::= expression:exp                   {: RESULT = FTree.expList().add(exp); :}
+                  | expression:exp expression_list:l {: RESULT = l.add(exp); :}
+                  | error                            {:  :}
+                  ;
+
+expression ::= literal:v           {: RESULT = v; :}
+             | function_call:fc    {: RESULT = fc; :}
+             | if_expression:ifexp {: RESULT = ifexp; :}
+             | IDENTIFIER:ident    {: RESULT = FTree.variable(ident); :}
+             ;
+
+function_call ::= IDENTIFIER:ident LPAREN arguments_opt:args RPAREN
+                  {: RESULT = FTree.functionCall(ident, args); :}
+                ;
+arguments_opt ::=                {: RESULT = null; :}
+                | arguments:args {: RESULT = args; :}
+                ;
+arguments ::= expression_list:list                      {: RESULT = new LinkedList<>(); RESULT.add(list); :}
+            | expression_list:list COMMA arguments:args {: args.add(list); RESULT = args; :}
             ;
 
-exp ::= STRING:s
-            {: RESULT = new FTree.Literal(s); :}
-        | INTEGER:i
-            {: RESULT = new FTree.Literal(i); :}
-        | IDENTIFIER:i LPAREN RPAREN
-            {: RESULT = new FTree.FunctionCall(i); :}
-        | IDENTIFIER:i LPAREN args:a RPAREN
-             {: RESULT = new FTree.FunctionCall(i, a); :}
-        | IDENTIFIER:i
-            {: RESULT = new FTree.Variable(i); :}
-        ;
+if_expression ::= IF conditional_expression:cond LBRACE expression_list_opt:if_exp RBRACE else_if_opt:else_exp
+                    {: RESULT = FTree.ifExp(cond, if_exp, else_exp); :}
+                ;
+else_if_opt ::=
+              | ELSE if_expression:if_exp
+                {: RESULT = FTree.expList().add(if_exp); :}
+              | ELSE LBRACE expression_list_opt:else_exp RBRACE
+                {: RESULT = else_exp; :}
+              ;
 
-args ::= explist:l
-            {: RESULT = new LinkedList<>(); RESULT.add(l); :}
-         | explist:l COMMA args:a
-            {: RESULT = a; a.addFirst(l); :}
-         ;
+conditional_expression ::= LPAREN conditional_expression:c RPAREN                {: RESULT = c; :}
+                         | conditional_expression:l AND conditional_expression:r {: RESULT = FTree.binExp(l, FParserSym.AND, r); :}
+                         | conditional_expression:l OR conditional_expression:r  {: RESULT = FTree.binExp(l, FParserSym.OR, r); :}
+                         | NOT LPAREN conditional_expression:exp RPAREN          {: RESULT = FTree.unExp(FParserSym.NOT, exp); :}
+                         | expression_list:l comp_op:op expression_list:r        {: RESULT = FTree.binExp(l, op, r); :}
+                         | expression_list:l                                     {: RESULT = l; :}
+                         ;
+
+comp_op ::= EQ    {: RESULT = FParserSym.EQ; :}
+          | NOTEQ {: RESULT = FParserSym.NOTEQ; :}
+          | LT    {: RESULT = FParserSym.LT; :}
+          | LTEQ  {: RESULT = FParserSym.LTEQ; :}
+          | GT    {: RESULT = FParserSym.GT; :}
+          | GTEQ  {: RESULT = FParserSym.GTEQ; :}
+          ;
+
+literal ::= STRING:s  {: RESULT = FTree.literal(s); :}
+          | INTEGER:i {: RESULT = FTree.literal(i); :}
+          | BOOLEAN:b {: RESULT = FTree.literal(b); :}
+          | NULL      {: RESULT = FTree.literal(null); :}
+          ;

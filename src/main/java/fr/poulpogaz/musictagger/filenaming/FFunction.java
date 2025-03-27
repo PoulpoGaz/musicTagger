@@ -1,12 +1,24 @@
 package fr.poulpogaz.musictagger.filenaming;
 
-public interface FFunction {
+import fr.poulpogaz.musictagger.filenaming.types.FunctionType;
 
-    String name();
+public abstract class FFunction {
 
-    int arity();
+    protected final String name;
+    protected final FunctionType signature;
 
-    Class<?> returnClass();
+    public FFunction(String name, FunctionType signature) {
+        this.name = name;
+        this.signature = signature;
+    }
 
-    Object call(Object[] args, int argCount);
+    public String name() {
+        return name;
+    }
+
+    public FunctionType signature() {
+        return signature;
+    }
+
+    public abstract Object call(Object[] args, int argCount);
 }

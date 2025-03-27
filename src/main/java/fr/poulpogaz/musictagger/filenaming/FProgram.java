@@ -15,11 +15,12 @@ public class FProgram {
     StringBuilder sb;
     Stack<Object> stack;
 
+    int instructionPointer;
+
     FProgram(List<FOp> ops) {
         this.ops = Collections.unmodifiableList(ops);
         addFunction(FFunctions.EQ);
         addFunction(FFunctions.FIRST_NON_NULL);
-        addFunction(FFunctions.IF);
     }
 
     private void addFunction(FFunction func) {
@@ -33,12 +34,15 @@ public class FProgram {
             sb = new StringBuilder();
             stack = new Stack<>();
 
-            for (FOp op : ops) {
+            while (instructionPointer >= 0 && instructionPointer < ops.size()) {
+                FOp op = ops.get(instructionPointer);
+                // System.out.println(instructionPointer + " - " + stack + " - " + op);
                 op.execute(this);
+                instructionPointer++;
             }
 
             if (stack.size() != 1) {
-                throw new MTException("fail");
+                throw new MTException("Runtime error, expected stack size is one but got " + stack.size());
             }
 
             return stack.pop().toString();
@@ -51,7 +55,7 @@ public class FProgram {
         funcArgs = growIfNeeded(funcArgs, argCount);
 
         for (int i = 0; i < argCount; i++) {
-            funcArgs[argCount - i - 1] = stack.pop();
+            funcArgs[argCount - i - 1] = pop();
         }
     }
 
@@ -65,6 +69,16 @@ public class FProgram {
     FFunction getFunction(String name) {
         return functions.get(name);
     }
+
+
+    Object pop() {
+        return stack.pop();
+    }
+
+    void push(Object object) {
+        stack.push(object);
+    }
+
 
     String castToString(Object pop) {
         if (pop instanceof List<?> list) {
@@ -88,6 +102,10 @@ public class FProgram {
         stack.clear();
         stack = null;
         file = null;
+    }
+
+    public int size() {
+        return ops.size();
     }
 
     @Override

@@ -43,18 +43,19 @@
 
 
             <plugin>
-                <groupId>de.jflex</groupId>
+                <groupId>com.github.vbmacher</groupId>
                 <artifactId>cup-maven-plugin</artifactId>
-                <version>1.3</version>
+                <version>11b-20160615-3</version>
                 <executions>
                     <execution>
                         <goals>
                             <goal>generate</goal>
                         </goals>
-                        <configuration>
-                        </configuration>
                     </execution>
                 </executions>
+                <configuration>
+                    <cupDefinition>${project.basedir}/src/main/cup/</cupDefinition>
+                </configuration>
             </plugin>
 
 
@@ -67,8 +68,6 @@
                         <goals>
                             <goal>generate</goal>
                         </goals>
-                        <configuration>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

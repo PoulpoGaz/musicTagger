@@ -1,6 +1,10 @@
 package fr.poulpogaz.musictagger.filenaming;
 
+import java_cup.runtime.ComplexSymbolFactory;
 import java_cup.runtime.Symbol;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.List;
 
 %%
 
@@ -12,14 +16,33 @@ import java_cup.runtime.Symbol;
 %column
 
 %{
-  StringBuffer string = new StringBuffer();
+    private final StringBuffer string = new StringBuffer();
+    private ComplexSymbolFactory symbolFactory;
+    private ErrorHandler error;
 
-  private Symbol symbol(int type) {
-    return new Symbol(type, yyline, yycolumn);
-  }
-  private Symbol symbol(int type, Object value) {
-    return new Symbol(type, yyline, yycolumn, value);
-  }
+    public FLexer(Reader in, ComplexSymbolFactory sf, ErrorHandler error){
+        this(in);
+        symbolFactory = sf;
+        this.error = error;
+    }
+
+    private Symbol symbol(String name, int sym) {
+        return symbol(name, sym, null);
+    }
+
+    private Symbol symbol(String name, int sym, Object val) {
+        return symbolFactory.newSymbol(name, sym,
+                                       new ComplexSymbolFactory.Location(yyline + 1, yycolumn + 1),
+                                       new ComplexSymbolFactory.Location(yyline + 1, yycolumn + yylength()),
+                                       val);
+    }
+
+    private Symbol stringSymbol(String name, int sym) {
+        int strLength = string.length();
+        ComplexSymbolFactory.Location left  = new ComplexSymbolFactory.Location(yyline + 1, yycolumn + yylength() - strLength);
+        ComplexSymbolFactory.Location right = new ComplexSymbolFactory.Location(yyline + 1, yycolumn + yylength());
+        return symbolFactory.newSymbol(name, sym, left, right, string.toString());
+    }
 %}
 
 
@@ -51,43 +74,64 @@ EndOfLineComment     = "//" [^\r\n]* {LineTerminator}?
 
 <YYINITIAL> {
     \"                           { string.setLength(0); yybegin(STRING); }
-    {Number}                     { return symbol(FParserSym.INTEGER, Integer.parseInt(yytext())); }
-    {OutIdentifier}              { return symbol(FParserSym.IDENTIFIER, yytext()); }
     "$"                          { string.setLength(0); yybegin(IDENTIFIER); }
 
-    "("                          { return symbol(FParserSym.LPAREN); }
-    ")"                          { return symbol(FParserSym.RPAREN); }
-    ","                          { return symbol(FParserSym.COMMA); }
+    "{"                          { return symbol("{", FParserSym.LBRACE); }
+    "}"                          { return symbol("}", FParserSym.RBRACE); }
+    "["                          { return symbol("[", FParserSym.LBRACKET); }
+    "]"                          { return symbol("]", FParserSym.RBRACKET); }
+    "("                          { return symbol("(", FParserSym.LPAREN); }
+    ")"                          { return symbol(")", FParserSym.RPAREN); }
+    ","                          { return symbol(",", FParserSym.COMMA); }
+
+    "&&"                         { return symbol("and", FParserSym.AND); }
+    "||"                         { return symbol("or", FParserSym.OR); }
+    "!"                          { return symbol("not", FParserSym.NOT); }
+
+    "if"                         { return symbol("if", FParserSym.IF); }
+    "else"                       { return symbol("else", FParserSym.ELSE); }
+    "true"                       { return symbol("true", FParserSym.BOOLEAN, true); }
+    "false"                      { return symbol("false", FParserSym.BOOLEAN, false); }
+
+    "=="                         { return symbol("==", FParserSym.EQ); }
+    "<"                          { return symbol("lt", FParserSym.LT); }
+    "<="                         { return symbol("lteq", FParserSym.LTEQ); }
+    ">"                          { return symbol("gt", FParserSym.GT); }
+    ">="                         { return symbol("gteq", FParserSym.GTEQ); }
+
+    {Number}                     { return symbol("int", FParserSym.INTEGER, Integer.parseInt(yytext())); }
+    {OutIdentifier}              { return symbol("identifier", FParserSym.IDENTIFIER, yytext()); }
 
     {Comment}                    { /* ignore comment*/ }
     {WhiteSpace}                 { /* ignore whitespace */ }
 }
 
 <IDENTIFIER> {
-    \$                           { yybegin(YYINITIAL); return symbol(FParserSym.IDENTIFIER, string.toString()); }
+    \$                           { yybegin(YYINITIAL); return stringSymbol("identifier", FParserSym.IDENTIFIER); }
     \\\$                         { string.append('$'); }
     \\\\                         { string.append('\\'); }
     {x30_x7D_BetweenDollar}+     { string.append(yytext()); }
-    <<EOF>>                      { throw new RuntimeException("Unterminated identifier \""+yytext()+
-                                                              "\" at line "+yyline+", column "+yycolumn); }
+    <<EOF>>                      { error.report("Unterminated identifier \"" + yytext() + '"');
+                                   yybegin(YYINITIAL); }
+    [^]                          { error.report("Illegal character in identifier \"" + yytext() + '"');
+                                   yybegin(YYINITIAL); }
 }
 
 <STRING> {
-    \"                           { yybegin(YYINITIAL);
-                                   return symbol(FParserSym.STRING,
-                                   string.toString()); }
+    \"                           { yybegin(YYINITIAL); return stringSymbol("str", FParserSym.STRING); }
     [^\n\r\"\\]+                 { string.append( yytext() ); }
     \\t                          { string.append('\t'); }
     \\n                          { string.append('\n'); }
     \\r                          { string.append('\r'); }
     \\\"                         { string.append('\"'); }
     \\                           { string.append('\\'); }
-    <<EOF>>                      { throw new RuntimeException("Unterminated string \""+yytext()+
-                                                              "\" at line "+yyline+", column "+yycolumn); }
+    <<EOF>>                      { error.report("Unterminated string \"" + yytext() + '"');
+                                   yybegin(YYINITIAL); }
+    [^]                          { error.report("Illegal character in string \"" + yytext() + '"');
+                                   yybegin(YYINITIAL); }
 }
 
-<<EOF>>                          { return symbol(FParserSym.EOF); }
+<<EOF>>                          { return symbol("eof", FParserSym.EOF); }
 
 /* error fallback */
-[^]                              { throw new RuntimeException("Illegal character \""+yytext()+
-                                                              "\" at line "+yyline+", column "+yycolumn); }
+[^]                              { error.report("Illegal token \"" + yytext() + '"'); }
